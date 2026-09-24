@@ -1,13 +1,17 @@
 from ..api_errors import ApiError, ApiRouter, error_responses
 from ..caching import cached_get
 from ..db import get_db
-from ..schemas import RevealedCell, RevealedCellsBlob
+from ..schemas import RevealedCellsBlob
 from ..schemas.errors import FogError
 
 router = ApiRouter(prefix="/api", tags=["fog"])
 
 
-@router.get("/dungeons/{dungeon_id}/revealed-cells", response_model=RevealedCellsBlob, operation_id="getRevealedCells")
+@router.get(
+    "/dungeons/{dungeon_id}/revealed-cells",
+    response_model=RevealedCellsBlob,
+    operation_id="getRevealedCells",
+)
 @cached_get("fog")
 def get_revealed_cells(dungeon_id: int) -> dict:
     """Get all revealed fog cells for a dungeon"""
@@ -45,7 +49,9 @@ def reveal_cells(dungeon_id: int, blob: RevealedCellsBlob) -> dict:
             conn.rollback()
             raise ApiError(
                 400,
-                FogError(code="failed_to_reveal_cells", message=f"Failed to reveal cells: {str(e)}"),
+                FogError(
+                    code="failed_to_reveal_cells", message=f"Failed to reveal cells: {str(e)}"
+                ),
             )
 
         cursor.execute(

@@ -193,11 +193,11 @@
  * itself never scrolls, at every width (a map that runs off the bottom of a tablet is unusable at
  * the table, and page scroll fights the canvas's own pan/pinch). `DungeonShell` sets the flag on
  * <body> while such a route is mounted. `.dungeon-shell` supplies its own padding. */
-body[data-app-layout='fill'] {
+body[data-app-layout="fill"] {
   overflow: hidden;
 }
 
-body[data-app-layout='fill'] .app-shell {
+body[data-app-layout="fill"] .app-shell {
   /* 100vh first for browsers predating dvh — it overshoots by the mobile URL bar rather than
    * letting the shell grow unbounded; the dvh line wins wherever it is understood. */
   height: 100vh;
@@ -206,7 +206,7 @@ body[data-app-layout='fill'] .app-shell {
   overflow: hidden;
 }
 
-body[data-app-layout='fill'] .app-main {
+body[data-app-layout="fill"] .app-main {
   display: flex;
   flex-direction: column;
   min-height: 0;

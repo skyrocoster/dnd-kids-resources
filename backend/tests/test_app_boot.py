@@ -19,7 +19,6 @@ from backend.app.db import get_db_path
 from backend.app.main import app, create_app
 from backend.app.schemas.common import StrictModel
 
-
 # ---------------------------------------------------------------------------
 # Structured error bodies (from test_api_errors.py)
 # ---------------------------------------------------------------------------
@@ -140,9 +139,7 @@ def test_db_path_dependency_override_selects_database(tmp_path):
     response = TestClient(app).get("/api/abilities")
 
     assert response.status_code == 200
-    assert response.json() == [
-        {"id": 1, "code": "str", "name": "Strength", "description": None}
-    ]
+    assert response.json() == [{"id": 1, "code": "str", "name": "Strength", "description": None}]
 
 
 def test_strict_model_rejects_coercion():

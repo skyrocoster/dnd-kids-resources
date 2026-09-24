@@ -1,127 +1,140 @@
-import { useState } from 'react'
-import type { LoomNode, LoomTapestryThread } from '../../api/types'
-import { Button } from '../../components/Button'
-import { Menu } from '../../components/menus/Menu'
-import type { MenuItemDefinition } from '../../components/menus/menuTypes'
-import { LoomBeatBankTray } from './LoomBeatBankTray'
-import { threadOrdered } from './loomGraph'
+import { useState } from "react";
+import type { LoomNode, LoomTapestryThread } from "../../api/types";
+import { Button } from "../../components/Button";
+import { Menu } from "../../components/menus/Menu";
+import type { MenuItemDefinition } from "../../components/menus/menuTypes";
+import { LoomBeatBankTray } from "./LoomBeatBankTray";
+import { threadOrdered } from "./loomGraph";
 
 export interface LoomRailProps {
-  selectedNode: LoomNode | null
-  threads: LoomTapestryThread[]
-  selectedThreadId?: number | null
-  onSelectThread?: (threadId: number) => void
-  onEdit: () => void
-  onDeleteNode: () => void
-  onFulfilNode: (node: LoomNode) => void
-  onBankNode: (node: LoomNode) => void
-  onBankNodeById?: (nodeId: number) => void
-  onReplaceNode: (node: LoomNode) => void
-  onSpawnThread: (node: LoomNode) => void
-  onChangeEnding: (node: LoomNode) => void
-  onUndoFulfil: (node: LoomNode) => void
-  nodes: LoomNode[]
-  onSelectNode: (node: LoomNode) => void
-  onRestoreNode: (node: LoomNode, threadId: number) => void
-  onEditThread?: (threadId: number) => void
-  onActivateNode?: (node: LoomNode) => void
-  onManageThreads?: () => void
-  onPlaceNode?: (node: LoomNode) => void
-  onReorderThread?: (threadId: number) => void
+  selectedNode: LoomNode | null;
+  threads: LoomTapestryThread[];
+  selectedThreadId?: number | null;
+  onSelectThread?: (threadId: number) => void;
+  onEdit: () => void;
+  onDeleteNode: () => void;
+  onFulfilNode: (node: LoomNode) => void;
+  onBankNode: (node: LoomNode) => void;
+  onBankNodeById?: (nodeId: number) => void;
+  onReplaceNode: (node: LoomNode) => void;
+  onSpawnThread: (node: LoomNode) => void;
+  onChangeEnding: (node: LoomNode) => void;
+  onUndoFulfil: (node: LoomNode) => void;
+  nodes: LoomNode[];
+  onSelectNode: (node: LoomNode) => void;
+  onRestoreNode: (node: LoomNode, threadId: number) => void;
+  onEditThread?: (threadId: number) => void;
+  onActivateNode?: (node: LoomNode) => void;
+  onManageThreads?: () => void;
+  onPlaceNode?: (node: LoomNode) => void;
+  onReorderThread?: (threadId: number) => void;
 }
 
 function kindLabel(node: LoomNode): string {
   switch (node.kind) {
-    case 'start':
-      return 'Start'
-    case 'end':
-      return 'End'
-    case 'beat':
-      return node.thread_id == null ? 'Banked Beat' : 'Story Beat'
-    case 'session':
-      return 'Session'
+    case "start":
+      return "Start";
+    case "end":
+      return "End";
+    case "beat":
+      return node.thread_id == null ? "Banked Beat" : "Story Beat";
+    case "session":
+      return "Session";
   }
 }
 
 function excerpt(body: string | null | undefined): string | null {
-  if (!body) return null
-  const compact = body.trim().replace(/\s+/g, ' ')
-  if (!compact) return null
-  return compact.length > 180 ? `${compact.slice(0, 177)}...` : compact
+  if (!body) return null;
+  const compact = body.trim().replace(/\s+/g, " ");
+  if (!compact) return null;
+  return compact.length > 180 ? `${compact.slice(0, 177)}...` : compact;
 }
 
 interface ActionItem {
-  label: string
-  onClick: () => void
-  destructive?: boolean
+  label: string;
+  onClick: () => void;
+  destructive?: boolean;
 }
 
 function getActionConfig(
   node: LoomNode,
   props: {
-    onEdit: () => void
-    onDeleteNode: () => void
-    onFulfilNode: (node: LoomNode) => void
-    onBankNode: (node: LoomNode) => void
-    onReplaceNode: (node: LoomNode) => void
-    onSpawnThread: (node: LoomNode) => void
-    onChangeEnding: (node: LoomNode) => void
-    onUndoFulfil: (node: LoomNode) => void
-    onPlaceNode?: (node: LoomNode) => void
-    onReorderThread?: (threadId: number) => void
+    onEdit: () => void;
+    onDeleteNode: () => void;
+    onFulfilNode: (node: LoomNode) => void;
+    onBankNode: (node: LoomNode) => void;
+    onReplaceNode: (node: LoomNode) => void;
+    onSpawnThread: (node: LoomNode) => void;
+    onChangeEnding: (node: LoomNode) => void;
+    onUndoFulfil: (node: LoomNode) => void;
+    onPlaceNode?: (node: LoomNode) => void;
+    onReorderThread?: (threadId: number) => void;
   },
-): { primary: ActionItem | null; adjacent: ActionItem | null; moreItems: (ActionItem | 'separator')[] } {
-  if (node.kind === 'start') {
-    return { primary: null, adjacent: null, moreItems: [] }
+): {
+  primary: ActionItem | null;
+  adjacent: ActionItem | null;
+  moreItems: (ActionItem | "separator")[];
+} {
+  if (node.kind === "start") {
+    return { primary: null, adjacent: null, moreItems: [] };
   }
 
-  if (node.kind === 'end') {
+  if (node.kind === "end") {
     return {
-      primary: { label: 'Change Ending', onClick: () => props.onChangeEnding(node) },
+      primary: { label: "Change Ending", onClick: () => props.onChangeEnding(node) },
       adjacent: null,
       moreItems: [],
-    }
+    };
   }
 
-  if (node.kind === 'beat' && node.thread_id != null) {
-    const more: (ActionItem | 'separator')[] = []
+  if (node.kind === "beat" && node.thread_id != null) {
+    const more: (ActionItem | "separator")[] = [];
     if (props.onReorderThread) {
-      more.push({ label: 'Reorder planned beats…', onClick: () => props.onReorderThread!(node.thread_id!) })
+      more.push({
+        label: "Reorder planned beats…",
+        onClick: () => props.onReorderThread!(node.thread_id!),
+      });
     }
-    more.push({ label: 'Bank Beat', onClick: () => props.onBankNode(node) })
-    more.push({ label: 'Replace Beat…', onClick: () => props.onReplaceNode(node) })
-    more.push('separator')
-    more.push({ label: 'Delete Beat…', onClick: () => props.onDeleteNode(), destructive: true })
+    more.push({ label: "Bank Beat", onClick: () => props.onBankNode(node) });
+    more.push({ label: "Replace Beat…", onClick: () => props.onReplaceNode(node) });
+    more.push("separator");
+    more.push({ label: "Delete Beat…", onClick: () => props.onDeleteNode(), destructive: true });
     return {
-      primary: { label: 'Fulfil Beat', onClick: () => props.onFulfilNode(node) },
-      adjacent: { label: 'Edit', onClick: () => props.onEdit() },
+      primary: { label: "Fulfil Beat", onClick: () => props.onFulfilNode(node) },
+      adjacent: { label: "Edit", onClick: () => props.onEdit() },
       moreItems: more,
-    }
+    };
   }
 
-  if (node.kind === 'beat' && node.thread_id == null) {
+  if (node.kind === "beat" && node.thread_id == null) {
     return {
-      primary: { label: 'Place Beat', onClick: () => props.onPlaceNode?.(node) },
-      adjacent: { label: 'Edit', onClick: () => props.onEdit() },
-      moreItems: [{ label: 'Delete Beat…', onClick: () => props.onDeleteNode(), destructive: true }],
-    }
+      primary: { label: "Place Beat", onClick: () => props.onPlaceNode?.(node) },
+      adjacent: { label: "Edit", onClick: () => props.onEdit() },
+      moreItems: [
+        { label: "Delete Beat…", onClick: () => props.onDeleteNode(), destructive: true },
+      ],
+    };
   }
 
-  if (node.kind === 'session') {
-    const more: (ActionItem | 'separator')[] = []
+  if (node.kind === "session") {
+    const more: (ActionItem | "separator")[] = [];
     if (node.fulfilled_planned_title) {
-      more.push({ label: 'Undo fulfilment', onClick: () => props.onUndoFulfil(node) })
-      more.push('separator')
+      more.push({ label: "Undo fulfilment", onClick: () => props.onUndoFulfil(node) });
+      more.push("separator");
     }
-    more.push({ label: 'Delete thread entry…', onClick: () => props.onDeleteNode(), destructive: true })
+    more.push({
+      label: "Delete thread entry…",
+      onClick: () => props.onDeleteNode(),
+      destructive: true,
+    });
     return {
-      primary: { label: 'Spawn Thread', onClick: () => props.onSpawnThread(node) },
-      adjacent: { label: 'Edit', onClick: () => props.onEdit() },
+      primary: { label: "Spawn Thread", onClick: () => props.onSpawnThread(node) },
+      adjacent: { label: "Edit", onClick: () => props.onEdit() },
       moreItems: more,
-    }
+    };
   }
 
-  return { primary: null, adjacent: null, moreItems: [] }
+  return { primary: null, adjacent: null, moreItems: [] };
 }
 
 export function LoomRail({
@@ -146,12 +159,13 @@ export function LoomRail({
   onPlaceNode,
   onReorderThread,
 }: LoomRailProps) {
-  const [bankDragOver, setBankDragOver] = useState(false)
-  const [overflowOpen, setOverflowOpen] = useState(false)
-  const threadNamesById = new Map(threads.map((thread) => [thread.id, thread.name]))
+  const [bankDragOver, setBankDragOver] = useState(false);
+  const [overflowOpen, setOverflowOpen] = useState(false);
+  const threadNamesById = new Map(threads.map((thread) => [thread.id, thread.name]));
   const selectedThreadName =
-    selectedNode?.thread_id != null ? threadNamesById.get(selectedNode.thread_id) ?? null : null
-  const selectedThread = selectedThreadId != null ? threads.find((t) => t.id === selectedThreadId) : null
+    selectedNode?.thread_id != null ? (threadNamesById.get(selectedNode.thread_id) ?? null) : null;
+  const selectedThread =
+    selectedThreadId != null ? threads.find((t) => t.id === selectedThreadId) : null;
 
   return (
     <aside className="loom-weaver-panel" aria-label="Weaver's panel">
@@ -167,7 +181,11 @@ export function LoomRail({
               <div className="loom-selection-meta" aria-label="Node details">
                 <span className="loom-selection-pill" data-tone={selectedNode.kind}>
                   <span className="loom-selection-pill-glyph" aria-hidden="true">
-                    {selectedNode.kind === 'start' || selectedNode.kind === 'end' ? '◇' : selectedNode.kind === 'beat' ? '◆' : '●'}
+                    {selectedNode.kind === "start" || selectedNode.kind === "end"
+                      ? "◇"
+                      : selectedNode.kind === "beat"
+                        ? "◆"
+                        : "●"}
                   </span>
                   {kindLabel(selectedNode)}
                 </span>
@@ -177,17 +195,19 @@ export function LoomRail({
             <dl className="loom-selection-details">
               <div>
                 <dt>Weft</dt>
-                <dd>{selectedThreadName ?? 'Unthreaded'}</dd>
+                <dd>{selectedThreadName ?? "Unthreaded"}</dd>
               </div>
               {selectedNode.banked_from_thread_id != null && (
                 <div>
                   <dt>Banked from</dt>
-                  <dd>{threadNamesById.get(selectedNode.banked_from_thread_id) ?? 'a retired thread'}</dd>
+                  <dd>
+                    {threadNamesById.get(selectedNode.banked_from_thread_id) ?? "a retired thread"}
+                  </dd>
                 </div>
               )}
               <div>
                 <dt>Notes</dt>
-                <dd>{excerpt(selectedNode.body) || 'No notes yet.'}</dd>
+                <dd>{excerpt(selectedNode.body) || "No notes yet."}</dd>
               </div>
             </dl>
 
@@ -204,20 +224,22 @@ export function LoomRail({
                   onUndoFulfil,
                   onPlaceNode,
                   onReorderThread,
-                })
+                });
                 const menuItems: MenuItemDefinition[] = config.moreItems.map((item, index) => {
-                  if (item === 'separator') {
-                    return { id: `separator-${index}`, separator: true }
+                  if (item === "separator") {
+                    return { id: `separator-${index}`, separator: true };
                   }
                   return {
                     id: item.label,
                     label: item.destructive ? (
                       <span className="loom-overflow-item--danger">{item.label}</span>
-                    ) : item.label,
+                    ) : (
+                      item.label
+                    ),
                     textValue: item.label,
                     onSelect: item.onClick,
-                  }
-                })
+                  };
+                });
                 return (
                   <>
                     {config.primary && (
@@ -241,7 +263,7 @@ export function LoomRail({
                       </div>
                     )}
                   </>
-                )
+                );
               })()}
             </div>
           </div>
@@ -254,7 +276,11 @@ export function LoomRail({
             {selectedThread.description && <p>{selectedThread.description}</p>}
             <p>{threadOrdered(selectedThread, nodes).length} nodes</p>
             <div className="loom-selection-actions">
-              <Button variant="secondary" size="compact" onClick={() => onEditThread?.(selectedThread.id)}>
+              <Button
+                variant="secondary"
+                size="compact"
+                onClick={() => onEditThread?.(selectedThread.id)}
+              >
                 Edit Thread
               </Button>
             </div>
@@ -265,30 +291,34 @@ export function LoomRail({
       </section>
 
       <section
-        className={`loom-weaver-section${bankDragOver ? ' loom-weaver-section--drag-over' : ''}`}
+        className={`loom-weaver-section${bankDragOver ? " loom-weaver-section--drag-over" : ""}`}
         onDragOver={(e) => {
-          const raw = e.dataTransfer.getData('application/json')
-          if (!raw) return
+          const raw = e.dataTransfer.getData("application/json");
+          if (!raw) return;
           try {
-            const data = JSON.parse(raw)
-            if (data.action === 'reorder' && data.nodeKind === 'beat') {
-              e.preventDefault()
-              setBankDragOver(true)
+            const data = JSON.parse(raw);
+            if (data.action === "reorder" && data.nodeKind === "beat") {
+              e.preventDefault();
+              setBankDragOver(true);
             }
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
         }}
         onDragLeave={() => setBankDragOver(false)}
         onDrop={(e) => {
-          e.preventDefault()
-          setBankDragOver(false)
-          const raw = e.dataTransfer.getData('application/json')
-          if (!raw) return
+          e.preventDefault();
+          setBankDragOver(false);
+          const raw = e.dataTransfer.getData("application/json");
+          if (!raw) return;
           try {
-            const data = JSON.parse(raw)
-            if (data.action === 'reorder' && data.nodeKind === 'beat' && onBankNodeById) {
-              onBankNodeById(data.nodeId as number)
+            const data = JSON.parse(raw);
+            if (data.action === "reorder" && data.nodeKind === "beat" && onBankNodeById) {
+              onBankNodeById(data.nodeId as number);
             }
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
         }}
       >
         <div className="loom-weaver-section-heading">
@@ -304,5 +334,5 @@ export function LoomRail({
         />
       </section>
     </aside>
-  )
+  );
 }

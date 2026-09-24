@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional
+from typing import Annotated, Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Field, StringConstraints
-from typing import Annotated
-
+from pydantic import BaseModel, StringConstraints
 
 ThreadColor = Annotated[str, StringConstraints(pattern=r"^thread-[1-6]$")]
 

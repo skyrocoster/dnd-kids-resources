@@ -1,10 +1,10 @@
-from typing import List
 import json
+from typing import List
 
 from ..api_errors import ApiError, ApiRouter, error_responses
 from ..caching import cached_get
 from ..db import get_db, parse_json_value
-from ..schemas import MapLayoutBlob, IncomingGateway
+from ..schemas import IncomingGateway, MapLayoutBlob
 from ..schemas.errors import LayoutError
 from .session_state import _normalize_session_state
 
@@ -269,7 +269,9 @@ def save_dungeon_layout(dungeon_id: int, blob: MapLayoutBlob) -> dict:
             conn.rollback()
             raise ApiError(
                 400,
-                LayoutError(code="failed_to_save_layout", message=f"Failed to save layout: {str(e)}"),
+                LayoutError(
+                    code="failed_to_save_layout", message=f"Failed to save layout: {str(e)}"
+                ),
             )
 
         cursor.execute("SELECT data FROM map_layout WHERE dungeon_id = ?", (dungeon_id,))

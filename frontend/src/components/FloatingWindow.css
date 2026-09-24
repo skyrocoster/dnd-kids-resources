@@ -97,7 +97,9 @@
   border-bottom: 2px solid var(--md-secondary);
   box-shadow: 0.3125rem 0.3125rem 0 -0.1875rem var(--md-secondary-container);
   pointer-events: none;
-  transition: transform 0.15s ease, border-color 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .floating-window-resize-handle:hover .floating-window-resize-ridges,
@@ -111,4 +113,3 @@
   outline-offset: -2px;
   border-radius: 0 0 0.5rem 0;
 }
-

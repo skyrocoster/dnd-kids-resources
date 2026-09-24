@@ -70,7 +70,10 @@ describe("Popover", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Toggle panel" }));
-    expect(onOpenChange).toHaveBeenCalledWith(true, expect.objectContaining({ reason: "trigger-press" }));
+    expect(onOpenChange).toHaveBeenCalledWith(
+      true,
+      expect.objectContaining({ reason: "trigger-press" }),
+    );
     expect(screen.queryByText("Panel content")).not.toBeInTheDocument();
 
     rerender(
@@ -112,7 +115,10 @@ describe("Popover", () => {
     await user.click(screen.getByRole("button", { name: "Panel action" }));
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("button", { name: "Panel action" })).not.toBeInTheDocument();
-    expect(onOpenChange).toHaveBeenCalledWith(false, expect.objectContaining({ reason: "escape-key" }));
+    expect(onOpenChange).toHaveBeenCalledWith(
+      false,
+      expect.objectContaining({ reason: "escape-key" }),
+    );
   });
 
   it("lets consumers block Escape dismissal", async () => {
@@ -136,7 +142,9 @@ describe("Popover", () => {
             <Popover.Trigger ref={triggerRef}>Toggle panel</Popover.Trigger>
             <Popover.Portal>
               <Popover.Positioner>
-                <Popover.Popup finalFocus={(closeType) => (closeType === "keyboard" ? triggerRef : false)}>
+                <Popover.Popup
+                  finalFocus={(closeType) => (closeType === "keyboard" ? triggerRef : false)}
+                >
                   <button type="button">Panel action</button>
                 </Popover.Popup>
               </Popover.Positioner>

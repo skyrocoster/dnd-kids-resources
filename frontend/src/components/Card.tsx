@@ -1,18 +1,18 @@
-import type { ReactNode } from 'react'
-import './Card.css'
+import type { ReactNode } from "react";
+import "./Card.css";
 
-export type CardVariant = 'spell' | 'monster' | 'weapon' | 'loot' | 'neutral'
+export type CardVariant = "spell" | "monster" | "weapon" | "loot" | "neutral";
 
 interface CardProps {
-  title: string
-  subtitle?: string
-  tag?: string
-  variant?: CardVariant
-  children?: ReactNode
-  footer?: ReactNode
+  title: string;
+  subtitle?: string;
+  tag?: string;
+  variant?: CardVariant;
+  children?: ReactNode;
+  footer?: ReactNode;
 }
 
-export function Card({ title, subtitle, tag, variant = 'neutral', children, footer }: CardProps) {
+export function Card({ title, subtitle, tag, variant = "neutral", children, footer }: CardProps) {
   return (
     <article className="card" data-variant={variant}>
       <header className="card-header">
@@ -25,5 +25,5 @@ export function Card({ title, subtitle, tag, variant = 'neutral', children, foot
       {children && <div className="card-body">{children}</div>}
       {footer && <footer className="card-footer">{footer}</footer>}
     </article>
-  )
+  );
 }

@@ -1,11 +1,23 @@
-from fastapi import Query
-from typing import List
 import json
+from typing import List
+
+from fastapi import Query
 
 from ..api_errors import ApiError, ApiRouter, error_responses
 from ..caching import cached_get
-from ..db import get_db, dict_from_row, parse_json_value, parse_spell_row as _parse_spell_row
-from ..schemas import Player, PlayerCreate, PlayerUpdate, PlayerDetail, PlayerSpellAssignments, PlayerWeaponAssignments, PlayerSpellbookCharacter, Spell, Weapon
+from ..db import dict_from_row, get_db, parse_json_value
+from ..db import parse_spell_row as _parse_spell_row
+from ..schemas import (
+    Player,
+    PlayerCreate,
+    PlayerDetail,
+    PlayerSpellAssignments,
+    PlayerSpellbookCharacter,
+    PlayerUpdate,
+    PlayerWeaponAssignments,
+    Spell,
+    Weapon,
+)
 from ..schemas.errors import PlayerError
 
 router = ApiRouter(prefix="/api", tags=["players"])
@@ -95,7 +107,12 @@ def _select_player(cursor, player_id: int) -> dict:
     return _parse_player_row(row)
 
 
-@router.get("/players", response_model=List[Player], response_model_by_alias=False, operation_id="listPlayers")
+@router.get(
+    "/players",
+    response_model=List[Player],
+    response_model_by_alias=False,
+    operation_id="listPlayers",
+)
 @cached_get("players")
 def list_players(
     limit: int = Query(100, ge=1, le=500),
@@ -117,7 +134,11 @@ def list_players(
         return [dict_from_row(row) for row in rows]
 
 
-@router.get("/players/spellbook", response_model=List[PlayerSpellbookCharacter], operation_id="getPlayerSpellbook")
+@router.get(
+    "/players/spellbook",
+    response_model=List[PlayerSpellbookCharacter],
+    operation_id="getPlayerSpellbook",
+)
 @cached_get("players")
 def get_player_spellbook():
     """Get every player's assigned spells as a combined spellbook bootstrap."""
@@ -183,7 +204,7 @@ def create_player(player: PlayerCreate):
 
         try:
             cursor.execute(
-                f"""INSERT INTO players ({', '.join(PLAYER_COLUMNS)})
+                f"""INSERT INTO players ({", ".join(PLAYER_COLUMNS)})
                    VALUES ({placeholders})""",
                 tuple(values[field] for field in PLAYER_FIELDS),
             )
@@ -191,7 +212,12 @@ def create_player(player: PlayerCreate):
             player_id = cursor.lastrowid
         except Exception as e:
             conn.rollback()
-            raise ApiError(400, PlayerError(code="failed_to_create_player", message=f"Failed to create player: {str(e)}"))
+            raise ApiError(
+                400,
+                PlayerError(
+                    code="failed_to_create_player", message=f"Failed to create player: {str(e)}"
+                ),
+            )
 
         return _select_player(cursor, player_id)
 
@@ -225,7 +251,12 @@ def update_player(player_id: int, player: PlayerUpdate):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise ApiError(400, PlayerError(code="failed_to_update_player", message=f"Failed to update player: {str(e)}"))
+            raise ApiError(
+                400,
+                PlayerError(
+                    code="failed_to_update_player", message=f"Failed to update player: {str(e)}"
+                ),
+            )
 
         return _select_player(cursor, player_id)
 
@@ -253,7 +284,12 @@ def delete_player(player_id: int):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise ApiError(400, PlayerError(code="failed_to_delete_player", message=f"Failed to delete player: {str(e)}"))
+            raise ApiError(
+                400,
+                PlayerError(
+                    code="failed_to_delete_player", message=f"Failed to delete player: {str(e)}"
+                ),
+            )
 
 
 @router.get(
@@ -274,15 +310,16 @@ def get_player_spells(player_id: int):
             raise ApiError(404, PlayerError(code="player_not_found", message="Player not found"))
 
         cursor.execute(
-            """SELECT s.id, s.name, s.level, s.school, s.description, s.alternate_description, s.quick_rules,
-                       s.damage, s.healing, s.range, s.higher_levels, s.casting_times, s.duration,
-                       s.concentration, s.ritual, s.components, s.materials, s.attacks, s.area_of_effect,
+            """SELECT s.id, s.name, s.level, s.school, s.description,
+                       s.damage, s.healing, s.range,
+                       s.higher_levels, s.casting_times, s.duration, s.concentration,
+                       s.ritual, s.components, s.materials, s.attacks, s.area_of_effect,
                        s.categories
                FROM spells s
                JOIN player_spells ps ON s.id = ps.spell_id
                WHERE ps.player_id = ?
                 ORDER BY s.name""",
-            (player_id,)
+            (player_id,),
         )
         rows = cursor.fetchall()
         return [_parse_spell_row(row) for row in rows]
@@ -311,14 +348,25 @@ def add_spell_to_player(player_id: int, spell_id: int):
         try:
             cursor.execute(
                 """INSERT INTO player_spells (player_id, spell_id) VALUES (?, ?)""",
-                (player_id, spell_id)
+                (player_id, spell_id),
             )
             conn.commit()
         except Exception as e:
             conn.rollback()
             if "UNIQUE constraint failed" in str(e):
-                raise ApiError(400, PlayerError(code="spell_already_assigned_to_player", message="Spell already assigned to player"))
-            raise ApiError(400, PlayerError(code="failed_to_assign_spell", message=f"Failed to assign spell: {str(e)}"))
+                raise ApiError(
+                    400,
+                    PlayerError(
+                        code="spell_already_assigned_to_player",
+                        message="Spell already assigned to player",
+                    ),
+                )
+            raise ApiError(
+                400,
+                PlayerError(
+                    code="failed_to_assign_spell", message=f"Failed to assign spell: {str(e)}"
+                ),
+            )
 
         return {"message": "Spell assigned successfully"}
 
@@ -359,13 +407,19 @@ def replace_player_spells(player_id: int, assignments: PlayerSpellAssignments):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise ApiError(400, PlayerError(code="failed_to_replace_player_spells", message=f"Failed to replace player spells: {str(e)}"))
+            raise ApiError(
+                400,
+                PlayerError(
+                    code="failed_to_replace_player_spells",
+                    message=f"Failed to replace player spells: {str(e)}",
+                ),
+            )
 
         cursor.execute(
-            """SELECT s.id, s.name, s.level, s.school, s.description, s.alternate_description, s.quick_rules,
+            """SELECT s.id, s.name, s.level, s.school, s.description,
                       s.damage, s.healing, s.range, s.higher_levels, s.casting_times, s.duration,
-                      s.concentration, s.ritual, s.components, s.materials, s.attacks, s.area_of_effect,
-                      s.categories
+                      s.concentration, s.ritual, s.components, s.materials,
+                      s.attacks, s.area_of_effect, s.categories
                FROM spells s
                JOIN player_spells ps ON s.id = ps.spell_id
                WHERE ps.player_id = ?
@@ -389,20 +443,31 @@ def remove_spell_from_player(player_id: int, spell_id: int):
         # Verify assignment exists
         cursor.execute(
             "SELECT id FROM player_spells WHERE player_id = ? AND spell_id = ?",
-            (player_id, spell_id)
+            (player_id, spell_id),
         )
         if not cursor.fetchone():
-            raise ApiError(404, PlayerError(code="spell_assignment_not_found", message="Spell assignment not found"))
+            raise ApiError(
+                404,
+                PlayerError(
+                    code="spell_assignment_not_found", message="Spell assignment not found"
+                ),
+            )
 
         try:
             cursor.execute(
                 "DELETE FROM player_spells WHERE player_id = ? AND spell_id = ?",
-                (player_id, spell_id)
+                (player_id, spell_id),
             )
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise ApiError(400, PlayerError(code="failed_to_remove_spell_from_player", message=f"Failed to remove spell: {str(e)}"))
+            raise ApiError(
+                400,
+                PlayerError(
+                    code="failed_to_remove_spell_from_player",
+                    message=f"Failed to remove spell: {str(e)}",
+                ),
+            )
 
 
 @router.get(
@@ -428,7 +493,7 @@ def get_player_weapons(player_id: int):
                JOIN player_weapons pw ON w.id = pw.weapon_id
                WHERE pw.player_id = ?
                ORDER BY w.name""",
-            (player_id,)
+            (player_id,),
         )
         rows = cursor.fetchall()
         return [dict_from_row(row) for row in rows]
@@ -444,7 +509,9 @@ def replace_player_weapons(player_id: int, assignments: PlayerWeaponAssignments)
     """Replace all weapon assignments for a player."""
     weapon_ids = assignments.weapon_ids
     if len(weapon_ids) != len(set(weapon_ids)):
-        raise ApiError(400, PlayerError(code="duplicate_weapon_ids", message="Duplicate weapon ids"))
+        raise ApiError(
+            400, PlayerError(code="duplicate_weapon_ids", message="Duplicate weapon ids")
+        )
 
     with get_db() as conn:
         cursor = conn.cursor()
@@ -459,7 +526,9 @@ def replace_player_weapons(player_id: int, assignments: PlayerWeaponAssignments)
             found = {row["id"] for row in cursor.fetchall()}
             missing = [wid for wid in weapon_ids if wid not in found]
             if missing:
-                raise ApiError(400, PlayerError(code="weapon_not_found", message="Weapon not found"))
+                raise ApiError(
+                    400, PlayerError(code="weapon_not_found", message="Weapon not found")
+                )
 
         try:
             cursor.execute("DELETE FROM player_weapons WHERE player_id = ?", (player_id,))
@@ -470,7 +539,13 @@ def replace_player_weapons(player_id: int, assignments: PlayerWeaponAssignments)
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise ApiError(400, PlayerError(code="failed_to_replace_player_weapons", message=f"Failed to replace player weapons: {str(e)}"))
+            raise ApiError(
+                400,
+                PlayerError(
+                    code="failed_to_replace_player_weapons",
+                    message=f"Failed to replace player weapons: {str(e)}",
+                ),
+            )
 
         cursor.execute(
             """SELECT w.id, w.name, w.rarity
@@ -498,15 +573,16 @@ def get_player_detail(player_id: int):
         player = _select_player(cursor, player_id)
 
         cursor.execute(
-            """SELECT s.id, s.name, s.level, s.school, s.description, s.alternate_description, s.quick_rules,
+            """SELECT s.id, s.name, s.level, s.school, s.description,
                       s.damage, s.healing, s.range, s.higher_levels, s.casting_times, s.duration,
-                       s.concentration, s.ritual, s.components, s.materials, s.attacks, s.area_of_effect,
+                       s.higher_levels, s.casting_times, s.duration, s.concentration,
+                       s.ritual, s.components, s.materials, s.attacks, s.area_of_effect,
                        s.categories
                FROM spells s
                JOIN player_spells ps ON s.id = ps.spell_id
                WHERE ps.player_id = ?
                ORDER BY s.name""",
-            (player_id,)
+            (player_id,),
         )
         spells = [_parse_spell_row(row) for row in cursor.fetchall()]
 
@@ -516,7 +592,7 @@ def get_player_detail(player_id: int):
                JOIN player_weapons pw ON w.id = pw.weapon_id
                WHERE pw.player_id = ?
                ORDER BY w.name""",
-            (player_id,)
+            (player_id,),
         )
         weapons = [dict_from_row(row) for row in cursor.fetchall()]
 
@@ -546,14 +622,25 @@ def add_weapon_to_player(player_id: int, weapon_id: int):
         try:
             cursor.execute(
                 """INSERT INTO player_weapons (player_id, weapon_id) VALUES (?, ?)""",
-                (player_id, weapon_id)
+                (player_id, weapon_id),
             )
             conn.commit()
         except Exception as e:
             conn.rollback()
             if "UNIQUE constraint failed" in str(e):
-                raise ApiError(400, PlayerError(code="weapon_already_assigned_to_player", message="Weapon already assigned to player"))
-            raise ApiError(400, PlayerError(code="failed_to_assign_weapon", message=f"Failed to assign weapon: {str(e)}"))
+                raise ApiError(
+                    400,
+                    PlayerError(
+                        code="weapon_already_assigned_to_player",
+                        message="Weapon already assigned to player",
+                    ),
+                )
+            raise ApiError(
+                400,
+                PlayerError(
+                    code="failed_to_assign_weapon", message=f"Failed to assign weapon: {str(e)}"
+                ),
+            )
 
         return {"message": "Weapon assigned successfully"}
 
@@ -572,17 +659,28 @@ def remove_weapon_from_player(player_id: int, weapon_id: int):
         # Verify assignment exists
         cursor.execute(
             "SELECT id FROM player_weapons WHERE player_id = ? AND weapon_id = ?",
-            (player_id, weapon_id)
+            (player_id, weapon_id),
         )
         if not cursor.fetchone():
-            raise ApiError(404, PlayerError(code="weapon_assignment_not_found", message="Weapon assignment not found"))
+            raise ApiError(
+                404,
+                PlayerError(
+                    code="weapon_assignment_not_found", message="Weapon assignment not found"
+                ),
+            )
 
         try:
             cursor.execute(
                 "DELETE FROM player_weapons WHERE player_id = ? AND weapon_id = ?",
-                (player_id, weapon_id)
+                (player_id, weapon_id),
             )
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise ApiError(400, PlayerError(code="failed_to_remove_weapon_from_player", message=f"Failed to remove weapon: {str(e)}"))
+            raise ApiError(
+                400,
+                PlayerError(
+                    code="failed_to_remove_weapon_from_player",
+                    message=f"Failed to remove weapon: {str(e)}",
+                ),
+            )

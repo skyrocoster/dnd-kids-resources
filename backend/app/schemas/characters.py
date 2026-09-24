@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional
 
-from pydantic import Field, ConfigDict, field_validator
+from pydantic import ConfigDict, Field, field_validator
 
 from .common import AbilityName, CreatureSize, NonEmptyString, StrictModel
 from .creatures import (

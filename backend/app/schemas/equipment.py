@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, field_validator
 
-from ..reference_text import weapon_value_reference_registry, validate_reference_text
+from ..reference_text import validate_reference_text, weapon_value_reference_registry
 from .common import StrictModel
 
 

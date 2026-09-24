@@ -2,17 +2,42 @@
 
 # Canonical target fields that every API response must include.
 _TARGET_FIELDS = {
-    "id", "name", "level", "school", "description", "alternate_description",
-    "damage", "healing", "range", "higher_levels", "casting_times", "duration",
-    "concentration", "ritual", "components", "materials", "attacks",
-    "area_of_effect", "categories", "quick_rules",
+    "id",
+    "name",
+    "level",
+    "school",
+    "description",
+    "alternate_description",
+    "damage",
+    "healing",
+    "range",
+    "higher_levels",
+    "casting_times",
+    "duration",
+    "concentration",
+    "ritual",
+    "components",
+    "materials",
+    "attacks",
+    "area_of_effect",
+    "categories",
+    "quick_rules",
 }
 
 # Legacy fields that must NOT appear in any target response.
 _LEGACY_FIELDS = {
-    "spell_name", "icon", "spell_text", "spell_alt_text", "casting_time",
-    "heal", "attack_type", "damage_at_higher_levels", "heal_at_spell_slots",
-    "action", "classes", "subclasses",
+    "spell_name",
+    "icon",
+    "spell_text",
+    "spell_alt_text",
+    "casting_time",
+    "heal",
+    "attack_type",
+    "damage_at_higher_levels",
+    "heal_at_spell_slots",
+    "action",
+    "classes",
+    "subclasses",
 }
 
 # Canonical create payload (all required fields present).
@@ -84,8 +109,22 @@ class TestSpellListTargetShape:
         resp = test_client.get("/api/spells")
         for spell in resp.json():
             assert isinstance(spell["categories"], list)
-            assert all(category in {"Damage", "Heal", "Protect", "Control", "Move", "Detect", "Influence", "Create", "Summon", "Other"}
-                       for category in spell["categories"])
+            assert all(
+                category
+                in {
+                    "Damage",
+                    "Heal",
+                    "Protect",
+                    "Control",
+                    "Move",
+                    "Detect",
+                    "Influence",
+                    "Create",
+                    "Summon",
+                    "Other",
+                }
+                for category in spell["categories"]
+            )
 
 
 class TestSpellDetailTargetShape:
@@ -156,7 +195,11 @@ class TestCreateSpellContract:
         defaulted = test_client.post("/api/spells", json=_CREATE_PAYLOAD)
         assert defaulted.status_code == 201
         assert defaulted.json()["categories"] == ["Other"]
-        payload = {**_CREATE_PAYLOAD, "name": "B0 Categorized Spell", "categories": ["Damage", "Protect"]}
+        payload = {
+            **_CREATE_PAYLOAD,
+            "name": "B0 Categorized Spell",
+            "categories": ["Damage", "Protect"],
+        }
         explicit = test_client.post("/api/spells", json=payload)
         assert explicit.status_code == 201
         assert explicit.json()["categories"] == ["Damage", "Protect"]
@@ -187,7 +230,11 @@ class TestUpdateSpellContract:
 
     def test_update_categories_round_trip(self, test_client):
         spell_id = test_client.get("/api/spells").json()[0]["id"]
-        update = {**_CREATE_PAYLOAD, "name": "B0 Updated Categories", "categories": ["Control", "Heal"]}
+        update = {
+            **_CREATE_PAYLOAD,
+            "name": "B0 Updated Categories",
+            "categories": ["Control", "Heal"],
+        }
         resp = test_client.put(f"/api/spells/{spell_id}", json=update)
         assert resp.status_code == 200
         assert resp.json()["categories"] == ["Heal", "Control"]

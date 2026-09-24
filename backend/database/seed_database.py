@@ -15,42 +15,50 @@ Seed files (in data/seeds/):
 Use `src/tools/export_db_seeds.py` to re-export the current DB's tables back into data/seeds/.
 
 Usage:
-    docker compose exec backend python -m backend.database.seed_database          # Load all seeds
-    docker compose exec backend python -m backend.database.seed_database --spells # Load only spells
-    docker compose exec backend python -m backend.database.seed_database --force  # Delete existing data first
+    docker compose exec backend python -m backend.database.seed_database
+        # Load all seeds
+    docker compose exec backend python -m backend.database.seed_database --spells
+        # Load only spells
+    docker compose exec backend python -m backend.database.seed_database --force
+        # Delete existing data first
 """
 
-import sqlite3
-import json
-from pathlib import Path
 import argparse
-import sys
+import json
+import sqlite3
+from pathlib import Path
 
+from backend.app.db import DB_PATH
 from backend.app.reference_text import (
     spell_value_reference_registry,
-    weapon_value_reference_registry,
     validate_reference_text,
+    weapon_value_reference_registry,
 )
-from backend.app.db import DB_PATH
 
 SEEDS_DIR = Path(__file__).resolve().parents[2] / "data" / "seeds"
+
+
 def load_json_file(filepath):
     """Load and parse a JSON seed file."""
     if not filepath.exists():
         print(f"[WARNING]  Seed file not found: {filepath}")
         return []
-    
+
     try:
-        with open(filepath, 'r', encoding='utf-8') as f:
+        with open(filepath, "r", encoding="utf-8") as f:
             return json.load(f)
     except json.JSONDecodeError as e:
         print(f"[ERROR] Invalid JSON in {filepath}: {e}")
         return []
 
+
 def populate_abilities(cursor, conn, force=False):
-    """Populate abilities table from seed_abilities.json. Requires schema created by init_database.py."""
+    """Populate abilities from seed_abilities.json.
+
+    Requires the schema created by init_database.py.
+    """
     print("\n[BRAIN] Loading abilities...")
-    
+
     if force:
         # Clear existing abilities data, but do not manage schema here
         try:
@@ -58,7 +66,10 @@ def populate_abilities(cursor, conn, force=False):
             print("  [TRASH]  Cleared existing abilities data")
         except Exception as e:
             print(f"  [WARNING]  Error clearing abilities data: {e}")
-            print("  [ERROR]  abilities table may not exist. Run backend/database/init_database.py first.")
+            print(
+                "  [ERROR]  abilities table may not exist. "
+                "Run backend/database/init_database.py first."
+            )
             return
     else:
         # Check if table exists and has data
@@ -66,41 +77,53 @@ def populate_abilities(cursor, conn, force=False):
             cursor.execute("SELECT COUNT(*) FROM abilities")
             count = cursor.fetchone()[0]
             if count > 0:
-                print(f"  [INFO]  Abilities table already has {count} records. Skip (use --force to override)")
+                print(
+                    f"  [INFO]  Abilities table already has {count} records. "
+                    "Skip (use --force to override)"
+                )
                 return
         except Exception:
-            print("  [ERROR]  Abilities table does not exist. Run backend/database/init_database.py first.")
+            print(
+                "  [ERROR]  Abilities table does not exist. "
+                "Run backend/database/init_database.py first."
+            )
             return
-    
+
     seeds = load_json_file(SEEDS_DIR / "seed_abilities.json")
     if not seeds:
         print("  [WARNING]  No ability seeds found")
         return
-    
+
     for ability in seeds:
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO abilities 
                 (id, code, name, emoji, color, type)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """, (
-                ability.get('id'),
-                ability.get('code'),
-                ability.get('name'),
-                ability.get('emoji', '❓'),
-                ability.get('color', '#95a5a6'),
-                ability.get('type', 'stat')
-            ))
-            ability_type = ability.get('type', 'stat')
-            ability_id = ability.get('id', '?')
-            print(f"  [CHECK] ID {ability_id}: {ability.get('code').upper()} - {ability.get('name')} ({ability_type})")
+            """,
+                (
+                    ability.get("id"),
+                    ability.get("code"),
+                    ability.get("name"),
+                    ability.get("emoji", "❓"),
+                    ability.get("color", "#95a5a6"),
+                    ability.get("type", "stat"),
+                ),
+            )
+            ability_type = ability.get("type", "stat")
+            ability_id = ability.get("id", "?")
+            print(
+                f"  [CHECK] ID {ability_id}: {ability.get('code').upper()} - "
+                f"{ability.get('name')} ({ability_type})"
+            )
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Error: {ability.get('code')} - {e}")
-    
+
     conn.commit()
     cursor.execute("SELECT COUNT(*) FROM abilities")
     final_count = cursor.fetchone()[0]
-    
+
     # Show breakdown by type
     cursor.execute("SELECT type, COUNT(*) FROM abilities GROUP BY type ORDER BY type")
     type_counts = cursor.fetchall()
@@ -130,14 +153,17 @@ def insert_spell(cursor, spell_data):
     if quick_rules is not None:
         validation = validate_reference_text(quick_rules, spell_value_reference_registry)
         if not validation["valid"]:
-            raise ValueError(f"Invalid quick_rules for {spell_data.get('name')}: {validation['errors']}")
+            raise ValueError(
+                f"Invalid quick_rules for {spell_data.get('name')}: {validation['errors']}"
+            )
 
     cursor.execute(
         """
         INSERT INTO spells
-        (id, name, level, school, categories, description, quick_rules, alternate_description, damage, healing, range,
-         higher_levels, casting_times, duration, concentration, ritual, components, materials, attacks,
-         area_of_effect)
+        (id, name, level, school, categories, description, quick_rules,
+         alternate_description, damage, healing, range, higher_levels,
+         casting_times, duration, concentration, ritual, components, materials,
+         attacks, area_of_effect)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
@@ -150,7 +176,9 @@ def insert_spell(cursor, spell_data):
             quick_rules,
             spell_data.get("alternate_description"),
             serialize_for_db(spell_data.get("damage", [])),
-            serialize_for_db(spell_data.get("healing", {"amount": None, "temp_hp": False, "max_hp": False})),
+            serialize_for_db(
+                spell_data.get("healing", {"amount": None, "temp_hp": False, "max_hp": False})
+            ),
             spell_data["range"],
             serialize_for_db(spell_data.get("higher_levels", {"text": None, "damage_by_slot": {}})),
             serialize_for_db(spell_data.get("casting_times", [])),
@@ -161,7 +189,7 @@ def insert_spell(cursor, spell_data):
             serialize_for_db(spell_data.get("materials")),
             serialize_for_db(spell_data.get("attacks", [])),
             serialize_for_db(spell_data.get("area_of_effect", {"shape": None, "size": None})),
-        )
+        ),
     )
 
 
@@ -178,7 +206,9 @@ def populate_spells(cursor, conn, force=False):
             count = 0
 
         if count > 0 and not force:
-            print(f"  [INFO] Spells table already has {count} records. Skip (use --force to override)")
+            print(
+                f"  [INFO] Spells table already has {count} records. Skip (use --force to override)"
+            )
             return
 
         if force:
@@ -205,55 +235,67 @@ def populate_spells(cursor, conn, force=False):
         print(f"  [OK] Loaded {len(seeds)} spells from JSON seed file")
         return
 
-    print("  [WARNING] No seed_spells.json found. Create it with export_db_seeds.py or add it manually.")
+    print(
+        "  [WARNING] No seed_spells.json found. "
+        "Create it with export_db_seeds.py or add it manually."
+    )
     return
 
 
 def populate_conditions(cursor, conn, force=False):
     """Populate conditions table from seed_conditions.json"""
     print("\n[WARNING]  Loading conditions...")
-    
+
     try:
         cursor.execute("SELECT COUNT(*) FROM conditions")
         count = cursor.fetchone()[0]
     except sqlite3.OperationalError:
         count = 0
-    
+
     if count > 0 and not force:
-        print(f"  [INFO]  Conditions table already has {count} records. Skip (use --force to override)")
+        print(
+            f"  [INFO]  Conditions table already has {count} records. "
+            "Skip (use --force to override)"
+        )
         return
-    
+
     # Conditions schema must be created by init_database.py
     if force or count == 0:
         try:
             cursor.execute("SELECT 1 FROM conditions LIMIT 1")
         except Exception:
-            print("  [ERROR]  Conditions table does not exist. Run backend/database/init_database.py first.")
+            print(
+                "  [ERROR]  Conditions table does not exist. "
+                "Run backend/database/init_database.py first."
+            )
             return
-    
+
     seeds = load_json_file(SEEDS_DIR / "seed_conditions.json")
     if not seeds:
         print("  [WARNING]  No condition seeds found")
         return
-    
+
     for condition in seeds:
         try:
-            details = json.dumps(condition.get('details', [])) if condition.get('details') else None
-            
-            cursor.execute("""
+            details = json.dumps(condition.get("details", [])) if condition.get("details") else None
+
+            cursor.execute(
+                """
                 INSERT INTO conditions 
                 (title, icon, explanation, details)
                 VALUES (?, ?, ?, ?)
-            """, (
-                condition.get('title'),
-                condition.get('icon', '[WARNING]'),
-                condition.get('explanation', ''),
-                details
-            ))
+            """,
+                (
+                    condition.get("title"),
+                    condition.get("icon", "[WARNING]"),
+                    condition.get("explanation", ""),
+                    details,
+                ),
+            )
             print(f"  [CHECK] {condition.get('title')}")
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Duplicate or error: {condition.get('title')} - {e}")
-    
+
     conn.commit()
     print(f"  [OK] Loaded {len(seeds)} conditions")
 
@@ -267,18 +309,24 @@ def populate_monsters(cursor, conn, force=False):
     except sqlite3.OperationalError:
         count = 0
     if count > 0 and not force:
-        print(f"  [INFO]  Monsters table already has {count} records. Skip (use --force to override)")
+        print(
+            f"  [INFO]  Monsters table already has {count} records. Skip (use --force to override)"
+        )
         return
     if force or count == 0:
         try:
             cursor.execute("SELECT 1 FROM monsters LIMIT 1")
         except Exception:
-            print("  [ERROR]  Monsters table does not exist. Run backend/database/init_database.py first.")
+            print(
+                "  [ERROR]  Monsters table does not exist. "
+                "Run backend/database/init_database.py first."
+            )
             return
     seeds = load_json_file(SEEDS_DIR / "seed_monsters.json")
     if not seeds:
         print("  [WARNING]  No monster seeds found")
         return
+
     def serialize(value):
         if value is None:
             return None
@@ -288,41 +336,46 @@ def populate_monsters(cursor, conn, force=False):
 
     for monster in seeds:
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO monsters
-                (id, name, aliases, sizes, family, alignment, creature_type, ac, hp, speed, abilities,
-                 saving_throws, skills, passive_perception, damage_resistances, damage_immunities,
-                 damage_vulnerabilities, condition_immunities, senses, languages, audio_path, features,
-                 cr, cr_sort, cr_note, experience_points)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                monster.get('id'),
-                monster.get('name'),
-                serialize(monster.get('aliases', [])),
-                serialize(monster.get('sizes', [])),
-                monster.get('family'),
-                monster.get('alignment'),
-                serialize(monster.get('creature_type')),
-                serialize(monster.get('ac')),
-                serialize(monster.get('hp')),
-                serialize(monster.get('speed', [])),
-                serialize(monster.get('abilities')),
-                serialize(monster.get('saving_throws', {})),
-                serialize(monster.get('skills', {})),
-                monster.get('passive_perception'),
-                serialize(monster.get('damage_resistances', [])),
-                serialize(monster.get('damage_immunities', [])),
-                serialize(monster.get('damage_vulnerabilities', [])),
-                serialize(monster.get('condition_immunities', [])),
-                serialize(monster.get('senses', [])),
-                serialize(monster.get('languages', [])),
-                monster.get('audio_path'),
-                serialize(monster.get('features', {})),
-                serialize(monster.get('cr')),
-                monster.get('cr_sort'),
-                monster.get('cr_note'),
-                monster.get('experience_points')
-            ))
+                (id, name, aliases, sizes, family, alignment, creature_type,
+                 ac, hp, speed, abilities, saving_throws, skills,
+                 passive_perception, damage_resistances, damage_immunities,
+                 damage_vulnerabilities, condition_immunities, senses, languages,
+                 audio_path, features, cr, cr_sort, cr_note, experience_points)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                        ?, ?, ?, ?, ?, ?)
+            """,
+                (
+                    monster.get("id"),
+                    monster.get("name"),
+                    serialize(monster.get("aliases", [])),
+                    serialize(monster.get("sizes", [])),
+                    monster.get("family"),
+                    monster.get("alignment"),
+                    serialize(monster.get("creature_type")),
+                    serialize(monster.get("ac")),
+                    serialize(monster.get("hp")),
+                    serialize(monster.get("speed", [])),
+                    serialize(monster.get("abilities")),
+                    serialize(monster.get("saving_throws", {})),
+                    serialize(monster.get("skills", {})),
+                    monster.get("passive_perception"),
+                    serialize(monster.get("damage_resistances", [])),
+                    serialize(monster.get("damage_immunities", [])),
+                    serialize(monster.get("damage_vulnerabilities", [])),
+                    serialize(monster.get("condition_immunities", [])),
+                    serialize(monster.get("senses", [])),
+                    serialize(monster.get("languages", [])),
+                    monster.get("audio_path"),
+                    serialize(monster.get("features", {})),
+                    serialize(monster.get("cr")),
+                    monster.get("cr_sort"),
+                    monster.get("cr_note"),
+                    monster.get("experience_points"),
+                ),
+            )
             print(f"  [CHECK] {monster.get('name')}")
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Duplicate or error: {monster.get('name')} - {e}")
@@ -347,7 +400,9 @@ def populate_npcs(cursor, conn, force=False):
         try:
             cursor.execute("SELECT 1 FROM npcs LIMIT 1")
         except Exception:
-            print("  [ERROR] NPCs table does not exist. Run backend/database/init_database.py first.")
+            print(
+                "  [ERROR] NPCs table does not exist. Run backend/database/init_database.py first."
+            )
             return
 
     seeds = load_json_file(SEEDS_DIR / "seed_npcs.json")
@@ -357,42 +412,46 @@ def populate_npcs(cursor, conn, force=False):
 
     for npc in seeds:
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO npcs
                 (id, name, race, gender, background, sizes, alignment, creature_type, ac, hp, speed,
                  abilities, saving_throws, skills, passive_perception, damage_resistances,
                  damage_immunities, damage_vulnerabilities, condition_immunities, senses, languages,
                  features, cr, cr_note, experience_points, appearance, notes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                npc.get('id'),
-                npc.get('name'),
-                npc.get('race'),
-                npc.get('gender'),
-                npc.get('background'),
-                serialize_for_db(npc.get('sizes')),
-                npc.get('alignment'),
-                serialize_for_db(npc.get('creature_type')),
-                serialize_for_db(npc.get('ac')),
-                serialize_for_db(npc.get('hp')),
-                serialize_for_db(npc.get('speed')),
-                serialize_for_db(npc.get('abilities')),
-                serialize_for_db(npc.get('saving_throws')),
-                serialize_for_db(npc.get('skills')),
-                npc.get('passive_perception'),
-                serialize_for_db(npc.get('damage_resistances')),
-                serialize_for_db(npc.get('damage_immunities')),
-                serialize_for_db(npc.get('damage_vulnerabilities')),
-                serialize_for_db(npc.get('condition_immunities')),
-                serialize_for_db(npc.get('senses')),
-                serialize_for_db(npc.get('languages')),
-                serialize_for_db(npc.get('features')),
-                npc.get('cr'),
-                npc.get('cr_note'),
-                npc.get('experience_points'),
-                serialize_for_db(npc.get('appearance')),
-                npc.get('notes')
-            ))
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+                (
+                    npc.get("id"),
+                    npc.get("name"),
+                    npc.get("race"),
+                    npc.get("gender"),
+                    npc.get("background"),
+                    serialize_for_db(npc.get("sizes")),
+                    npc.get("alignment"),
+                    serialize_for_db(npc.get("creature_type")),
+                    serialize_for_db(npc.get("ac")),
+                    serialize_for_db(npc.get("hp")),
+                    serialize_for_db(npc.get("speed")),
+                    serialize_for_db(npc.get("abilities")),
+                    serialize_for_db(npc.get("saving_throws")),
+                    serialize_for_db(npc.get("skills")),
+                    npc.get("passive_perception"),
+                    serialize_for_db(npc.get("damage_resistances")),
+                    serialize_for_db(npc.get("damage_immunities")),
+                    serialize_for_db(npc.get("damage_vulnerabilities")),
+                    serialize_for_db(npc.get("condition_immunities")),
+                    serialize_for_db(npc.get("senses")),
+                    serialize_for_db(npc.get("languages")),
+                    serialize_for_db(npc.get("features")),
+                    npc.get("cr"),
+                    npc.get("cr_note"),
+                    npc.get("experience_points"),
+                    serialize_for_db(npc.get("appearance")),
+                    npc.get("notes"),
+                ),
+            )
             print(f"  [CHECK] {npc.get('name')}")
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Duplicate or error: {npc.get('name')} - {e}")
@@ -411,7 +470,10 @@ def populate_loom_threads(cursor, conn, force=False):
         count = 0
 
     if count > 0 and not force:
-        print(f"  [INFO] Loom threads table already has {count} records. Skip (use --force to override)")
+        print(
+            f"  [INFO] Loom threads table already has {count} records. "
+            "Skip (use --force to override)"
+        )
         return
 
     seeds = load_json_file(SEEDS_DIR / "seed_loom_threads.json")
@@ -422,8 +484,15 @@ def populate_loom_threads(cursor, conn, force=False):
     for thread in seeds:
         try:
             cursor.execute(
-                "INSERT INTO loom_threads (id, name, color, description, origin_node_id) VALUES (?, ?, ?, ?, ?)",
-                (thread.get('id'), thread.get('name'), thread.get('color'), thread.get('description'), thread.get('origin_node_id')),
+                "INSERT INTO loom_threads (id, name, color, description, origin_node_id) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (
+                    thread.get("id"),
+                    thread.get("name"),
+                    thread.get("color"),
+                    thread.get("description"),
+                    thread.get("origin_node_id"),
+                ),
             )
             print(f"  [CHECK] {thread.get('name')}")
         except sqlite3.IntegrityError as e:
@@ -443,7 +512,10 @@ def populate_loom_sessions(cursor, conn, force=False):
         count = 0
 
     if count > 0 and not force:
-        print(f"  [INFO] Loom sessions table already has {count} records. Skip (use --force to override)")
+        print(
+            f"  [INFO] Loom sessions table already has {count} records. "
+            "Skip (use --force to override)"
+        )
         return
 
     seeds = load_json_file(SEEDS_DIR / "seed_loom_sessions.json")
@@ -457,11 +529,11 @@ def populate_loom_sessions(cursor, conn, force=False):
                 """INSERT INTO loom_sessions (id, ordinal, name, played_on, notes)
                    VALUES (?, ?, ?, ?, ?)""",
                 (
-                    session.get('id'),
-                    session.get('ordinal'),
-                    session.get('name'),
-                    session.get('played_on'),
-                    session.get('notes'),
+                    session.get("id"),
+                    session.get("ordinal"),
+                    session.get("name"),
+                    session.get("played_on"),
+                    session.get("notes"),
                 ),
             )
             print(f"  [CHECK] {session.get('name')}")
@@ -482,7 +554,9 @@ def populate_loom_nodes(cursor, conn, force=False):
         count = 0
 
     if count > 0 and not force:
-        print(f"  [INFO] Loom nodes table already has {count} records. Skip (use --force to override)")
+        print(
+            f"  [INFO] Loom nodes table already has {count} records. Skip (use --force to override)"
+        )
         return
 
     seeds = load_json_file(SEEDS_DIR / "seed_loom_nodes.json")
@@ -497,17 +571,17 @@ def populate_loom_nodes(cursor, conn, force=False):
                    carried_count, fulfilled_planned_title, fulfilled_at, banked_from_thread_id)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
-                    node.get('id'),
-                    node.get('thread_id'),
-                    node.get('kind'),
-                    node.get('title'),
-                    node.get('body'),
-                    node.get('session_id'),
-                    node.get('position', 0),
-                    node.get('carried_count', 0),
-                    node.get('fulfilled_planned_title'),
-                    node.get('fulfilled_at'),
-                    node.get('banked_from_thread_id'),
+                    node.get("id"),
+                    node.get("thread_id"),
+                    node.get("kind"),
+                    node.get("title"),
+                    node.get("body"),
+                    node.get("session_id"),
+                    node.get("position", 0),
+                    node.get("carried_count", 0),
+                    node.get("fulfilled_planned_title"),
+                    node.get("fulfilled_at"),
+                    node.get("banked_from_thread_id"),
                 ),
             )
             print(f"  [CHECK] {node.get('title')}")
@@ -519,9 +593,12 @@ def populate_loom_nodes(cursor, conn, force=False):
 
 
 def populate_damage_types(cursor, conn, force=False):
-    """Populate damage_types table from seed_damage_types.json. Requires schema created by init_database.py."""
+    """Populate damage types from seed_damage_types.json.
+
+    Requires the schema created by init_database.py.
+    """
     print("\n[BOOM] Loading damage types...")
-    
+
     if force:
         # Clear existing damage types data, but do not manage schema here
         try:
@@ -529,7 +606,10 @@ def populate_damage_types(cursor, conn, force=False):
             print("  [TRASH]  Cleared existing damage_types data")
         except Exception as e:
             print(f"  [WARNING]  Error clearing damage_types data: {e}")
-            print("  [ERROR]  damage_types table may not exist. Run backend/database/init_database.py first.")
+            print(
+                "  [ERROR]  damage_types table may not exist. "
+                "Run backend/database/init_database.py first."
+            )
             return
     else:
         # Check if table exists and has data
@@ -537,35 +617,47 @@ def populate_damage_types(cursor, conn, force=False):
             cursor.execute("SELECT COUNT(*) FROM damage_types")
             count = cursor.fetchone()[0]
             if count > 0:
-                print(f"  [INFO]  Damage types table already has {count} records. Skip (use --force to override)")
+                print(
+                    f"  [INFO]  Damage types table already has {count} records. "
+                    "Skip (use --force to override)"
+                )
                 return
         except Exception:
-            print("  [ERROR]  Damage types table does not exist. Run backend/database/init_database.py first.")
+            print(
+                "  [ERROR]  Damage types table does not exist. "
+                "Run backend/database/init_database.py first."
+            )
             return
-    
+
     seeds = load_json_file(SEEDS_DIR / "seed_damage_types.json")
     if not seeds:
         print("  [WARNING]  No damage type seeds found")
         return
-    
+
     for damage_type in seeds:
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO damage_types 
                 (id, code, name, emoji, color)
                 VALUES (?, ?, ?, ?, ?)
-            """, (
-                damage_type.get('id'),
-                damage_type.get('code'),
-                damage_type.get('name'),
-                damage_type.get('emoji', '❓'),
-                damage_type.get('color', '#95a5a6')
-            ))
-            dt_id = damage_type.get('id', '?')
-            print(f"  [CHECK] ID {dt_id}: {damage_type.get('code').upper()} - {damage_type.get('name')}")
+            """,
+                (
+                    damage_type.get("id"),
+                    damage_type.get("code"),
+                    damage_type.get("name"),
+                    damage_type.get("emoji", "❓"),
+                    damage_type.get("color", "#95a5a6"),
+                ),
+            )
+            dt_id = damage_type.get("id", "?")
+            print(
+                f"  [CHECK] ID {dt_id}: {damage_type.get('code').upper()} - "
+                f"{damage_type.get('name')}"
+            )
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Error: {damage_type.get('code')} - {e}")
-    
+
     conn.commit()
     cursor.execute("SELECT COUNT(*) FROM damage_types")
     final_count = cursor.fetchone()[0]
@@ -575,62 +667,72 @@ def populate_damage_types(cursor, conn, force=False):
 def populate_weapon_properties(cursor, conn, force=False):
     """Populate weapon_properties table from seed_weapon_properties.json."""
     print("[ARMS] Loading weapon properties...")
-    
+
     if force:
         try:
             cursor.execute("DELETE FROM weapon_properties")
             print("  [TRASH]  Cleared existing weapon_properties data")
         except Exception as e:
             print(f"  [WARNING]  Error clearing weapon_properties data: {e}")
-            print("  [ERROR]  weapon_properties table may not exist. Run backend/database/init_database.py first.")
+            print(
+                "  [ERROR]  weapon_properties table may not exist. "
+                "Run backend/database/init_database.py first."
+            )
             return
     else:
         try:
             cursor.execute("SELECT COUNT(*) FROM weapon_properties")
             count = cursor.fetchone()[0]
             if count > 0:
-                print(f"  [INFO]  Weapon properties table already has {count} records. Skip (use --force to override)")
+                print(
+                    f"  [INFO]  Weapon properties table already has {count} records. "
+                    "Skip (use --force to override)"
+                )
                 return
         except Exception:
-            print("  [ERROR]  weapon_properties table does not exist. Run backend/database/init_database.py first.")
+            print(
+                "  [ERROR]  weapon_properties table does not exist. "
+                "Run backend/database/init_database.py first."
+            )
             return
-    
+
     seeds = load_json_file(SEEDS_DIR / "seed_weapon_properties.json")
     if not seeds:
         print("  [WARNING]  No weapon property seeds found")
         return
-    
+
     property_items = []
     if isinstance(seeds, dict):
         for code, payload in seeds.items():
             if not isinstance(payload, dict):
                 continue
-            property_items.append({
-                'code': code,
-                'name': payload.get('name'),
-                'description': payload.get('description')
-            })
+            property_items.append(
+                {
+                    "code": code,
+                    "name": payload.get("name"),
+                    "description": payload.get("description"),
+                }
+            )
     elif isinstance(seeds, list):
         property_items = seeds
     else:
         print("  [WARNING]  Unexpected seed format for weapon properties")
         return
-    
+
     for prop in property_items:
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO weapon_properties
                 (code, name, description)
                 VALUES (?, ?, ?)
-            """, (
-                prop.get('code'),
-                prop.get('name'),
-                prop.get('description')
-            ))
+            """,
+                (prop.get("code"), prop.get("name"), prop.get("description")),
+            )
             print(f"  [CHECK] {prop.get('code').upper()}: {prop.get('name')}")
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Duplicate or error: {prop.get('code')} - {e}")
-    
+
     conn.commit()
     cursor.execute("SELECT COUNT(*) FROM weapon_properties")
     final_count = cursor.fetchone()[0]
@@ -642,13 +744,15 @@ def insert_weapon(cursor, weapon_data):
     if quick_rules is not None:
         validation = validate_reference_text(quick_rules, weapon_value_reference_registry)
         if not validation["valid"]:
-            raise ValueError(f"Invalid quick_rules for {weapon_data.get('name')}: {validation['errors']}")
+            raise ValueError(
+                f"Invalid quick_rules for {weapon_data.get('name')}: {validation['errors']}"
+            )
 
     def parse_bool(value):
         if isinstance(value, bool):
             return int(value)
         if isinstance(value, str):
-            return int(value.strip().lower() in ['true', '1', '+1', 'yes'])
+            return int(value.strip().lower() in ["true", "1", "+1", "yes"])
         return 0
 
     def get_field(*keys):
@@ -670,37 +774,37 @@ def insert_weapon(cursor, weapon_data):
                 ?, ?, ?)
         """,
         (
-            serialize_for_db(get_field('name')),
-            serialize_for_db(get_field('baseWeapon', 'base_weapon')),
-            parse_bool(get_field('baseitems', 'base_items')),
-            serialize_for_db(get_field('rarity')),
-            serialize_for_db(get_field('weaponCategory', 'weapon_category')),
-            get_field('weight'),
-            serialize_for_db(get_field('reqAttune', 'req_attune')),
-            int(bool(get_field('sentient', False))),
-            int(bool(get_field('curse', False))),
-            serialize_json_field(get_field('resist'), []),
-            serialize_json_field(get_field('property'), []),
-            serialize_json_field(get_field('focus'), []),
-            serialize_json_field(get_field('spells'), []),
-            serialize_json_field(get_field('attack'), []),
-            serialize_json_field(get_field('recharge'), {}),
-            serialize_json_field(get_field('light'), []),
-            serialize_json_field(get_field('entries'), []),
-            serialize_for_db(get_field('tier')),
-            int(bool(get_field('grantsLanguage', 'grants_language', False))),
-            get_field('bonusSpellAttack', 'bonus_spell_attack'),
-            get_field('bonusSpellSaveDc', 'bonus_spell_save_dc'),
-            get_field('bonusAc', 'bonus_ac'),
-            get_field('bonusSavingThrow', 'bonus_saving_throw'),
-            get_field('critThreshold', 'crit_threshold'),
-            serialize_for_db(get_field('ammoType', 'ammo_type')),
-            int(bool(get_field('grantsProficiency', 'grants_proficiency', False))),
-            serialize_json_field(get_field('modifySpeed', 'modify_speed'), {}),
-            serialize_json_field(get_field('ability'), {}),
+            serialize_for_db(get_field("name")),
+            serialize_for_db(get_field("baseWeapon", "base_weapon")),
+            parse_bool(get_field("baseitems", "base_items")),
+            serialize_for_db(get_field("rarity")),
+            serialize_for_db(get_field("weaponCategory", "weapon_category")),
+            get_field("weight"),
+            serialize_for_db(get_field("reqAttune", "req_attune")),
+            int(bool(get_field("sentient", False))),
+            int(bool(get_field("curse", False))),
+            serialize_json_field(get_field("resist"), []),
+            serialize_json_field(get_field("property"), []),
+            serialize_json_field(get_field("focus"), []),
+            serialize_json_field(get_field("spells"), []),
+            serialize_json_field(get_field("attack"), []),
+            serialize_json_field(get_field("recharge"), {}),
+            serialize_json_field(get_field("light"), []),
+            serialize_json_field(get_field("entries"), []),
+            serialize_for_db(get_field("tier")),
+            int(bool(get_field("grantsLanguage", "grants_language", False))),
+            get_field("bonusSpellAttack", "bonus_spell_attack"),
+            get_field("bonusSpellSaveDc", "bonus_spell_save_dc"),
+            get_field("bonusAc", "bonus_ac"),
+            get_field("bonusSavingThrow", "bonus_saving_throw"),
+            get_field("critThreshold", "crit_threshold"),
+            serialize_for_db(get_field("ammoType", "ammo_type")),
+            int(bool(get_field("grantsProficiency", "grants_proficiency", False))),
+            serialize_json_field(get_field("modifySpeed", "modify_speed"), {}),
+            serialize_json_field(get_field("ability"), {}),
             quick_rules,
-            get_field('weaponAttackBonus', 'weapon_attack_bonus'),
-            get_field('weaponDamageBonus', 'weapon_damage_bonus'),
+            get_field("weaponAttackBonus", "weapon_attack_bonus"),
+            get_field("weaponDamageBonus", "weapon_damage_bonus"),
         ),
     )
 
@@ -715,17 +819,26 @@ def populate_weapons(cursor, conn, force=False):
             print("  [TRASH]  Cleared existing weapons data")
         except Exception as e:
             print(f"  [WARNING]  Error clearing weapons data: {e}")
-            print("  [ERROR]  weapons table may not exist. Run backend/database/init_database.py first.")
+            print(
+                "  [ERROR]  weapons table may not exist. "
+                "Run backend/database/init_database.py first."
+            )
             return
     else:
         try:
             cursor.execute("SELECT COUNT(*) FROM weapons")
             count = cursor.fetchone()[0]
             if count > 0:
-                print(f"  [INFO] Weapons table already has {count} records. Skip (use --force to override)")
+                print(
+                    "  [INFO] Weapons table already has {count} records. "
+                    "Skip (use --force to override)"
+                )
                 return
         except Exception:
-            print("  [ERROR]  weapons table does not exist. Run backend/database/init_database.py first.")
+            print(
+                "  [ERROR]  weapons table does not exist. "
+                "Run backend/database/init_database.py first."
+            )
             return
 
     seeds = load_json_file(SEEDS_DIR / "seed_weapons.json")
@@ -733,8 +846,8 @@ def populate_weapons(cursor, conn, force=False):
         print("  [WARNING]  No weapon seeds found")
         return
 
-    if isinstance(seeds, dict) and 'item' in seeds:
-        records = seeds.get('item', [])
+    if isinstance(seeds, dict) and "item" in seeds:
+        records = seeds.get("item", [])
     else:
         records = seeds if isinstance(seeds, list) else []
 
@@ -770,7 +883,12 @@ def populate_items(cursor, conn, force=False):
         cursor.execute(
             """INSERT INTO items (name, value_gp, category, description)
                VALUES (?, ?, ?, ?)""",
-            (item.get("name"), item.get("value_gp", 0), item.get("category"), item.get("description")),
+            (
+                item.get("name"),
+                item.get("value_gp", 0),
+                item.get("category"),
+                item.get("description"),
+            ),
         )
     conn.commit()
     print(f"  [OK] Loaded {len(seeds)} items")
@@ -783,11 +901,17 @@ def populate_loot_bundles(cursor, conn, force=False):
         cursor.execute("SELECT COUNT(*) FROM loot_bundle")
         count = cursor.fetchone()[0]
     except sqlite3.OperationalError:
-        print("  [ERROR] loot_bundle table does not exist. Run backend/database/init_database.py first.")
+        print(
+            "  [ERROR] loot_bundle table does not exist. "
+            "Run backend/database/init_database.py first."
+        )
         return
 
     if count > 0 and not force:
-        print(f"  [INFO] Loot bundle table already has {count} records. Skip (use --force to override)")
+        print(
+            f"  [INFO] Loot bundle table already has {count} records. "
+            "Skip (use --force to override)"
+        )
         return
 
     if force:
@@ -826,7 +950,9 @@ def populate_encounters(cursor, conn, force=False):
         count = 0
 
     if count > 0 and not force:
-        print(f"  [INFO] Encounter table already has {count} records. Skip (use --force to override)")
+        print(
+            f"  [INFO] Encounter table already has {count} records. Skip (use --force to override)"
+        )
         return
 
     if force:
@@ -835,7 +961,10 @@ def populate_encounters(cursor, conn, force=False):
             print("  [TRASH]  Cleared existing encounter data")
         except Exception as e:
             print(f"  [WARNING]  Error clearing encounter data: {e}")
-            print("  [ERROR]  encounter table may not exist. Run backend/database/init_database.py first.")
+            print(
+                "  [ERROR]  encounter table may not exist. "
+                "Run backend/database/init_database.py first."
+            )
             return
 
     seeds = load_json_file(SEEDS_DIR / "seed_encounters.json")
@@ -845,15 +974,18 @@ def populate_encounters(cursor, conn, force=False):
 
     for encounter in seeds:
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO encounter (id, name, units, active_index)
                 VALUES (?, ?, ?, ?)
-            """, (
-                encounter.get('id'),
-                encounter.get('name'),
-                serialize_for_db(encounter.get('units', [])),
-                encounter.get('active_index'),
-            ))
+            """,
+                (
+                    encounter.get("id"),
+                    encounter.get("name"),
+                    serialize_for_db(encounter.get("units", [])),
+                    encounter.get("active_index"),
+                ),
+            )
             print(f"  [CHECK] {encounter.get('name')}")
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Duplicate or error: {encounter.get('name')} - {e}")
@@ -883,7 +1015,10 @@ def populate_players(cursor, conn, force=False):
             print("  [TRASH]  Cleared existing players data")
         except Exception as e:
             print(f"  [WARNING]  Error clearing players data: {e}")
-            print("  [ERROR]  players table may not exist. Run backend/database/init_database.py first.")
+            print(
+                "  [ERROR]  players table may not exist. "
+                "Run backend/database/init_database.py first."
+            )
             return
 
     seeds = load_json_file(SEEDS_DIR / "seed_players.json")
@@ -893,7 +1028,8 @@ def populate_players(cursor, conn, force=False):
 
     for player in seeds:
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO players
                 (id, name, child_name, class, subclass, level, ancestry, background,
                  sizes, alignment, creature_type, ac, hp, speed, abilities, saving_throws, skills,
@@ -901,42 +1037,45 @@ def populate_players(cursor, conn, force=False):
                  condition_immunities, senses, languages, features,
                  initiative, proficiency_bonus, spell_attack_bonus, spell_save_dc,
                  max_spell_slots, notes, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                player.get('id'),
-                player.get('name'),
-                player.get('child_name'),
-                player.get('class'),
-                player.get('subclass'),
-                player.get('level'),
-                player.get('ancestry'),
-                player.get('background'),
-                serialize_for_db(player.get('sizes')),
-                player.get('alignment'),
-                serialize_for_db(player.get('creature_type')),
-                serialize_for_db(player.get('ac')),
-                serialize_for_db(player.get('hp')),
-                serialize_for_db(player.get('speed')),
-                serialize_for_db(player.get('abilities')),
-                serialize_for_db(player.get('saving_throws')),
-                serialize_for_db(player.get('skills')),
-                player.get('passive_perception'),
-                serialize_for_db(player.get('damage_resistances')),
-                serialize_for_db(player.get('damage_immunities')),
-                serialize_for_db(player.get('damage_vulnerabilities')),
-                serialize_for_db(player.get('condition_immunities')),
-                serialize_for_db(player.get('senses')),
-                serialize_for_db(player.get('languages')),
-                serialize_for_db(player.get('features')),
-                player.get('initiative'),
-                player.get('proficiency_bonus'),
-                player.get('spell_attack_bonus'),
-                player.get('spell_save_dc'),
-                serialize_for_db(player.get('max_spell_slots')),
-                player.get('notes'),
-                player.get('created_at'),
-                player.get('updated_at')
-            ))
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+                (
+                    player.get("id"),
+                    player.get("name"),
+                    player.get("child_name"),
+                    player.get("class"),
+                    player.get("subclass"),
+                    player.get("level"),
+                    player.get("ancestry"),
+                    player.get("background"),
+                    serialize_for_db(player.get("sizes")),
+                    player.get("alignment"),
+                    serialize_for_db(player.get("creature_type")),
+                    serialize_for_db(player.get("ac")),
+                    serialize_for_db(player.get("hp")),
+                    serialize_for_db(player.get("speed")),
+                    serialize_for_db(player.get("abilities")),
+                    serialize_for_db(player.get("saving_throws")),
+                    serialize_for_db(player.get("skills")),
+                    player.get("passive_perception"),
+                    serialize_for_db(player.get("damage_resistances")),
+                    serialize_for_db(player.get("damage_immunities")),
+                    serialize_for_db(player.get("damage_vulnerabilities")),
+                    serialize_for_db(player.get("condition_immunities")),
+                    serialize_for_db(player.get("senses")),
+                    serialize_for_db(player.get("languages")),
+                    serialize_for_db(player.get("features")),
+                    player.get("initiative"),
+                    player.get("proficiency_bonus"),
+                    player.get("spell_attack_bonus"),
+                    player.get("spell_save_dc"),
+                    serialize_for_db(player.get("max_spell_slots")),
+                    player.get("notes"),
+                    player.get("created_at"),
+                    player.get("updated_at"),
+                ),
+            )
             print(f"  [CHECK] {player.get('name')}")
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Duplicate or error: {player.get('name')} - {e}")
@@ -957,7 +1096,10 @@ def populate_player_spells(cursor, conn, force=False):
         count = 0
 
     if count > 0 and not force:
-        print(f"  [INFO] Player spells table already has {count} records. Skip (use --force to override)")
+        print(
+            f"  [INFO] Player spells table already has {count} records. "
+            "Skip (use --force to override)"
+        )
         return
 
     if force:
@@ -966,7 +1108,10 @@ def populate_player_spells(cursor, conn, force=False):
             print("  [TRASH]  Cleared existing player spells data")
         except Exception as e:
             print(f"  [WARNING]  Error clearing player spells data: {e}")
-            print("  [ERROR]  player_spells table may not exist. Run backend/database/init_database.py first.")
+            print(
+                "  [ERROR]  player_spells table may not exist. "
+                "Run backend/database/init_database.py first."
+            )
             return
 
     seeds = load_json_file(SEEDS_DIR / "seed_player_spells.json")
@@ -976,19 +1121,25 @@ def populate_player_spells(cursor, conn, force=False):
 
     for entry in seeds:
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO player_spells
                 (id, player_id, spell_id, added_at)
                 VALUES (?, ?, ?, ?)
-            """, (
-                entry.get('id'),
-                entry.get('player_id'),
-                entry.get('spell_id'),
-                entry.get('added_at')
-            ))
+            """,
+                (
+                    entry.get("id"),
+                    entry.get("player_id"),
+                    entry.get("spell_id"),
+                    entry.get("added_at"),
+                ),
+            )
             print(f"  [CHECK] Player {entry.get('player_id')} spell {entry.get('spell_id')}")
         except sqlite3.IntegrityError as e:
-            print(f"  [WARNING]  Duplicate or error: player_id={entry.get('player_id')} spell_id={entry.get('spell_id')} - {e}")
+            print(
+                f"  [WARNING]  Duplicate or error: player_id={entry.get('player_id')} "
+                f"spell_id={entry.get('spell_id')} - {e}"
+            )
 
     conn.commit()
     cursor.execute("SELECT COUNT(*) FROM player_spells")
@@ -1006,7 +1157,10 @@ def populate_player_weapons(cursor, conn, force=False):
         count = 0
 
     if count > 0 and not force:
-        print(f"  [INFO] Player weapons table already has {count} records. Skip (use --force to override)")
+        print(
+            f"  [INFO] Player weapons table already has {count} records. "
+            "Skip (use --force to override)"
+        )
         return
 
     if force:
@@ -1015,7 +1169,10 @@ def populate_player_weapons(cursor, conn, force=False):
             print("  [TRASH]  Cleared existing player weapons data")
         except Exception as e:
             print(f"  [WARNING]  Error clearing player weapons data: {e}")
-            print("  [ERROR]  player_weapons table may not exist. Run backend/database/init_database.py first.")
+            print(
+                "  [ERROR]  player_weapons table may not exist. "
+                "Run backend/database/init_database.py first."
+            )
             return
 
     seeds = load_json_file(SEEDS_DIR / "seed_player_weapons.json")
@@ -1025,25 +1182,30 @@ def populate_player_weapons(cursor, conn, force=False):
 
     for entry in seeds:
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO player_weapons
                 (id, player_id, weapon_id, added_at)
                 VALUES (?, ?, ?, ?)
-            """, (
-                entry.get('id'),
-                entry.get('player_id'),
-                entry.get('weapon_id'),
-                entry.get('added_at')
-            ))
+            """,
+                (
+                    entry.get("id"),
+                    entry.get("player_id"),
+                    entry.get("weapon_id"),
+                    entry.get("added_at"),
+                ),
+            )
             print(f"  [CHECK] Player {entry.get('player_id')} weapon {entry.get('weapon_id')}")
         except sqlite3.IntegrityError as e:
-            print(f"  [WARNING]  Duplicate or error: player_id={entry.get('player_id')} weapon_id={entry.get('weapon_id')} - {e}")
+            print(
+                f"  [WARNING]  Duplicate or error: player_id={entry.get('player_id')} "
+                f"weapon_id={entry.get('weapon_id')} - {e}"
+            )
 
     conn.commit()
     cursor.execute("SELECT COUNT(*) FROM player_weapons")
     final_count = cursor.fetchone()[0]
     print(f"  [OK] Loaded {final_count} player weapons")
-
 
 
 def _populate_dungeon_blob_table(cursor, conn, table, seed_file, label, force=False):
@@ -1053,7 +1215,9 @@ def _populate_dungeon_blob_table(cursor, conn, table, seed_file, label, force=Fa
         cursor.execute(f"SELECT COUNT(*) FROM {table}")
         count = cursor.fetchone()[0]
     except sqlite3.OperationalError:
-        print(f"  [ERROR] {table} table does not exist. Run backend/database/init_database.py first.")
+        print(
+            f"  [ERROR] {table} table does not exist. Run backend/database/init_database.py first."
+        )
         return
 
     if count > 0 and not force:
@@ -1088,7 +1252,9 @@ def populate_dungeons(cursor, conn, force=False):
     see docs/areas/dungeons.md. The three tables load together and in FK order.
     """
     _populate_dungeon_blob_table(cursor, conn, "dungeons", "seed_dungeons.json", "dungeons", force)
-    _populate_dungeon_blob_table(cursor, conn, "map_layout", "seed_map_layouts.json", "map layouts", force)
+    _populate_dungeon_blob_table(
+        cursor, conn, "map_layout", "seed_map_layouts.json", "map layouts", force
+    )
     _populate_dungeon_blob_table(
         cursor, conn, "map_session_state", "seed_map_session_state.json", "map session state", force
     )
@@ -1123,7 +1289,7 @@ def clear_all_tables(cursor, conn):
         "loom_threads",
         "loom_sessions",
     ]
-    
+
     for table in tables_to_clear:
         try:
             cursor.execute(f"DELETE FROM {table}")
@@ -1131,7 +1297,7 @@ def clear_all_tables(cursor, conn):
         except Exception:
             # Table might not exist, that's okay
             pass
-    
+
     # Reset AUTOINCREMENT counters so explicit IDs can be reused after force reload.
     try:
         cursor.execute("DELETE FROM sqlite_sequence")
@@ -1147,55 +1313,85 @@ def clear_all_tables(cursor, conn):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Populate database from seed JSON files')
-    parser.add_argument('--abilities', action='store_true', help='Load only abilities')
-    parser.add_argument('--spells', action='store_true', help='Load only spells')
-    parser.add_argument('--conditions', action='store_true', help='Load only conditions')
-    parser.add_argument('--monsters', action='store_true', help='Load only monsters')
-    parser.add_argument('--damage-types', action='store_true', help='Load only damage types')
-    parser.add_argument('--weapon-properties', action='store_true', help='Load only weapon properties')
-    parser.add_argument('--weapons', action='store_true', help='Load only weapons')
-    parser.add_argument('--items', action='store_true', help='Load only items')
-    parser.add_argument('--loot-bundles', action='store_true', help='Load only loot bundles')
-    parser.add_argument('--encounters', action='store_true', help='Load only encounters')
-    parser.add_argument('--npcs', action='store_true', help='Load only NPCs')
-    parser.add_argument('--players', action='store_true', help='Load only players')
-    parser.add_argument('--player-spells', action='store_true', help='Load only player spell assignments')
-    parser.add_argument('--player-weapons', action='store_true', help='Load only player weapon assignments')
-    parser.add_argument('--dungeons', action='store_true', help='Load only dungeons, map layouts and map session state')
-    parser.add_argument('--loom', action='store_true', help='Load only the loom demo tapestry (test/playtest fixture, not loaded by default)')
-    parser.add_argument('--force', action='store_true', help='Force reload (clear existing data first)')
+    parser = argparse.ArgumentParser(description="Populate database from seed JSON files")
+    parser.add_argument("--abilities", action="store_true", help="Load only abilities")
+    parser.add_argument("--spells", action="store_true", help="Load only spells")
+    parser.add_argument("--conditions", action="store_true", help="Load only conditions")
+    parser.add_argument("--monsters", action="store_true", help="Load only monsters")
+    parser.add_argument("--damage-types", action="store_true", help="Load only damage types")
+    parser.add_argument(
+        "--weapon-properties", action="store_true", help="Load only weapon properties"
+    )
+    parser.add_argument("--weapons", action="store_true", help="Load only weapons")
+    parser.add_argument("--items", action="store_true", help="Load only items")
+    parser.add_argument("--loot-bundles", action="store_true", help="Load only loot bundles")
+    parser.add_argument("--encounters", action="store_true", help="Load only encounters")
+    parser.add_argument("--npcs", action="store_true", help="Load only NPCs")
+    parser.add_argument("--players", action="store_true", help="Load only players")
+    parser.add_argument(
+        "--player-spells", action="store_true", help="Load only player spell assignments"
+    )
+    parser.add_argument(
+        "--player-weapons", action="store_true", help="Load only player weapon assignments"
+    )
+    parser.add_argument(
+        "--dungeons",
+        action="store_true",
+        help="Load only dungeons, map layouts and map session state",
+    )
+    parser.add_argument(
+        "--loom",
+        action="store_true",
+        help="Load only the loom demo tapestry (test/playtest fixture, not loaded by default)",
+    )
+    parser.add_argument(
+        "--force", action="store_true", help="Force reload (clear existing data first)"
+    )
 
     args = parser.parse_args()
     # If no specific tables selected, load all canonical catalog tables.
     # --loom is never part of "load all": the loom demo tapestry is a frozen
     # test/playtest fixture, not canonical campaign data (see docs/areas/loom.md).
-    load_all = not any([
-        args.abilities, args.spells, args.conditions, args.monsters,
-        args.npcs, args.players, args.player_spells, args.player_weapons,
-        args.damage_types, args.weapon_properties, args.weapons,
-        args.encounters, args.items, args.loot_bundles, args.dungeons, args.loom
-    ])
-    
-    print("="*60)
+    load_all = not any(
+        [
+            args.abilities,
+            args.spells,
+            args.conditions,
+            args.monsters,
+            args.npcs,
+            args.players,
+            args.player_spells,
+            args.player_weapons,
+            args.damage_types,
+            args.weapon_properties,
+            args.weapons,
+            args.encounters,
+            args.items,
+            args.loot_bundles,
+            args.dungeons,
+            args.loom,
+        ]
+    )
+
+    print("=" * 60)
     print("PHASE 2: DATABASE SEEDING")
-    print("="*60)
-    
+    print("=" * 60)
+
     if not DB_PATH.exists():
         print(f"[ERROR] Database not found: {DB_PATH}")
         return False
-    
+
     try:
         conn = sqlite3.connect(str(DB_PATH))
         # DISABLE foreign keys during schema operations (dropping/creating tables)
-        conn.execute('PRAGMA foreign_keys = OFF')
+        conn.execute("PRAGMA foreign_keys = OFF")
         cursor = conn.cursor()
-        
+
         if args.force:
             print("\n[WARNING]  FORCE MODE: Will overwrite existing data\n")
             # Clear all tables in dependency order first to avoid FK constraint issues
             clear_all_tables(cursor, conn)
-        
+
         if load_all or args.abilities:
             populate_abilities(cursor, conn, args.force)
         if load_all or args.damage_types:
@@ -1234,13 +1430,15 @@ def main():
             cursor.execute("PRAGMA foreign_keys = ON")
 
         conn.close()
-        
-        print("\n" + "="*60)
+
+        print("\n" + "=" * 60)
         print("[OK] PHASE 2 COMPLETE!")
-        print("="*60)
+        print("=" * 60)
         print("\nNext Steps:")
         print("  1. Edit seed files in data/seeds/ to add more data")
-        print("  2. Run: docker compose exec backend python -m backend.database.seed_database --force")
+        print(
+            "  2. Run: docker compose exec backend python -m backend.database.seed_database --force"
+        )
         print("  3. Build frontend and run FastAPI server")
         print("\nSeed files (14 tables):")
         print("  - data/seeds/seed_abilities.json")
@@ -1257,15 +1455,17 @@ def main():
         print("  - data/seeds/seed_players.json")
         print("  - data/seeds/seed_player_spells.json")
         print("  - data/seeds/seed_player_weapons.json")
-        
+
         return True
-        
+
     except Exception as e:
         print(f"\n[ERROR] ERROR: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     success = main()
     exit(0 if success else 1)

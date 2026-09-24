@@ -1,40 +1,41 @@
-import { BadgeDisc } from '../../../map/BadgeDisc'
-import { boundedBadgeLayout, collapsedStatusDescriptor, collapsedStatusLabel, fixtureMarkerBadges } from '../../../map/markerBadges'
-import { fixtureStairPresentation } from './maplabPresentation'
+import { BadgeDisc } from "../../../map/BadgeDisc";
 import {
-  type MapCell,
-  type MapStair,
-  type SessionFixtureState,
-} from '../../../model/maplabModel'
-import { onSquareMarkerGeometry, MarkerHitArea, MarkerGlyph } from '../../../map/markerShape'
+  boundedBadgeLayout,
+  collapsedStatusDescriptor,
+  collapsedStatusLabel,
+  fixtureMarkerBadges,
+} from "../../../map/markerBadges";
+import { fixtureStairPresentation } from "./maplabPresentation";
+import { type MapCell, type MapStair, type SessionFixtureState } from "../../../model/maplabModel";
+import { onSquareMarkerGeometry, MarkerHitArea, MarkerGlyph } from "../../../map/markerShape";
 
-const STAIR_IDENTITY_TOKEN = '--md-tertiary'
+const STAIR_IDENTITY_TOKEN = "--md-tertiary";
 
 interface StairMarkerProps {
-  stair: MapStair
-  cellSize: number
-  cell: MapCell
-  activeZ: number
-  selected?: boolean
+  stair: MapStair;
+  cellSize: number;
+  cell: MapCell;
+  activeZ: number;
+  selected?: boolean;
   /** Live session state — the viewer merges this over the authored state; the editor omits it
    * and gets the authored state as-is. */
-  session?: SessionFixtureState
+  session?: SessionFixtureState;
   /** Fractional-cell nudge (from `gridMarkerOffset`) when this stair shares its cell with other
    * markers (portals/other stairs/props). */
-  offset?: { dx: number; dy: number }
+  offset?: { dx: number; dy: number };
   /** True when 2+ markers share this cell — shrinks the marker to `GROUPED_MARKER_RADIUS_FRACTION`
    * so `gridMarkerOffset`'s spacing actually separates same-cell markers instead of stacking
    * full-size circles a few px apart. */
-  grouped?: boolean
-  simplified?: boolean
+  grouped?: boolean;
+  simplified?: boolean;
   /** Viewer-only destination appended after the complete status narration. */
-  destinationLabel?: string
-  onMouseEnter?: () => void
-  onMouseLeave?: () => void
-  onFocus?: () => void
-  onBlur?: () => void
-  onClick?: () => void
-  onContextMenu?: () => void
+  destinationLabel?: string;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
+  onClick?: () => void;
+  onContextMenu?: () => void;
 }
 
 /** Stair marker — the stair glyph and ring carry stable fixture identity; one collapsed
@@ -57,15 +58,17 @@ export function StairMarker({
   onClick,
   onContextMenu,
 }: StairMarkerProps) {
-  const { cx, cy, radius, iconSize } = onSquareMarkerGeometry(cell, cellSize, { offset, grouped })
+  const { cx, cy, radius, iconSize } = onSquareMarkerGeometry(cell, cellSize, { offset, grouped });
 
-  const presentation = fixtureStairPresentation(stair, activeZ, session)
-  const Icon = presentation.icon
-  const badges = fixtureMarkerBadges(stair, session)
-  const badge = collapsedStatusDescriptor(badges)
-  const badgePosition = badge ? boundedBadgeLayout(cell[0] * cellSize, cell[1] * cellSize, cellSize, cx, cy, radius, 8) : null
-  const dasharray = presentation.state === 'concealed' ? '4 3' : undefined
-  const resolvedLabel = `${stair.title ?? `Stair ${stair.stair_id}`} — ${collapsedStatusLabel(badges, presentation.label)}${destinationLabel ? ` — ${destinationLabel}` : ''}`
+  const presentation = fixtureStairPresentation(stair, activeZ, session);
+  const Icon = presentation.icon;
+  const badges = fixtureMarkerBadges(stair, session);
+  const badge = collapsedStatusDescriptor(badges);
+  const badgePosition = badge
+    ? boundedBadgeLayout(cell[0] * cellSize, cell[1] * cellSize, cellSize, cx, cy, radius, 8)
+    : null;
+  const dasharray = presentation.state === "concealed" ? "4 3" : undefined;
+  const resolvedLabel = `${stair.title ?? `Stair ${stair.stair_id}`} — ${collapsedStatusLabel(badges, presentation.label)}${destinationLabel ? ` — ${destinationLabel}` : ""}`;
 
   return (
     <MarkerHitArea
@@ -111,5 +114,5 @@ export function StairMarker({
         />
       ) : null}
     </MarkerHitArea>
-  )
+  );
 }

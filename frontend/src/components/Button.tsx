@@ -1,20 +1,20 @@
-import { Button as BaseButton } from '@base-ui/react/button'
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
-import './Button.css'
+import { Button as BaseButton } from "@base-ui/react/button";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
+import "./Button.css";
 
-export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost'
-export type ButtonSize = 'normal' | 'compact'
+export type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";
+export type ButtonSize = "normal" | "compact";
 
-interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
-  variant?: ButtonVariant
-  size?: ButtonSize
-  loading?: boolean
-  children: ReactNode
+interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  loading?: boolean;
+  children: ReactNode;
 }
 
 export function Button({
-  variant = 'primary',
-  size = 'normal',
+  variant = "primary",
+  size = "normal",
   loading = false,
   children,
   disabled,
@@ -32,5 +32,5 @@ export function Button({
     >
       {children}
     </BaseButton>
-  )
+  );
 }

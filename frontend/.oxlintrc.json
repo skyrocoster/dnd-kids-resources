@@ -14,12 +14,7 @@
           {
             "patterns": [
               {
-                "group": [
-                  "**/components/**",
-                  "**/features/**",
-                  "**/layout/**",
-                  "**/pages/**"
-                ],
+                "group": ["**/components/**", "**/features/**", "**/layout/**", "**/pages/**"],
                 "message": "src/model/ and src/map/ hold pure domain models and shared canvas code used by the DM and Player apps and must import nothing from components/, features/, layout/ or pages/ (docs/ARCHITECTURE.md). Move the shared type down into model/ or map/, or keep the helper in the feature."
               }
             ]

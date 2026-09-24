@@ -1,5 +1,3 @@
-from typing import Optional
-
 from ..api_errors import ApiError, ApiRouter, error_responses
 from ..caching import cached_get
 from ..db import get_db

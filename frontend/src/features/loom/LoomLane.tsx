@@ -1,76 +1,103 @@
-import { useCallback, useState } from 'react'
-import type { LoomNode, LoomSession, LoomTapestryThread } from '../../api/types'
-import { threadOrdered, currentPosition, threadHead, nextBeat, isThreadAlive } from './loomGraph'
-import { LoomNodeCard } from './LoomNodeCard'
+import { useCallback, useState } from "react";
+import type { LoomNode, LoomSession, LoomTapestryThread } from "../../api/types";
+import { threadOrdered, currentPosition, threadHead, nextBeat, isThreadAlive } from "./loomGraph";
+import { LoomNodeCard } from "./LoomNodeCard";
 
 interface LoomLaneProps {
-  thread: LoomTapestryThread
-  nodes: LoomNode[]
-  sessions: LoomSession[]
-  selectedNodeId?: number | null
-  onSelectNode?: (nodeId: number) => void
-  selectedThreadId?: number | null
-  onSelectThread?: (threadId: number) => void
-  onGapClick?: (threadId: number, position: number) => void
-  onReorder?: (threadId: number, nodeId: number, fromBodyIndex: number, toBodyIndex: number) => void
-  onCrossLaneDrop?: (nodeId: number, sourceThreadId: number, targetThreadId: number, position: number, nodeKind: 'beat' | 'session') => void
-  onGapRestore?: (nodeId: number, threadId: number, position: number) => void
-  onCardEdit?: (node: LoomNode) => void
-  onCardBank?: (node: LoomNode) => void
-  onCardDelete?: (node: LoomNode) => void
-  placingNodeId?: number | null
+  thread: LoomTapestryThread;
+  nodes: LoomNode[];
+  sessions: LoomSession[];
+  selectedNodeId?: number | null;
+  onSelectNode?: (nodeId: number) => void;
+  selectedThreadId?: number | null;
+  onSelectThread?: (threadId: number) => void;
+  onGapClick?: (threadId: number, position: number) => void;
+  onReorder?: (
+    threadId: number,
+    nodeId: number,
+    fromBodyIndex: number,
+    toBodyIndex: number,
+  ) => void;
+  onCrossLaneDrop?: (
+    nodeId: number,
+    sourceThreadId: number,
+    targetThreadId: number,
+    position: number,
+    nodeKind: "beat" | "session",
+  ) => void;
+  onGapRestore?: (nodeId: number, threadId: number, position: number) => void;
+  onCardEdit?: (node: LoomNode) => void;
+  onCardBank?: (node: LoomNode) => void;
+  onCardDelete?: (node: LoomNode) => void;
+  placingNodeId?: number | null;
 }
 
 interface DropZoneCallbacks {
-  onReorder?: (threadId: number, nodeId: number, fromBodyIndex: number, toBodyIndex: number) => void
-  onCrossLaneDrop?: (nodeId: number, sourceThreadId: number, targetThreadId: number, position: number, nodeKind: 'beat' | 'session') => void
-  onGapRestore?: (nodeId: number, threadId: number, position: number) => void
+  onReorder?: (
+    threadId: number,
+    nodeId: number,
+    fromBodyIndex: number,
+    toBodyIndex: number,
+  ) => void;
+  onCrossLaneDrop?: (
+    nodeId: number,
+    sourceThreadId: number,
+    targetThreadId: number,
+    position: number,
+    nodeKind: "beat" | "session",
+  ) => void;
+  onGapRestore?: (nodeId: number, threadId: number, position: number) => void;
 }
 
-function useDropZone(threadId: number, position: number, index: number, callbacks: DropZoneCallbacks) {
-  const { onReorder, onCrossLaneDrop, onGapRestore } = callbacks
-  const [dragOver, setDragOver] = useState(false)
+function useDropZone(
+  threadId: number,
+  position: number,
+  index: number,
+  callbacks: DropZoneCallbacks,
+) {
+  const { onReorder, onCrossLaneDrop, onGapRestore } = callbacks;
+  const [dragOver, setDragOver] = useState(false);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-    setDragOver(true)
-  }, [])
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOver(true);
+  }, []);
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(true)
-  }, [])
+    e.preventDefault();
+    setDragOver(true);
+  }, []);
 
   const handleDragLeave = useCallback(() => {
-    setDragOver(false)
-  }, [])
+    setDragOver(false);
+  }, []);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
-      e.preventDefault()
-      setDragOver(false)
-      const raw = e.dataTransfer.getData('application/json')
-      if (!raw) return
+      e.preventDefault();
+      setDragOver(false);
+      const raw = e.dataTransfer.getData("application/json");
+      if (!raw) return;
       try {
-        const data = JSON.parse(raw)
-        if (data.action === 'reorder') {
+        const data = JSON.parse(raw);
+        if (data.action === "reorder") {
           if (data.sourceThreadId === threadId) {
-            onReorder?.(threadId, data.nodeId, data.fromBodyIndex, index)
+            onReorder?.(threadId, data.nodeId, data.fromBodyIndex, index);
           } else {
-            onCrossLaneDrop?.(data.nodeId, data.sourceThreadId, threadId, position, data.nodeKind)
+            onCrossLaneDrop?.(data.nodeId, data.sourceThreadId, threadId, position, data.nodeKind);
           }
-        } else if (data.action === 'restore') {
-          onGapRestore?.(data.nodeId, threadId, position)
+        } else if (data.action === "restore") {
+          onGapRestore?.(data.nodeId, threadId, position);
         }
       } catch {
         // ignore parse errors
       }
     },
     [onReorder, onCrossLaneDrop, onGapRestore, threadId, position, index],
-  )
+  );
 
-  return { dragOver, handleDragOver, handleDragEnter, handleDragLeave, handleDrop }
+  return { dragOver, handleDragOver, handleDragEnter, handleDragLeave, handleDrop };
 }
 
 function Gap({
@@ -81,39 +108,41 @@ function Gap({
   onGapRestore,
   placingNodeId,
 }: {
-  threadId: number
-  position: number
-  dragOver: boolean
-  onGapClick?: (threadId: number, position: number) => void
-  onGapRestore?: (nodeId: number, threadId: number, position: number) => void
-  placingNodeId?: number | null
+  threadId: number;
+  position: number;
+  dragOver: boolean;
+  onGapClick?: (threadId: number, position: number) => void;
+  onGapRestore?: (nodeId: number, threadId: number, position: number) => void;
+  placingNodeId?: number | null;
 }) {
-  const placing = placingNodeId != null
+  const placing = placingNodeId != null;
   const handleClick = useCallback(() => {
     if (placing) {
-      onGapRestore?.(placingNodeId, threadId, position)
+      onGapRestore?.(placingNodeId, threadId, position);
     } else {
-      onGapClick?.(threadId, position)
+      onGapClick?.(threadId, position);
     }
-  }, [placing, placingNodeId, onGapRestore, onGapClick, threadId, position])
+  }, [placing, placingNodeId, onGapRestore, onGapClick, threadId, position]);
 
   return (
     <div
-      className={`loom-lane-gap${dragOver || placing ? ' loom-lane-gap--drag-over' : ''}`}
+      className={`loom-lane-gap${dragOver || placing ? " loom-lane-gap--drag-over" : ""}`}
       onClick={handleClick}
       role="button"
       tabIndex={0}
       aria-label={`Insert at position ${position}`}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          handleClick()
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleClick();
         }
       }}
     >
-      <span className="loom-lane-gap-icon" aria-hidden="true">+</span>
+      <span className="loom-lane-gap-icon" aria-hidden="true">
+        +
+      </span>
     </div>
-  )
+  );
 }
 
 function CardGroup({
@@ -127,19 +156,19 @@ function CardGroup({
   placingNodeId,
   children,
 }: DropZoneCallbacks & {
-  threadId: number
-  position: number
-  index: number
-  onGapClick?: (threadId: number, position: number) => void
-  placingNodeId?: number | null
-  children: React.ReactNode
+  threadId: number;
+  position: number;
+  index: number;
+  onGapClick?: (threadId: number, position: number) => void;
+  placingNodeId?: number | null;
+  children: React.ReactNode;
 }) {
   const { dragOver, handleDragOver, handleDragEnter, handleDragLeave, handleDrop } = useDropZone(
     threadId,
     position,
     index,
     { onReorder, onCrossLaneDrop, onGapRestore },
-  )
+  );
 
   return (
     <div
@@ -159,7 +188,7 @@ function CardGroup({
       />
       {children}
     </div>
-  )
+  );
 }
 
 export function LoomLane({
@@ -179,30 +208,35 @@ export function LoomLane({
   onCardDelete,
   placingNodeId,
 }: LoomLaneProps) {
-  const ordered = threadOrdered(thread, nodes)
-  const current = currentPosition(thread, nodes)
-  const head = threadHead(thread, nodes)
-  const next = nextBeat(thread, nodes)
+  const ordered = threadOrdered(thread, nodes);
+  const current = currentPosition(thread, nodes);
+  const head = threadHead(thread, nodes);
+  const next = nextBeat(thread, nodes);
 
-  const currentNodeId = current?.nodeId ?? null
-  const nextBeatId = next?.id ?? null
+  const currentNodeId = current?.nodeId ?? null;
+  const nextBeatId = next?.id ?? null;
 
-  const warpNodes = ordered.filter((n) => n.kind !== 'start' && n.kind !== 'end' && n.session_id == null)
+  const warpNodes = ordered.filter(
+    (n) => n.kind !== "start" && n.kind !== "end" && n.session_id == null,
+  );
 
   return (
     <div
-      className={`loom-grid-row${selectedThreadId === thread.id ? ' loom-grid-row--selected' : ''}${selectedThreadId != null && selectedThreadId !== thread.id ? ' loom-grid-row--dimmed' : ''}`}
+      className={`loom-grid-row${selectedThreadId === thread.id ? " loom-grid-row--selected" : ""}${selectedThreadId != null && selectedThreadId !== thread.id ? " loom-grid-row--dimmed" : ""}`}
     >
       <div
         className="loom-grid-thread-label"
-        onClick={(e) => { e.stopPropagation(); onSelectThread?.(thread.id) }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelectThread?.(thread.id);
+        }}
         role="button"
         tabIndex={0}
         aria-pressed={selectedThreadId === thread.id}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            onSelectThread?.(thread.id)
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSelectThread?.(thread.id);
           }
         }}
       >
@@ -210,12 +244,16 @@ export function LoomLane({
         <span className="loom-grid-thread-name">{thread.name}</span>
       </div>
       {sessions.map((session) => {
-        const node = nodes.find((n) => n.thread_id === thread.id && n.session_id === session.id)
-        const alive = isThreadAlive(thread, session.ordinal, nodes, sessions)
+        const node = nodes.find((n) => n.thread_id === thread.id && n.session_id === session.id);
+        const alive = isThreadAlive(thread, session.ordinal, nodes, sessions);
 
         if (node) {
           return (
-            <div key={session.id} className="loom-grid-cell loom-grid-cell--real loom-grid-cell--cloth" aria-label={`Session ${session.ordinal} played`}>
+            <div
+              key={session.id}
+              className="loom-grid-cell loom-grid-cell--real loom-grid-cell--cloth"
+              aria-label={`Session ${session.ordinal} played`}
+            >
               <LoomNodeCard
                 node={node}
                 isNow={head?.id === node.id || currentNodeId === node.id}
@@ -230,14 +268,14 @@ export function LoomLane({
                 onDelete={onCardDelete}
               />
             </div>
-          )
+          );
         }
 
         if (alive) {
-          return <div key={session.id} className="loom-grid-cell loom-grid-cell--quiet" />
+          return <div key={session.id} className="loom-grid-cell loom-grid-cell--quiet" />;
         }
 
-        return <div key={session.id} className="loom-grid-cell loom-grid-cell--outside-life" />
+        return <div key={session.id} className="loom-grid-cell loom-grid-cell--outside-life" />;
       })}
       <div className="loom-grid-fell-edge" role="separator" aria-label="Current position" />
       <div className="loom-grid-warp" aria-label="Planned beats">
@@ -283,5 +321,5 @@ export function LoomLane({
         </CardGroup>
       </div>
     </div>
-  )
+  );
 }

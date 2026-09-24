@@ -1,22 +1,22 @@
-import { useId } from 'react'
-import type { SelectHTMLAttributes } from 'react'
-import './form.css'
+import { useId } from "react";
+import type { SelectHTMLAttributes } from "react";
+import "./form.css";
 
 interface Option {
-  value: string
-  label: string
+  value: string;
+  label: string;
 }
 
-interface SelectFieldProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'id'> {
-  label: string
-  options: Option[]
-  error?: string
-  placeholder?: string
+interface SelectFieldProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, "id"> {
+  label: string;
+  options: Option[];
+  error?: string;
+  placeholder?: string;
 }
 
 export function SelectField({ label, options, error, placeholder, ...rest }: SelectFieldProps) {
-  const id = useId()
-  const errorId = `${id}-error`
+  const id = useId();
+  const errorId = `${id}-error`;
 
   return (
     <div className="form-field">
@@ -47,5 +47,5 @@ export function SelectField({ label, options, error, placeholder, ...rest }: Sel
         </p>
       )}
     </div>
-  )
+  );
 }

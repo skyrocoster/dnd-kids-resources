@@ -1,7 +1,6 @@
 import pytest
 
 import backend.app.db as db_module
-
 from backend.tests.conftest import db_failure_conn
 
 
@@ -62,7 +61,10 @@ def test_loot_bundle_crud_round_trips_mixed_snapshot_contents(test_client):
     assert bundle == {"id": bundle["id"], **payload}
     assert test_client.get(f"/api/loot-bundles/{bundle['id']}").json() == bundle
 
-    updated_contents = [*contents, {"kind": "item", "ref_id": 43, "name": "Map", "value_gp": 5, "quantity": 1}]
+    updated_contents = [
+        *contents,
+        {"kind": "item", "ref_id": 43, "name": "Map", "value_gp": 5, "quantity": 1},
+    ]
     updated = test_client.put(
         f"/api/loot-bundles/{bundle['id']}",
         json={"name": "Moonlit Hoard", "gold": 25, "contents": updated_contents},

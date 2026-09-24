@@ -56,7 +56,9 @@ def get_loot_bundle(bundle_id: int):
         cursor.execute(f"SELECT {SELECT_COLUMNS} FROM loot_bundle WHERE id = ?", (bundle_id,))
         bundle = _parse_loot_bundle_row(cursor.fetchone())
         if bundle is None:
-            raise ApiError(404, LootError(code="loot_bundle_not_found", message="Loot bundle not found"))
+            raise ApiError(
+                404, LootError(code="loot_bundle_not_found", message="Loot bundle not found")
+            )
         return bundle
 
 
@@ -74,7 +76,11 @@ def create_loot_bundle(bundle: LootBundleCreate):
         try:
             cursor.execute(
                 """INSERT INTO loot_bundle (name, gold, contents) VALUES (?, ?, ?)""",
-                (bundle.name, bundle.gold, json.dumps(bundle.contents) if bundle.contents else json.dumps([])),
+                (
+                    bundle.name,
+                    bundle.gold,
+                    json.dumps(bundle.contents) if bundle.contents else json.dumps([]),
+                ),
             )
             conn.commit()
             bundle_id = cursor.lastrowid
@@ -82,7 +88,10 @@ def create_loot_bundle(bundle: LootBundleCreate):
             conn.rollback()
             raise ApiError(
                 400,
-                LootError(code="failed_to_create_loot_bundle", message=f"Failed to create loot bundle: {str(e)}"),
+                LootError(
+                    code="failed_to_create_loot_bundle",
+                    message=f"Failed to create loot bundle: {str(e)}",
+                ),
             )
 
         cursor.execute(f"SELECT {SELECT_COLUMNS} FROM loot_bundle WHERE id = ?", (bundle_id,))
@@ -101,7 +110,9 @@ def update_loot_bundle(bundle_id: int, bundle: LootBundleUpdate):
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM loot_bundle WHERE id = ?", (bundle_id,))
         if cursor.fetchone() is None:
-            raise ApiError(404, LootError(code="loot_bundle_not_found", message="Loot bundle not found"))
+            raise ApiError(
+                404, LootError(code="loot_bundle_not_found", message="Loot bundle not found")
+            )
 
         try:
             cursor.execute(
@@ -120,7 +131,10 @@ def update_loot_bundle(bundle_id: int, bundle: LootBundleUpdate):
             conn.rollback()
             raise ApiError(
                 400,
-                LootError(code="failed_to_update_loot_bundle", message=f"Failed to update loot bundle: {str(e)}"),
+                LootError(
+                    code="failed_to_update_loot_bundle",
+                    message=f"Failed to update loot bundle: {str(e)}",
+                ),
             )
 
         cursor.execute(f"SELECT {SELECT_COLUMNS} FROM loot_bundle WHERE id = ?", (bundle_id,))
@@ -139,7 +153,9 @@ def delete_loot_bundle(bundle_id: int):
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM loot_bundle WHERE id = ?", (bundle_id,))
         if cursor.fetchone() is None:
-            raise ApiError(404, LootError(code="loot_bundle_not_found", message="Loot bundle not found"))
+            raise ApiError(
+                404, LootError(code="loot_bundle_not_found", message="Loot bundle not found")
+            )
 
         try:
             cursor.execute("DELETE FROM loot_bundle WHERE id = ?", (bundle_id,))
@@ -148,5 +164,8 @@ def delete_loot_bundle(bundle_id: int):
             conn.rollback()
             raise ApiError(
                 400,
-                LootError(code="failed_to_delete_loot_bundle", message=f"Failed to delete loot bundle: {str(e)}"),
+                LootError(
+                    code="failed_to_delete_loot_bundle",
+                    message=f"Failed to delete loot bundle: {str(e)}",
+                ),
             )

@@ -1,21 +1,33 @@
-import { useId } from 'react'
-import { DICE_COUNT_OPTIONS, DICE_TYPE_OPTIONS } from './constants'
-import { formatDiceString, parseDiceString } from './dice'
-import './DiceRollField.css'
+import { useId } from "react";
+import { Select } from "../../components/form/Select";
+import { TextInput } from "../../components/form/TextInput";
+import { DICE_COUNT_OPTIONS, DICE_TYPE_OPTIONS } from "./constants";
+import { formatDiceString, parseDiceString } from "./dice";
+import "./DiceRollField.css";
+
+const diceCountSelectOptions = [
+  { value: "", label: "—" },
+  ...DICE_COUNT_OPTIONS.map((count) => ({ value: count, label: count })),
+];
+
+const diceTypeSelectOptions = [
+  { value: "", label: "—" },
+  ...DICE_TYPE_OPTIONS.map((dieType) => ({ value: dieType, label: `d${dieType}` })),
+];
 
 interface DiceRollFieldProps {
-  label: string
-  value: string
-  onChange: (value: string) => void
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
 }
 
 export function DiceRollField({ label, value, onChange }: DiceRollFieldProps) {
-  const id = useId()
-  const { count, dieType, mod } = parseDiceString(value)
+  const id = useId();
+  const { count, dieType, mod } = parseDiceString(value);
 
   const update = (patch: Partial<{ count: string; dieType: string; mod: string }>) => {
-    onChange(formatDiceString({ count, dieType, mod, ...patch }))
-  }
+    onChange(formatDiceString({ count, dieType, mod, ...patch }));
+  };
 
   return (
     <div className="form-field dice-roll-field">
@@ -23,36 +35,21 @@ export function DiceRollField({ label, value, onChange }: DiceRollFieldProps) {
         {label}
       </label>
       <div className="dice-roll-group" id={id}>
-        <select
-          className="form-control dice-roll-count"
-          aria-label={`${label} dice count`}
+        <Select
+          ariaLabel={`${label} dice count`}
+          options={diceCountSelectOptions}
           value={count}
-          onChange={(e) => update({ count: e.target.value })}
-        >
-          <option value="">—</option>
-          {DICE_COUNT_OPTIONS.map((n) => (
-            <option key={n} value={n}>
-              {n}
-            </option>
-          ))}
-        </select>
+          onValueChange={(next) => update({ count: next ?? "" })}
+        />
         <span className="dice-roll-sep">d</span>
-        <select
-          className="form-control dice-roll-type"
-          aria-label={`${label} die type`}
+        <Select
+          ariaLabel={`${label} die type`}
+          options={diceTypeSelectOptions}
           value={dieType}
-          onChange={(e) => update({ dieType: e.target.value })}
-        >
-          <option value="">—</option>
-          {DICE_TYPE_OPTIONS.map((n) => (
-            <option key={n} value={n}>
-              d{n}
-            </option>
-          ))}
-        </select>
-        <input
-          type="text"
-          className="form-control dice-roll-mod"
+          onValueChange={(next) => update({ dieType: next ?? "" })}
+        />
+        <TextInput
+          className="dice-roll-mod"
           aria-label={`${label} modifier`}
           placeholder="+0"
           value={mod}
@@ -60,5 +57,5 @@ export function DiceRollField({ label, value, onChange }: DiceRollFieldProps) {
         />
       </div>
     </div>
-  )
+  );
 }

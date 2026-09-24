@@ -1,4 +1,4 @@
-@import './theme.css';
+@import "./theme.css";
 
 :root {
   /* Dark-only app (index.html always sets data-theme="dark"); declaring only

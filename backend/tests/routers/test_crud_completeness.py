@@ -6,13 +6,10 @@ PUT/update round-trips, the player<->spell/weapon assignment lifecycle, and the
 404/400 error branches every editor UI depends on.
 """
 
-import sqlite3
 import pytest
 
 import backend.app.db as db_module
-
 from backend.tests.conftest import db_failure_conn
-
 
 # ---------------------------------------------------------------------------
 # Players: spell & weapon assignment lifecycle
@@ -56,7 +53,9 @@ def test_player_weapon_assignment_lifecycle(test_client):
     assert test_client.delete(f"/api/players/{pid}/weapons/{weapon_id}").status_code == 204
 
 
-@pytest.mark.parametrize(("kind", "remove"), [("spells", False), ("spells", True), ("weapons", False), ("weapons", True)])
+@pytest.mark.parametrize(
+    ("kind", "remove"), [("spells", False), ("spells", True), ("weapons", False), ("weapons", True)]
+)
 def test_player_assignment_db_failure(monkeypatch, test_client, kind, remove):
     pid = _make_player(test_client, f"{kind} Fail")
     resource_id = test_client.get(f"/api/{kind}").json()[0]["id"]
@@ -102,14 +101,22 @@ def test_weapon_update_round_trip(test_client):
         json={
             "name": "Upgradeable",
             "rarity": "common",
-            "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}.",
+            "quick_rules": (
+                "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}."
+            ),
         },
     ).json()["id"]
     resp = test_client.put(
         f"/api/weapons/{wid}",
-        json={"name": "Upgraded", "rarity": "rare", "property": ["F"],
-              "attack": [{"type": "ranged", "damage": "1d6", "damage_type": "piercing"}],
-              "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d6 piercing damage +{weapon_damage_bonus}."},
+        json={
+            "name": "Upgraded",
+            "rarity": "rare",
+            "property": ["F"],
+            "attack": [{"type": "ranged", "damage": "1d6", "damage_type": "piercing"}],
+            "quick_rules": (
+                "Attack +{weapon_attack_bonus}, deal 1d6 piercing damage +{weapon_damage_bonus}."
+            ),
+        },
     )
     assert resp.status_code == 200
     data = resp.json()
@@ -122,17 +129,40 @@ def test_weapon_update_round_trip(test_client):
 @pytest.mark.parametrize(
     ("resource", "seed", "update"),
     [
-        ("weapons",
-         {"name": "Mutable Resource", "rarity": "common",
-          "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}."},
-         {"name": "Mutated Resource", "rarity": "rare",
-          "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}."}),
-        ("npcs", {"name": "Mutable Resource", "race": "Human"},
-         {"name": "Mutated Resource", "race": "Dwarf", "notes": "grumpy"}),
-        ("encounters", {"title": "Mutable Resource", "creatures": []},
-         {"title": "Mutated Resource", "creatures": []}),
-        ("dungeons", {"title": "Mutable Resource", "data": {"rooms": []}},
-         {"title": "Mutated Resource", "data": {"rooms": []}}),
+        (
+            "weapons",
+            {
+                "name": "Mutable Resource",
+                "rarity": "common",
+                "quick_rules": (
+                    "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage "
+                    "+{weapon_damage_bonus}."
+                ),
+            },
+            {
+                "name": "Mutated Resource",
+                "rarity": "rare",
+                "quick_rules": (
+                    "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage "
+                    "+{weapon_damage_bonus}."
+                ),
+            },
+        ),
+        (
+            "npcs",
+            {"name": "Mutable Resource", "race": "Human"},
+            {"name": "Mutated Resource", "race": "Dwarf", "notes": "grumpy"},
+        ),
+        (
+            "encounters",
+            {"title": "Mutable Resource", "creatures": []},
+            {"title": "Mutated Resource", "creatures": []},
+        ),
+        (
+            "dungeons",
+            {"title": "Mutable Resource", "data": {"rooms": []}},
+            {"title": "Mutated Resource", "data": {"rooms": []}},
+        ),
     ],
 )
 def test_update_db_failure(monkeypatch, test_client, resource, seed, update):
@@ -151,13 +181,19 @@ def test_weapon_get_by_name(test_client):
 def test_weapon_404s(test_client):
     assert test_client.get("/api/weapons/99999").status_code == 404
     assert test_client.get("/api/weapons/by-name/NoSuchWeapon").status_code == 404
-    assert test_client.put(
-        "/api/weapons/99999",
-        json={
-            "name": "X",
-            "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}.",
-        },
-    ).status_code == 404
+    assert (
+        test_client.put(
+            "/api/weapons/99999",
+            json={
+                "name": "X",
+                "quick_rules": (
+                    "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage "
+                    "+{weapon_damage_bonus}."
+                ),
+            },
+        ).status_code
+        == 404
+    )
     assert test_client.delete("/api/weapons/99999").status_code == 404
 
 
@@ -191,7 +227,9 @@ def test_npc_update_round_trip(test_client):
             "condition_immunities": ["poisoned"],
             "senses": [{"type": "darkvision", "range": 60}],
             "languages": ["Common", "Dwarvish"],
-            "features": {"actions": [{"name": "Hammer", "description": "Makes one hammer attack."}]},
+            "features": {
+                "actions": [{"name": "Hammer", "description": "Makes one hammer attack."}]
+            },
             "cr": "1/2",
             "cr_note": "sturdy ally",
             "experience_points": 100,
@@ -229,10 +267,21 @@ def test_encounter_update_round_trip(test_client):
     ).json()["id"]
     resp = test_client.put(
         f"/api/encounters/{eid}",
-        json={"title": "Updated Encounter",
-              "creatures": [{"creature_id": 1, "source_kind": "monster",
-                             "name": "Goblin", "hp_current": 7,
-                             "hp_max": 7, "ac": 15, "status": "alive", "conditions": []}]},
+        json={
+            "title": "Updated Encounter",
+            "creatures": [
+                {
+                    "creature_id": 1,
+                    "source_kind": "monster",
+                    "name": "Goblin",
+                    "hp_current": 7,
+                    "hp_max": 7,
+                    "ac": 15,
+                    "status": "alive",
+                    "conditions": [],
+                }
+            ],
+        },
     )
     assert resp.status_code == 200
     data = resp.json()
@@ -242,7 +291,10 @@ def test_encounter_update_round_trip(test_client):
 
 def test_encounter_404s(test_client):
     assert test_client.get("/api/encounters/99999").status_code == 404
-    assert test_client.put("/api/encounters/99999", json={"title": "X", "creatures": []}).status_code == 404
+    assert (
+        test_client.put("/api/encounters/99999", json={"title": "X", "creatures": []}).status_code
+        == 404
+    )
     assert test_client.delete("/api/encounters/99999").status_code == 404
 
 
@@ -309,5 +361,7 @@ def test_dungeon_detail_and_404s(test_client):
     ).json()["id"]
     assert test_client.get(f"/api/dungeons/{did}").status_code == 200
     assert test_client.get("/api/dungeons/99999").status_code == 404
-    assert test_client.put("/api/dungeons/99999", json={"title": "X", "data": {}}).status_code == 404
+    assert (
+        test_client.put("/api/dungeons/99999", json={"title": "X", "data": {}}).status_code == 404
+    )
     assert test_client.delete("/api/dungeons/99999").status_code == 404

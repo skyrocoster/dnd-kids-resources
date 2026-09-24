@@ -1,39 +1,52 @@
-import { useId, useState } from 'react'
-import type { FormEvent } from 'react'
-import { Radio } from '@base-ui/react/radio'
-import { RadioGroup } from '@base-ui/react/radio-group'
-import { createLoomThread, deleteLoomThread, updateLoomThread } from '../../api/client'
-import type { LoomThread, ThreadColor } from '../../api/types'
-import { Button } from '../../components/Button'
-import { ConfirmDialog } from '../../components/ConfirmDialog'
-import { Dialog } from '../../components/Dialog'
-import { TextField } from '../../components/form/TextField'
-import { TrashIcon, PlusIcon } from '../../components/icons'
-import './LoomEditor.css'
+import { useId, useState } from "react";
+import type { FormEvent } from "react";
+import { Radio } from "@base-ui/react/radio";
+import { RadioGroup } from "@base-ui/react/radio-group";
+import { createLoomThread, deleteLoomThread, updateLoomThread } from "../../api/client";
+import type { LoomThread, ThreadColor } from "../../api/types";
+import { Button } from "../../components/Button";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { Dialog } from "../../components/Dialog";
+import { TextField } from "../../components/form/TextField";
+import { TrashIcon, PlusIcon } from "../../components/icons";
+import "./LoomEditor.css";
 
-const THREAD_COLORS: ThreadColor[] = ['thread-1', 'thread-2', 'thread-3', 'thread-4', 'thread-5', 'thread-6']
+const THREAD_COLORS: ThreadColor[] = [
+  "thread-1",
+  "thread-2",
+  "thread-3",
+  "thread-4",
+  "thread-5",
+  "thread-6",
+];
 
 interface LoomThreadManagerProps {
-  threads: LoomThread[]
-  onClose: () => void
-  onChanged: () => void
+  threads: LoomThread[];
+  onClose: () => void;
+  onChanged: () => void;
 }
 
 interface ThreadFormState {
-  name: string
-  color: ThreadColor
-  description: string
+  name: string;
+  color: ThreadColor;
+  description: string;
 }
 
 function emptyForm(): ThreadFormState {
-  return { name: '', color: 'thread-1', description: '' }
+  return { name: "", color: "thread-1", description: "" };
 }
 
 function threadToForm(thread: LoomThread): ThreadFormState {
-  return { name: thread.name, color: thread.color, description: thread.description ?? '' }
+  return { name: thread.name, color: thread.color, description: thread.description ?? "" };
 }
 
-function ColorPicker({ value, onChange }: { value: ThreadColor; onChange: (color: ThreadColor) => void }) {
+function ColorPicker({
+  value,
+  onChange,
+}: {
+  value: ThreadColor;
+  onChange: (color: ThreadColor) => void;
+}) {
   return (
     <RadioGroup
       className="loom-thread-color-picker"
@@ -52,75 +65,75 @@ function ColorPicker({ value, onChange }: { value: ThreadColor; onChange: (color
         />
       ))}
     </RadioGroup>
-  )
+  );
 }
 
 export function LoomThreadManager({ threads, onClose, onChanged }: LoomThreadManagerProps) {
-  const formId = useId()
-  const [editingId, setEditingId] = useState<number | null>(null)
-  const [creating, setCreating] = useState(false)
-  const [form, setForm] = useState<ThreadFormState>(emptyForm())
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [pendingDelete, setPendingDelete] = useState<LoomThread | null>(null)
-  const [deleting, setDeleting] = useState(false)
+  const formId = useId();
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState<ThreadFormState>(emptyForm());
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<LoomThread | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const patch = (fields: Partial<ThreadFormState>) => setForm((prev) => ({ ...prev, ...fields }))
+  const patch = (fields: Partial<ThreadFormState>) => setForm((prev) => ({ ...prev, ...fields }));
 
   const startCreate = () => {
-    setEditingId(null)
-    setCreating(true)
-    setForm(emptyForm())
-    setError(null)
-  }
+    setEditingId(null);
+    setCreating(true);
+    setForm(emptyForm());
+    setError(null);
+  };
 
   const startEdit = (thread: LoomThread) => {
-    setCreating(false)
-    setEditingId(thread.id)
-    setForm(threadToForm(thread))
-    setError(null)
-  }
+    setCreating(false);
+    setEditingId(thread.id);
+    setForm(threadToForm(thread));
+    setError(null);
+  };
 
   const cancelForm = () => {
-    setCreating(false)
-    setEditingId(null)
-    setError(null)
-  }
+    setCreating(false);
+    setEditingId(null);
+    setError(null);
+  };
 
   const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault()
-    setSaving(true)
-    setError(null)
-    const payload = { name: form.name, color: form.color, description: form.description || null }
+    event.preventDefault();
+    setSaving(true);
+    setError(null);
+    const payload = { name: form.name, color: form.color, description: form.description || null };
     try {
       if (editingId != null) {
-        await updateLoomThread(editingId, payload)
+        await updateLoomThread(editingId, payload);
       } else {
-        await createLoomThread(payload)
+        await createLoomThread(payload);
       }
-      setCreating(false)
-      setEditingId(null)
-      onChanged()
+      setCreating(false);
+      setEditingId(null);
+      onChanged();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save the thread.')
+      setError(err instanceof Error ? err.message : "Failed to save the thread.");
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const confirmDelete = async () => {
-    if (!pendingDelete) return
-    setDeleting(true)
+    if (!pendingDelete) return;
+    setDeleting(true);
     try {
-      await deleteLoomThread(pendingDelete.id)
-      setPendingDelete(null)
-      onChanged()
+      await deleteLoomThread(pendingDelete.id);
+      setPendingDelete(null);
+      onChanged();
     } finally {
-      setDeleting(false)
+      setDeleting(false);
     }
-  }
+  };
 
-  const showForm = creating || editingId != null
+  const showForm = creating || editingId != null;
 
   return (
     <Dialog open title="Manage Threads" onClose={onClose} className="loom-thread-manager-dialog">
@@ -157,7 +170,12 @@ export function LoomThreadManager({ threads, onClose, onChanged }: LoomThreadMan
             </p>
           )}
           <form id={formId} onSubmit={handleSubmit} className="loom-thread-manager-form">
-            <TextField label="Name" value={form.name} onChange={(e) => patch({ name: e.target.value })} required />
+            <TextField
+              label="Name"
+              value={form.name}
+              onChange={(e) => patch({ name: e.target.value })}
+              required
+            />
             <ColorPicker value={form.color} onChange={(color) => patch({ color })} />
             <TextField
               label="Description"
@@ -170,7 +188,7 @@ export function LoomThreadManager({ threads, onClose, onChanged }: LoomThreadMan
                 Cancel
               </Button>
               <Button type="submit" loading={saving}>
-                {editingId != null ? 'Save Changes' : 'Create Thread'}
+                {editingId != null ? "Save Changes" : "Create Thread"}
               </Button>
             </div>
           </form>
@@ -190,5 +208,5 @@ export function LoomThreadManager({ threads, onClose, onChanged }: LoomThreadMan
         />
       )}
     </Dialog>
-  )
+  );
 }

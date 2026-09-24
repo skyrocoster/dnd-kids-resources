@@ -1,68 +1,70 @@
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
-import { BrowserLayout } from '../BrowserLayout'
-import { PageHeader } from '../PageHeader'
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
+import { BrowserLayout } from "../BrowserLayout";
+import { PageHeader } from "../PageHeader";
 
-describe('PageHeader', () => {
-  it('renders the title as an h1', () => {
-    render(<PageHeader title="Spells" />)
-    expect(screen.getByRole('heading', { level: 1, name: 'Spells' })).toBeInTheDocument()
-  })
+describe("PageHeader", () => {
+  it("renders the title as an h1", () => {
+    render(<PageHeader title="Spells" />);
+    expect(screen.getByRole("heading", { level: 1, name: "Spells" })).toBeInTheDocument();
+  });
 
-  it('renders an optional subtitle', () => {
-    render(<PageHeader title="Monsters" subtitle="Bestiary browser" />)
-    expect(screen.getByText('Bestiary browser')).toBeInTheDocument()
-  })
+  it("renders an optional subtitle", () => {
+    render(<PageHeader title="Monsters" subtitle="Bestiary browser" />);
+    expect(screen.getByText("Bestiary browser")).toBeInTheDocument();
+  });
 
   const tabs = [
-    { key: 'rooms', label: 'Rooms', icon: <span aria-hidden="true">🚪</span> },
-    { key: 'npcs', label: 'NPCs', icon: <span aria-hidden="true">🧙</span> },
-  ]
+    { key: "rooms", label: "Rooms", icon: <span aria-hidden="true">🚪</span> },
+    { key: "npcs", label: "NPCs", icon: <span aria-hidden="true">🧙</span> },
+  ];
 
   // VF1: chapter tabs render with icon and label
-  it('renders chapter tabs with icon and label', () => {
-    render(<PageHeader title="Dungeon" chapterTabs={tabs} />)
-    expect(screen.getByRole('tab', { name: 'Rooms' })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: 'NPCs' })).toBeInTheDocument()
-  })
+  it("renders chapter tabs with icon and label", () => {
+    render(<PageHeader title="Dungeon" chapterTabs={tabs} />);
+    expect(screen.getByRole("tab", { name: "Rooms" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "NPCs" })).toBeInTheDocument();
+  });
 
   // VF1: active tab receives aria-selected and active class
-  it('marks the active tab with aria-selected=true', () => {
-    render(<PageHeader title="Dungeon" chapterTabs={tabs} activeTab="npcs" />)
-    expect(screen.getByRole('tab', { name: 'Rooms' })).toHaveAttribute('aria-selected', 'false')
-    const activeTab = screen.getByRole('tab', { name: 'NPCs' })
-    expect(activeTab).toHaveAttribute('aria-selected', 'true')
-    expect(activeTab).toHaveClass('cmt-tabs__tab')
-  })
+  it("marks the active tab with aria-selected=true", () => {
+    render(<PageHeader title="Dungeon" chapterTabs={tabs} activeTab="npcs" />);
+    expect(screen.getByRole("tab", { name: "Rooms" })).toHaveAttribute("aria-selected", "false");
+    const activeTab = screen.getByRole("tab", { name: "NPCs" });
+    expect(activeTab).toHaveAttribute("aria-selected", "true");
+    expect(activeTab).toHaveClass("cmt-tabs__tab");
+  });
 
-  it('composes its chapter tabs with the matching tab panels', () => {
-    const { container } = render(<PageHeader title="Dungeon" chapterTabs={tabs} activeTab="rooms" />)
-    const tab = screen.getByRole('tab', { name: 'Rooms' })
-    const panel = document.getElementById(tab.getAttribute('aria-controls')!)
+  it("composes its chapter tabs with the matching tab panels", () => {
+    const { container } = render(
+      <PageHeader title="Dungeon" chapterTabs={tabs} activeTab="rooms" />,
+    );
+    const tab = screen.getByRole("tab", { name: "Rooms" });
+    const panel = document.getElementById(tab.getAttribute("aria-controls")!);
 
-    expect(screen.getByRole('tablist', { name: 'Content sections' })).toContainElement(tab)
-    expect(panel).toHaveAttribute('role', 'tabpanel')
-    expect(panel).toHaveAttribute('aria-labelledby', tab.id)
-    expect(container).toContainElement(panel)
-  })
+    expect(screen.getByRole("tablist", { name: "Content sections" })).toContainElement(tab);
+    expect(panel).toHaveAttribute("role", "tabpanel");
+    expect(panel).toHaveAttribute("aria-labelledby", tab.id);
+    expect(container).toContainElement(panel);
+  });
 
   // VF1: tab click calls onTabSelect with the tab key
-  it('calls onTabSelect when a tab is clicked', async () => {
-    const user = userEvent.setup()
-    const onTabSelect = vi.fn()
-    render(<PageHeader title="Dungeon" chapterTabs={tabs} onTabSelect={onTabSelect} />)
-    await user.click(screen.getByRole('tab', { name: 'NPCs' }))
-    expect(onTabSelect).toHaveBeenCalledWith('npcs')
-  })
+  it("calls onTabSelect when a tab is clicked", async () => {
+    const user = userEvent.setup();
+    const onTabSelect = vi.fn();
+    render(<PageHeader title="Dungeon" chapterTabs={tabs} onTabSelect={onTabSelect} />);
+    await user.click(screen.getByRole("tab", { name: "NPCs" }));
+    expect(onTabSelect).toHaveBeenCalledWith("npcs");
+  });
 
   // VF1: actions slot renders alongside the title
-  it('renders actions in the actions slot', () => {
-    render(<PageHeader title="Dungeon" actions={<button type="button">Edit</button>} />)
-    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
-  })
+  it("renders actions in the actions slot", () => {
+    render(<PageHeader title="Dungeon" actions={<button type="button">Edit</button>} />);
+    expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
+  });
 
-  it('keeps BrowserLayout chapter markers static instead of tabs', () => {
+  it("keeps BrowserLayout chapter markers static instead of tabs", () => {
     const { container } = render(
       <BrowserLayout
         title="Spells"
@@ -70,20 +72,20 @@ describe('PageHeader', () => {
         list={<div>Spell list</div>}
         detail={<div>Spell details</div>}
       />,
-    )
-    const marker = container.querySelector('.page-header-tab--static')
+    );
+    const marker = container.querySelector(".page-header-tab--static");
 
-    expect(screen.queryByRole('tab')).not.toBeInTheDocument()
-    expect(marker?.tagName).toBe('SPAN')
-    expect(marker).toHaveTextContent('Spells')
-  })
+    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+    expect(marker?.tagName).toBe("SPAN");
+    expect(marker).toHaveTextContent("Spells");
+  });
 
-  it('uses a wrapping intrinsic row so actions cannot overlay the title', async () => {
-    const { readFileSync } = await import('node:fs')
-    const { resolve } = await import('node:path')
-    const css = readFileSync(resolve(process.cwd(), 'src/components/PageHeader.css'), 'utf-8')
-    expect(css).toMatch(/\.page-header-main\s*\{[^}]*flex-wrap:\s*wrap;/s)
-    expect(css).toMatch(/\.page-header-titles\s*\{[^}]*flex:\s*1 1/s)
-    expect(css).toMatch(/\.page-header-actions\s*\{[^}]*flex-shrink:\s*0;/s)
-  })
-})
+  it("uses a wrapping intrinsic row so actions cannot overlay the title", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    const css = readFileSync(resolve(process.cwd(), "src/components/PageHeader.css"), "utf-8");
+    expect(css).toMatch(/\.page-header-main\s*\{[^}]*flex-wrap:\s*wrap;/s);
+    expect(css).toMatch(/\.page-header-titles\s*\{[^}]*flex:\s*1 1/s);
+    expect(css).toMatch(/\.page-header-actions\s*\{[^}]*flex-shrink:\s*0;/s);
+  });
+});

@@ -1,25 +1,25 @@
-import { Field as BaseField } from '@base-ui/react/field'
-import { Input } from '@base-ui/react/input'
-import { useId } from 'react'
-import type { InputHTMLAttributes, TextareaHTMLAttributes } from 'react'
-import './form.css'
+import { Field as BaseField } from "@base-ui/react/field";
+import { Input } from "@base-ui/react/input";
+import { useId } from "react";
+import type { InputHTMLAttributes, TextareaHTMLAttributes } from "react";
+import "./form.css";
 
-interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'id'> {
-  label: string
-  error?: string
-  multiline?: false
+interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "id"> {
+  label: string;
+  error?: string;
+  multiline?: false;
 }
 
-interface TextAreaFieldProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'id'> {
-  label: string
-  error?: string
-  multiline: true
+interface TextAreaFieldProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "id"> {
+  label: string;
+  error?: string;
+  multiline: true;
 }
 
 export function TextField(props: TextFieldProps | TextAreaFieldProps) {
-  const id = useId()
-  const errorId = `${id}-error`
-  const { label, error, multiline, ...rest } = props
+  const id = useId();
+  const errorId = `${id}-error`;
+  const { label, error, multiline, ...rest } = props;
 
   return (
     <BaseField.Root
@@ -54,5 +54,5 @@ export function TextField(props: TextFieldProps | TextAreaFieldProps) {
         </BaseField.Error>
       )}
     </BaseField.Root>
-  )
+  );
 }

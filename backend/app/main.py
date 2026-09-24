@@ -5,10 +5,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from .caching import invalidate_cache
+from .db import bind_db_path, get_db_path
 from .routers import (
     at_the_table,
-    encounters,
     dungeons,
+    encounters,
     fog,
     items,
     layouts,
@@ -22,11 +24,10 @@ from .routers import (
     spells,
     weapons,
 )
-from .caching import invalidate_cache
-from .db import bind_db_path, get_db_path
 from .schemas.errors import ApiErrorResponse
 
 FRONTEND_DIST = Path(__file__).parent.parent.parent / "frontend" / "dist"
+
 
 def create_app(database_path: Path | str | None = None) -> FastAPI:
     """Build the API application, optionally using an app-specific SQLite path."""

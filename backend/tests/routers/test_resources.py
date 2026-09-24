@@ -3,7 +3,6 @@
 import pytest
 
 import backend.app.db as db_module
-
 from backend.tests.conftest import db_failure_conn
 
 
@@ -26,7 +25,9 @@ def test_create_weapon_with_structured_fields(test_client):
         "property": ["H", "2H"],
         "attack": [{"type": "melee", "damage": "1d12", "damage_type": "slashing"}],
         "entries": ["A brutal two-handed axe."],
-        "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}.",
+        "quick_rules": (
+            "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}."
+        ),
     }
     response = test_client.post("/api/weapons", json=weapon)
     assert response.status_code == 201
@@ -181,7 +182,17 @@ def test_delete_dungeon(test_client):
 @pytest.mark.parametrize(
     ("resource", "payload"),
     [
-        ("weapons", {"name": "Fail", "rarity": "common", "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}."}),
+        (
+            "weapons",
+            {
+                "name": "Fail",
+                "rarity": "common",
+                "quick_rules": (
+                    "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage "
+                    "+{weapon_damage_bonus}."
+                ),
+            },
+        ),
         ("npcs", {"name": "Fail"}),
         ("encounters", {"title": "Fail", "creatures": []}),
         ("dungeons", {"title": "Fail", "data": {}}),
@@ -197,7 +208,13 @@ def test_create_db_failure(monkeypatch, test_client, resource, payload):
 def test_delete_db_failure(monkeypatch, test_client, resource):
     """DELETE maps DB failures to 400 on every resource."""
     seed = {
-        "weapons": {"name": "FailDelete", "rarity": "common", "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}."},
+        "weapons": {
+            "name": "FailDelete",
+            "rarity": "common",
+            "quick_rules": (
+                "Attack +{weapon_attack_bonus}, deal 1d8 slashing damage +{weapon_damage_bonus}."
+            ),
+        },
         "npcs": {"name": "FailDelete"},
         "encounters": {"title": "FailDelete", "creatures": []},
         "dungeons": {"title": "FailDelete", "data": {}},

@@ -9,79 +9,137 @@ import {
   SwordsIcon,
   UserIcon,
   type LucideIcon,
-} from '../../../components/icons'
+} from "../../../components/icons";
 
 export interface SelectOption {
-  value: string
-  label: string
+  value: string;
+  label: string;
 }
 
 export interface FieldSpec {
-  key: string
-  label: string
-  type: 'boolean' | 'number' | 'text' | 'select' | 'encounterPicker' | 'npcPicker' | 'destinationPicker' | 'lootBundlePicker'
-  options?: SelectOption[]
-  showWhen?: (values: Record<string, unknown>) => boolean
+  key: string;
+  label: string;
+  type:
+    | "boolean"
+    | "number"
+    | "text"
+    | "select"
+    | "encounterPicker"
+    | "npcPicker"
+    | "destinationPicker"
+    | "lootBundlePicker";
+  options?: SelectOption[];
+  showWhen?: (values: Record<string, unknown>) => boolean;
 }
 
 export interface FixtureTypeSpec {
-  fields: FieldSpec[]
-  defaultFlags: Record<string, unknown>
-  presentation?: Record<string, unknown>
+  fields: FieldSpec[];
+  defaultFlags: Record<string, unknown>;
+  presentation?: Record<string, unknown>;
 }
 
 export const PASSAGE_FIELDS: FieldSpec[] = [
-  { key: 'title', label: 'Title', type: 'text' },
-  { key: 'hidden', label: 'Hidden', type: 'boolean' },
-  { key: 'locked', label: 'Locked', type: 'boolean' },
-  { key: 'trapped', label: 'Trapped', type: 'boolean' },
-  { key: 'breakDc', label: 'Break DC', type: 'number', showWhen: (values) => values.locked === true },
-  { key: 'pickDc', label: 'Pick Lock DC', type: 'number', showWhen: (values) => values.locked === true },
-  { key: 'hiddenDc', label: 'Perception DC', type: 'number', showWhen: (values) => values.hidden === true },
-  { key: 'searchDc', label: 'Search DC', type: 'number', showWhen: (values) => values.hidden === true },
-  { key: 'note', label: 'Note', type: 'text' },
-]
+  { key: "title", label: "Title", type: "text" },
+  { key: "hidden", label: "Hidden", type: "boolean" },
+  { key: "locked", label: "Locked", type: "boolean" },
+  { key: "trapped", label: "Trapped", type: "boolean" },
+  {
+    key: "breakDc",
+    label: "Break DC",
+    type: "number",
+    showWhen: (values) => values.locked === true,
+  },
+  {
+    key: "pickDc",
+    label: "Pick Lock DC",
+    type: "number",
+    showWhen: (values) => values.locked === true,
+  },
+  {
+    key: "hiddenDc",
+    label: "Perception DC",
+    type: "number",
+    showWhen: (values) => values.hidden === true,
+  },
+  {
+    key: "searchDc",
+    label: "Search DC",
+    type: "number",
+    showWhen: (values) => values.hidden === true,
+  },
+  { key: "note", label: "Note", type: "text" },
+];
 
 export const PROP_KIND_OPTIONS: SelectOption[] = [
-  { value: 'chest', label: 'Chest' },
-  { value: 'table', label: 'Table' },
-  { value: 'mirror', label: 'Mirror' },
-  { value: 'barrel', label: 'Barrel' },
-  { value: 'statue', label: 'Statue' },
-  { value: 'window', label: 'Window' },
-  { value: 'encounter', label: 'Encounter' },
-  { value: 'npc', label: 'NPC' },
-  { value: 'other', label: 'Other' },
-]
+  { value: "chest", label: "Chest" },
+  { value: "table", label: "Table" },
+  { value: "mirror", label: "Mirror" },
+  { value: "barrel", label: "Barrel" },
+  { value: "statue", label: "Statue" },
+  { value: "window", label: "Window" },
+  { value: "encounter", label: "Encounter" },
+  { value: "npc", label: "NPC" },
+  { value: "other", label: "Other" },
+];
 
-const PROP_KINDS = PROP_KIND_OPTIONS.map((option) => option.value)
+const PROP_KINDS = PROP_KIND_OPTIONS.map((option) => option.value);
 
 const PROP_WALL_SIDE_OPTIONS: SelectOption[] = [
-  { value: 'Off', label: 'On the floor' },
-  { value: 'N', label: 'North wall' },
-  { value: 'S', label: 'South wall' },
-  { value: 'E', label: 'East wall' },
-  { value: 'W', label: 'West wall' },
-]
+  { value: "Off", label: "On the floor" },
+  { value: "N", label: "North wall" },
+  { value: "S", label: "South wall" },
+  { value: "E", label: "East wall" },
+  { value: "W", label: "West wall" },
+];
 
 export const PROP_FIELDS: FieldSpec[] = [
-  { key: 'title', label: 'Title', type: 'text' },
-  { key: 'kind', label: 'Kind', type: 'select', options: PROP_KIND_OPTIONS },
-  { key: 'side', label: 'Attach to wall', type: 'select', options: PROP_WALL_SIDE_OPTIONS },
-  { key: 'encounter_id', label: 'Encounter', type: 'encounterPicker', showWhen: (values) => values.kind === 'encounter' },
-  { key: 'npc_id', label: 'NPC', type: 'npcPicker', showWhen: (values) => values.kind === 'npc' },
-  { key: 'loot', label: 'Loot bundle', type: 'lootBundlePicker', showWhen: (values) => values.kind !== 'encounter' && values.kind !== 'npc' },
-  { key: 'hidden', label: 'Hidden', type: 'boolean' },
-  { key: 'locked', label: 'Locked', type: 'boolean' },
-  { key: 'trapped', label: 'Trapped', type: 'boolean' },
-  { key: 'breakDc', label: 'Break DC', type: 'number', showWhen: (values) => values.locked === true },
-  { key: 'pickDc', label: 'Pick Lock DC', type: 'number', showWhen: (values) => values.locked === true },
-  { key: 'hiddenDc', label: 'Perception DC', type: 'number', showWhen: (values) => values.hidden === true },
-  { key: 'searchDc', label: 'Search DC', type: 'number', showWhen: (values) => values.hidden === true },
-  { key: 'note', label: 'Note', type: 'text' },
-]
+  { key: "title", label: "Title", type: "text" },
+  { key: "kind", label: "Kind", type: "select", options: PROP_KIND_OPTIONS },
+  { key: "side", label: "Attach to wall", type: "select", options: PROP_WALL_SIDE_OPTIONS },
+  {
+    key: "encounter_id",
+    label: "Encounter",
+    type: "encounterPicker",
+    showWhen: (values) => values.kind === "encounter",
+  },
+  { key: "npc_id", label: "NPC", type: "npcPicker", showWhen: (values) => values.kind === "npc" },
+  {
+    key: "loot",
+    label: "Loot bundle",
+    type: "lootBundlePicker",
+    showWhen: (values) => values.kind !== "encounter" && values.kind !== "npc",
+  },
+  { key: "hidden", label: "Hidden", type: "boolean" },
+  { key: "locked", label: "Locked", type: "boolean" },
+  { key: "trapped", label: "Trapped", type: "boolean" },
+  {
+    key: "breakDc",
+    label: "Break DC",
+    type: "number",
+    showWhen: (values) => values.locked === true,
+  },
+  {
+    key: "pickDc",
+    label: "Pick Lock DC",
+    type: "number",
+    showWhen: (values) => values.locked === true,
+  },
+  {
+    key: "hiddenDc",
+    label: "Perception DC",
+    type: "number",
+    showWhen: (values) => values.hidden === true,
+  },
+  {
+    key: "searchDc",
+    label: "Search DC",
+    type: "number",
+    showWhen: (values) => values.hidden === true,
+  },
+  { key: "note", label: "Note", type: "text" },
+];
 
-export type PropKind = typeof PROP_KINDS[number]
+export type PropKind = (typeof PROP_KINDS)[number];
 
 export const PROP_KIND_ICONS: Record<PropKind, LucideIcon> = {
   chest: PropChestIcon,
@@ -93,42 +151,82 @@ export const PROP_KIND_ICONS: Record<PropKind, LucideIcon> = {
   encounter: SwordsIcon,
   npc: UserIcon,
   other: PropIcon,
-}
+};
 
 /** Stair field definitions — PassageFlags only. Destination isn't a generic field: stairs always
  * cross to the adjacent floor at the same [x, y], so it's the bespoke up/down checkbox pair
  * rendered directly in the stair inspector (Phase I), not a `destinationPicker`. */
 export const STAIR_FIELDS: FieldSpec[] = [
-  { key: 'title', label: 'Title', type: 'text' },
-  { key: 'hidden', label: 'Hidden', type: 'boolean' },
-  { key: 'locked', label: 'Locked', type: 'boolean' },
-  { key: 'trapped', label: 'Trapped', type: 'boolean' },
-  { key: 'breakDc', label: 'Break DC', type: 'number', showWhen: (values) => values.locked === true },
-  { key: 'pickDc', label: 'Pick Lock DC', type: 'number', showWhen: (values) => values.locked === true },
-  { key: 'hiddenDc', label: 'Perception DC', type: 'number', showWhen: (values) => values.hidden === true },
-  { key: 'searchDc', label: 'Search DC', type: 'number', showWhen: (values) => values.hidden === true },
-  { key: 'note', label: 'Note', type: 'text' },
-]
+  { key: "title", label: "Title", type: "text" },
+  { key: "hidden", label: "Hidden", type: "boolean" },
+  { key: "locked", label: "Locked", type: "boolean" },
+  { key: "trapped", label: "Trapped", type: "boolean" },
+  {
+    key: "breakDc",
+    label: "Break DC",
+    type: "number",
+    showWhen: (values) => values.locked === true,
+  },
+  {
+    key: "pickDc",
+    label: "Pick Lock DC",
+    type: "number",
+    showWhen: (values) => values.locked === true,
+  },
+  {
+    key: "hiddenDc",
+    label: "Perception DC",
+    type: "number",
+    showWhen: (values) => values.hidden === true,
+  },
+  {
+    key: "searchDc",
+    label: "Search DC",
+    type: "number",
+    showWhen: (values) => values.hidden === true,
+  },
+  { key: "note", label: "Note", type: "text" },
+];
 
 /** Portal field definitions — PassageFlags + destination picker (Phase H) */
 export const PORTAL_FIELDS: FieldSpec[] = [
-  { key: 'title', label: 'Title', type: 'text' },
-  { key: 'to', label: 'Destination', type: 'destinationPicker' },
-  { key: 'hidden', label: 'Hidden', type: 'boolean' },
-  { key: 'locked', label: 'Locked', type: 'boolean' },
-  { key: 'trapped', label: 'Trapped', type: 'boolean' },
-  { key: 'breakDc', label: 'Break DC', type: 'number', showWhen: (values) => values.locked === true },
-  { key: 'pickDc', label: 'Pick Lock DC', type: 'number', showWhen: (values) => values.locked === true },
-  { key: 'hiddenDc', label: 'Perception DC', type: 'number', showWhen: (values) => values.hidden === true },
-  { key: 'searchDc', label: 'Search DC', type: 'number', showWhen: (values) => values.hidden === true },
-  { key: 'note', label: 'Note', type: 'text' },
-]
+  { key: "title", label: "Title", type: "text" },
+  { key: "to", label: "Destination", type: "destinationPicker" },
+  { key: "hidden", label: "Hidden", type: "boolean" },
+  { key: "locked", label: "Locked", type: "boolean" },
+  { key: "trapped", label: "Trapped", type: "boolean" },
+  {
+    key: "breakDc",
+    label: "Break DC",
+    type: "number",
+    showWhen: (values) => values.locked === true,
+  },
+  {
+    key: "pickDc",
+    label: "Pick Lock DC",
+    type: "number",
+    showWhen: (values) => values.locked === true,
+  },
+  {
+    key: "hiddenDc",
+    label: "Perception DC",
+    type: "number",
+    showWhen: (values) => values.hidden === true,
+  },
+  {
+    key: "searchDc",
+    label: "Search DC",
+    type: "number",
+    showWhen: (values) => values.hidden === true,
+  },
+  { key: "note", label: "Note", type: "text" },
+];
 
 export const FIXTURE_TYPES: Record<string, FixtureTypeSpec> = {
   door: {
     fields: PASSAGE_FIELDS,
     defaultFlags: {
-      title: '',
+      title: "",
       hidden: false,
       locked: false,
       trapped: false,
@@ -138,9 +236,9 @@ export const FIXTURE_TYPES: Record<string, FixtureTypeSpec> = {
     fields: PROP_FIELDS,
     defaultFlags: {
       prop_id: 0,
-      kind: 'chest',
+      kind: "chest",
       cell: [0, 0],
-      title: '',
+      title: "",
       hidden: false,
       locked: false,
       trapped: false,
@@ -150,9 +248,9 @@ export const FIXTURE_TYPES: Record<string, FixtureTypeSpec> = {
     fields: PROP_FIELDS,
     defaultFlags: {
       prop_id: 0,
-      kind: 'encounter',
+      kind: "encounter",
       cell: [0, 0],
-      title: '',
+      title: "",
       hidden: false,
       locked: false,
       trapped: false,
@@ -163,9 +261,9 @@ export const FIXTURE_TYPES: Record<string, FixtureTypeSpec> = {
     fields: PROP_FIELDS,
     defaultFlags: {
       prop_id: 0,
-      kind: 'npc',
+      kind: "npc",
       cell: [0, 0],
-      title: '',
+      title: "",
       hidden: false,
       locked: false,
       trapped: false,
@@ -175,7 +273,7 @@ export const FIXTURE_TYPES: Record<string, FixtureTypeSpec> = {
   stair: {
     fields: STAIR_FIELDS,
     defaultFlags: {
-      title: '',
+      title: "",
       hidden: false,
       locked: false,
       trapped: false,
@@ -184,10 +282,10 @@ export const FIXTURE_TYPES: Record<string, FixtureTypeSpec> = {
   portal: {
     fields: PORTAL_FIELDS,
     defaultFlags: {
-      title: '',
+      title: "",
       hidden: false,
       locked: false,
       trapped: false,
     },
   },
-}
+};

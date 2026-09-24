@@ -1,58 +1,60 @@
-import { useEffect, useMemo, useState } from 'react'
-import { listNPCs } from '../../../api/client'
-import type { NPC } from '../../../api/types'
-import { DiceText } from '../../../components/DiceText'
-import { SelectField } from '../../../components/form/SelectField'
-import { TextField } from '../../../components/form/TextField'
-import { NpcChip } from '../../npcs/NpcChip'
-import { groupEntriesByType, type DungeonEntry, type DungeonRoom } from '../dungeonModel'
-import { InspectorPanel } from './InspectorPanel'
-import type { MapRoom } from '../../../model/maplabModel'
-import { WALL_KIND_OPTIONS } from './wallKinds'
+import { useEffect, useMemo, useState } from "react";
+import { listNPCs } from "../../../api/client";
+import type { NPC } from "../../../api/types";
+import { Button } from "../../../components/Button";
+import { DiceText } from "../../../components/DiceText";
+import { CheckboxField } from "../../../components/form/CheckboxField";
+import { SelectField } from "../../../components/form/SelectField";
+import { TextField } from "../../../components/form/TextField";
+import { NpcChip } from "../../npcs/NpcChip";
+import { groupEntriesByType, type DungeonEntry, type DungeonRoom } from "../dungeonModel";
+import { InspectorPanel } from "./InspectorPanel";
+import type { MapRoom } from "../../../model/maplabModel";
+import { WALL_KIND_OPTIONS } from "./wallKinds";
 
 interface RoomContentEditorProps {
-  room: MapRoom
-  dungeonRoom: DungeonRoom | null
-  onUpdateRoomTitle: (roomId: number, title: string) => void
-  onUpdateRoomWallKind: (roomId: number, wallKind: string) => void
-  onUpdateRoomEntries: (roomId: number, entries: DungeonEntry[] | null | undefined) => void
-  onUpdateRoomNpcs: (roomId: number, npcs: number[]) => void
-  onCreateRoomData: (roomId: number) => void
+  room: MapRoom;
+  dungeonRoom: DungeonRoom | null;
+  onUpdateRoomTitle: (roomId: number, title: string) => void;
+  onUpdateRoomWallKind: (roomId: number, wallKind: string) => void;
+  onUpdateRoomEntries: (roomId: number, entries: DungeonEntry[] | null | undefined) => void;
+  onUpdateRoomNpcs: (roomId: number, npcs: number[]) => void;
+  onCreateRoomData: (roomId: number) => void;
 }
 
 const ENTRY_TYPES = [
-  'feature',
-  'encounter',
-  'monster',
-  'trap',
-  'treasure',
-  'npc',
-  'trick',
-  'door',
-] as const
+  "feature",
+  "encounter",
+  "monster",
+  "trap",
+  "treasure",
+  "npc",
+  "trick",
+  "door",
+] as const;
 
 function emptyEntry(): DungeonEntry {
-  return { entry_type: 'feature', title: '', content: '' }
+  return { entry_type: "feature", title: "", content: "" };
 }
 
 function entryLabel(entryType: string): string {
   switch (entryType) {
-    case 'door':
-      return 'Door'
-    case 'encounter':
-      return 'Encounter'
-    case 'monster':
-      return 'Monster'
-    case 'npc':
-      return 'NPC'
-    case 'trap':
-      return 'Trap'
-    case 'treasure':
-      return 'Treasure'
-    case 'trick':
-      return 'Trick'
+    case "door":
+      return "Door";
+    case "encounter":
+      return "Encounter";
+    case "monster":
+      return "Monster";
+    case "npc":
+      return "NPC";
+    case "trap":
+      return "Trap";
+    case "treasure":
+      return "Treasure";
+    case "trick":
+      return "Trick";
     default:
-      return 'Feature'
+      return "Feature";
   }
 }
 
@@ -65,43 +67,43 @@ export function RoomContentEditor({
   onUpdateRoomNpcs,
   onCreateRoomData,
 }: RoomContentEditorProps) {
-  const [npcs, setNpcs] = useState<NPC[]>([])
-  const [editingNpcs, setEditingNpcs] = useState(false)
-  const [entryDraft, setEntryDraft] = useState<DungeonEntry>(emptyEntry())
-  const [editingEntries, setEditingEntries] = useState(false)
-  const [selectedNpcIds, setSelectedNpcIds] = useState<number[]>(dungeonRoom?.npcs ?? [])
+  const [npcs, setNpcs] = useState<NPC[]>([]);
+  const [editingNpcs, setEditingNpcs] = useState(false);
+  const [entryDraft, setEntryDraft] = useState<DungeonEntry>(emptyEntry());
+  const [editingEntries, setEditingEntries] = useState(false);
+  const [selectedNpcIds, setSelectedNpcIds] = useState<number[]>(dungeonRoom?.npcs ?? []);
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
     listNPCs()
       .then((result) => {
-        if (!cancelled) setNpcs(result)
+        if (!cancelled) setNpcs(result);
       })
       .catch(() => {
-        if (!cancelled) setNpcs([])
-      })
+        if (!cancelled) setNpcs([]);
+      });
 
     return () => {
-      cancelled = true
-    }
-  }, [])
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
-    setSelectedNpcIds(dungeonRoom?.npcs ?? [])
-    setEditingNpcs(false)
-    setEditingEntries(false)
-    setEntryDraft(emptyEntry())
-  }, [room.room_id, dungeonRoom?.npcs])
+    setSelectedNpcIds(dungeonRoom?.npcs ?? []);
+    setEditingNpcs(false);
+    setEditingEntries(false);
+    setEntryDraft(emptyEntry());
+  }, [room.room_id, dungeonRoom?.npcs]);
 
-  const roster = useMemo(() => new Map(npcs.map((npc) => [npc.id, npc.name] as const)), [npcs])
-  const entryGroups = dungeonRoom ? groupEntriesByType(dungeonRoom) : []
-  const title = dungeonRoom?.title ?? room.title ?? ''
-  const description = room.description ?? 'No description'
-  const kind = room.kind ?? 'Unspecified'
+  const roster = useMemo(() => new Map(npcs.map((npc) => [npc.id, npc.name] as const)), [npcs]);
+  const entryGroups = dungeonRoom ? groupEntriesByType(dungeonRoom) : [];
+  const title = dungeonRoom?.title ?? room.title ?? "";
+  const description = room.description ?? "No description";
+  const kind = room.kind ?? "Unspecified";
 
   return (
     <section className="maplab-room-content-editor" aria-label="Room content editor">
-      <InspectorPanel target={{ kind: 'room', room }} />
+      <InspectorPanel target={{ kind: "room", room }} />
 
       <div className="maplab-fixture-form maplab-room-content-editor-form">
         <div className="maplab-field-row maplab-room-content-field">
@@ -117,7 +119,7 @@ export function RoomContentEditor({
           <SelectField
             label="Wall kind"
             options={WALL_KIND_OPTIONS}
-            value={room.wallKind ?? 'solid'}
+            value={room.wallKind ?? "solid"}
             onChange={(event) => onUpdateRoomWallKind(room.room_id, event.target.value)}
           />
         </div>
@@ -143,7 +145,7 @@ export function RoomContentEditor({
                   className="maplab-pill-button maplab-editor-toolbar-button"
                   onClick={() => setEditingNpcs((active) => !active)}
                 >
-                  {editingNpcs ? 'Done' : 'Edit NPCs'}
+                  {editingNpcs ? "Done" : "Edit NPCs"}
                 </button>
               </div>
               {(dungeonRoom.npcs ?? []).length > 0 ? (
@@ -156,25 +158,27 @@ export function RoomContentEditor({
                 <p className="maplab-room-content-muted">No NPCs assigned.</p>
               )}
               {editingNpcs && (
-                <div className="maplab-room-content-checkbox-list" role="group" aria-label="Edit NPCs">
+                <div
+                  className="maplab-room-content-checkbox-list"
+                  role="group"
+                  aria-label="Edit NPCs"
+                >
                   {npcs.map((npc) => {
-                    const checked = selectedNpcIds.includes(npc.id)
+                    const checked = selectedNpcIds.includes(npc.id);
                     return (
-                      <label key={npc.id} className="maplab-room-content-checkbox-row">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(event) => {
-                            const next = event.target.checked
-                              ? [...selectedNpcIds, npc.id]
-                              : selectedNpcIds.filter((id) => id !== npc.id)
-                            setSelectedNpcIds(next)
-                            onUpdateRoomNpcs(room.room_id, next)
-                          }}
-                        />
-                        <span>{npc.name}</span>
-                      </label>
-                    )
+                      <CheckboxField
+                        key={npc.id}
+                        label={npc.name}
+                        checked={checked}
+                        onChange={(event) => {
+                          const next = event.target.checked
+                            ? [...selectedNpcIds, npc.id]
+                            : selectedNpcIds.filter((id) => id !== npc.id);
+                          setSelectedNpcIds(next);
+                          onUpdateRoomNpcs(room.room_id, next);
+                        }}
+                      />
+                    );
                   })}
                 </div>
               )}
@@ -188,7 +192,7 @@ export function RoomContentEditor({
                   className="maplab-pill-button maplab-editor-toolbar-button"
                   onClick={() => setEditingEntries((active) => !active)}
                 >
-                  {editingEntries ? 'Close entry form' : 'Add entry'}
+                  {editingEntries ? "Close entry form" : "Add entry"}
                 </button>
               </div>
 
@@ -199,7 +203,10 @@ export function RoomContentEditor({
                       <h5 className="maplab-room-content-section-subtitle">{group.label}</h5>
                       <div className="maplab-room-content-entry-list">
                         {group.entries.map((entry, index) => (
-                          <article key={`${group.type}-${entry.title}-${index}`} className="maplab-room-content-entry-card">
+                          <article
+                            key={`${group.type}-${entry.title}-${index}`}
+                            className="maplab-room-content-entry-card"
+                          >
                             <header className="maplab-room-content-entry-card-header">
                               <strong>{entry.title || entryLabel(entry.entry_type)}</strong>
                               <span>{entry.entry_type}</span>
@@ -223,18 +230,23 @@ export function RoomContentEditor({
                 <form
                   className="maplab-room-content-entry-form"
                   onSubmit={(event) => {
-                    event.preventDefault()
-                    const nextEntries = [...(dungeonRoom.entries ?? []), entryDraft]
-                    onUpdateRoomEntries(room.room_id, nextEntries)
-                    setEntryDraft(emptyEntry())
+                    event.preventDefault();
+                    const nextEntries = [...(dungeonRoom.entries ?? []), entryDraft];
+                    onUpdateRoomEntries(room.room_id, nextEntries);
+                    setEntryDraft(emptyEntry());
                   }}
                 >
                   <div className="maplab-field-row maplab-room-content-field">
                     <SelectField
                       label="Type"
-                      options={ENTRY_TYPES.map((type) => ({ value: type, label: entryLabel(type) }))}
+                      options={ENTRY_TYPES.map((type) => ({
+                        value: type,
+                        label: entryLabel(type),
+                      }))}
                       value={entryDraft.entry_type}
-                      onChange={(event) => setEntryDraft((current) => ({ ...current, entry_type: event.target.value }))}
+                      onChange={(event) =>
+                        setEntryDraft((current) => ({ ...current, entry_type: event.target.value }))
+                      }
                     />
                   </div>
                   <div className="maplab-field-row maplab-room-content-field">
@@ -242,7 +254,9 @@ export function RoomContentEditor({
                       label="Title"
                       type="text"
                       value={entryDraft.title}
-                      onChange={(event) => setEntryDraft((current) => ({ ...current, title: event.target.value }))}
+                      onChange={(event) =>
+                        setEntryDraft((current) => ({ ...current, title: event.target.value }))
+                      }
                     />
                   </div>
                   <div className="maplab-room-content-textarea-row">
@@ -250,12 +264,14 @@ export function RoomContentEditor({
                       label="Content"
                       multiline
                       value={entryDraft.content}
-                      onChange={(event) => setEntryDraft((current) => ({ ...current, content: event.target.value }))}
+                      onChange={(event) =>
+                        setEntryDraft((current) => ({ ...current, content: event.target.value }))
+                      }
                     />
                   </div>
-                  <button type="submit" className="maplab-pill-button maplab-editor-toolbar-button">
+                  <Button type="submit" className="maplab-pill-button maplab-editor-toolbar-button">
                     Add entry
-                  </button>
+                  </Button>
                 </form>
               )}
             </section>
@@ -263,16 +279,16 @@ export function RoomContentEditor({
         ) : (
           <section className="maplab-room-content-section">
             <p className="maplab-room-content-muted">No content data.</p>
-            <button
+            <Button
               type="button"
               className="maplab-pill-button maplab-editor-toolbar-button"
               onClick={() => onCreateRoomData(room.room_id)}
             >
               Create room data
-            </button>
+            </Button>
           </section>
         )}
       </div>
     </section>
-  )
+  );
 }

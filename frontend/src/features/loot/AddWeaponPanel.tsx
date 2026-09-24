@@ -1,32 +1,41 @@
-import { useEffect, useState } from 'react'
-import * as api from '../../api/client'
-import type { Weapon } from '../../api/types'
-import { IconButton } from '../../components/IconButton'
-import { SearchList } from '../../components/SearchList'
-import { CloseIcon } from '../../components/icons'
-import { initialRemoteState, remoteError, remoteLoading, remoteSuccess } from '../../components/remoteState'
-import type { RemoteState } from '../../components/remoteState'
-import './AddCatalogPanel.css'
+import { useEffect, useState } from "react";
+import * as api from "../../api/client";
+import type { Weapon } from "../../api/types";
+import { IconButton } from "../../components/IconButton";
+import { SearchList } from "../../components/SearchList";
+import { CloseIcon } from "../../components/icons";
+import {
+  initialRemoteState,
+  remoteError,
+  remoteLoading,
+  remoteSuccess,
+} from "../../components/remoteState";
+import type { RemoteState } from "../../components/remoteState";
+import "./AddCatalogPanel.css";
 
 interface AddWeaponPanelProps {
-  onAdd: (weapon: Weapon) => void
-  onClose: () => void
+  onAdd: (weapon: Weapon) => void;
+  onClose: () => void;
 }
 
 export function AddWeaponPanel({ onAdd, onClose }: AddWeaponPanelProps) {
-  const [weaponsRemote, setWeaponsRemote] = useState<RemoteState<Weapon[]>>(initialRemoteState)
+  const [weaponsRemote, setWeaponsRemote] = useState<RemoteState<Weapon[]>>(initialRemoteState);
 
   useEffect(() => {
-    setWeaponsRemote(remoteLoading())
+    setWeaponsRemote(remoteLoading());
     api
       .listWeapons()
       .then((data) => {
-        setWeaponsRemote(remoteSuccess([...data].sort((a, b) => a.name.localeCompare(b.name))))
+        setWeaponsRemote(remoteSuccess([...data].sort((a, b) => a.name.localeCompare(b.name))));
       })
-      .catch((error) => setWeaponsRemote(remoteError(error instanceof Error ? error.message : 'Failed to load weapons.')))
-  }, [])
+      .catch((error) =>
+        setWeaponsRemote(
+          remoteError(error instanceof Error ? error.message : "Failed to load weapons."),
+        ),
+      );
+  }, []);
 
-  const weapons = weaponsRemote.status === 'success' ? weaponsRemote.data : []
+  const weapons = weaponsRemote.status === "success" ? weaponsRemote.data : [];
 
   return (
     <div className="add-catalog-panel">
@@ -45,8 +54,14 @@ export function AddWeaponPanel({ onAdd, onClose }: AddWeaponPanelProps) {
         variant="weapon"
         searchPlaceholder="Search weapons…"
         emptyMessage="No weapons found."
-        status={weaponsRemote.status === 'loading' || weaponsRemote.status === 'idle' ? 'loading' : weaponsRemote.status === 'error' ? 'error' : 'ready'}
+        status={
+          weaponsRemote.status === "loading" || weaponsRemote.status === "idle"
+            ? "loading"
+            : weaponsRemote.status === "error"
+              ? "error"
+              : "ready"
+        }
       />
     </div>
-  )
+  );
 }

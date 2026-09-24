@@ -6,8 +6,10 @@ This script creates the database tables with proper schema.
 It does NOT populate data - use seed_database.py for that.
 
 Workflow:
-  1. docker compose exec backend python -m backend.database.init_database  # Drops existing tables
-  2. docker compose exec backend python -m backend.database.seed_database  # Load seed data from JSON files
+  1. docker compose exec backend python -m backend.database.init_database
+     # Drops existing tables
+  2. docker compose exec backend python -m backend.database.seed_database
+     # Load seed data from JSON files
 """
 
 import sqlite3
@@ -22,13 +24,13 @@ def init_database(db_path: Path | None = None):
     conn = sqlite3.connect(str(db_path))
     cursor = conn.cursor()
 
-    print("="*60)
+    print("=" * 60)
     print("PHASE 1: DATABASE SCHEMA INITIALIZATION")
-    print("="*60)
-    
+    print("=" * 60)
+
     # Disable foreign key constraints temporarily to allow table drops
     cursor.execute("PRAGMA foreign_keys = OFF")
-    
+
     # Drop all existing tables in reverse dependency order
     print("\nCleaning up existing tables...")
     tables_to_drop = [
@@ -55,18 +57,18 @@ def init_database(db_path: Path | None = None):
         "loot_bundle",
         "items",
     ]
-    
+
     for table in tables_to_drop:
         try:
             cursor.execute(f"DROP TABLE IF EXISTS {table}")
         except Exception as e:
             print(f"  [INFO]  Could not drop {table}: {e}")
-    
+
     conn.commit()
-    
+
     # Re-enable foreign key constraints
     cursor.execute("PRAGMA foreign_keys = ON")
-    
+
     print("[OK] Cleaned up existing tables")
     print("\nCreating database schema...")
     print("  - Creating tables with new spell metadata fields (Option 1)...")
@@ -191,7 +193,6 @@ def init_database(db_path: Path | None = None):
         )
     """)
 
-
     # Create monsters table using the M2 authorable target projection
     cursor.execute("""
         CREATE TABLE monsters (
@@ -294,12 +295,8 @@ def init_database(db_path: Path | None = None):
         )
     """)
 
-    cursor.execute(
-        "CREATE INDEX IF NOT EXISTS idx_monsters_cr ON monsters(cr)"
-    )
-    cursor.execute(
-        "CREATE INDEX IF NOT EXISTS idx_monsters_cr_sort ON monsters(cr_sort)"
-    )
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_monsters_cr ON monsters(cr)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_monsters_cr_sort ON monsters(cr_sort)")
 
     # Runtime-created dungeon content; no dungeon seeds are loaded on rebuild.
     cursor.execute("""
@@ -475,21 +472,25 @@ def init_database(db_path: Path | None = None):
     print(f"   Size: {db_path.stat().st_size / 1024:.1f} KB")
     print("\nV3 SCHEMA - 18 tables:")
     print("  [OK] abilities, damage_types, weapon_properties, weapons")
-    print("  [OK] spells (18 canonical fields + created_at: name, level, school, description, etc.)")
+    print(
+        "  [OK] spells (18 canonical fields + created_at: name, level, school, description, etc.)"
+    )
     print("  [OK] conditions, monsters, npcs, encounter")
     print("  [OK] items, loot_bundle")
     print("  [OK] dungeons (id, title, data JSON for structured hand-authored dungeons)")
     print("  [OK] players, player_spells, player_weapons")
-    print("  [OK] loom_sessions (ordinal), loom_threads (origin_node_id), loom_nodes (thread/session/position, provenance)")
-    print("\n" + "="*60)
+    print(
+        "  [OK] loom_sessions (ordinal), loom_threads (origin_node_id), "
+        "loom_nodes (thread/session/position, provenance)"
+    )
+    print("\n" + "=" * 60)
     print("NEXT STEP: Run seed_database.py to populate data")
-    print("="*60)
+    print("=" * 60)
     print("\nUsage:")
     print("  python -m backend.database.seed_database              # Load all seed data")
     print("  python -m backend.database.seed_database --spells     # Load only spells")
     print("  python -m backend.database.seed_database --force      # Reload (clear existing data)")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     init_database()
-

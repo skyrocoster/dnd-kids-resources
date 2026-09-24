@@ -8,9 +8,7 @@
   "paths": {
     "/api/abilities": {
       "get": {
-        "tags": [
-          "reference"
-        ],
+        "tags": ["reference"],
         "summary": "Get Abilities",
         "description": "Get the six ability scores (Strength, Dexterity, etc.).",
         "operationId": "getAbilities",
@@ -34,9 +32,7 @@
     },
     "/api/conditions": {
       "get": {
-        "tags": [
-          "reference"
-        ],
+        "tags": ["reference"],
         "summary": "Get Conditions",
         "description": "Get all conditions (Poisoned, Charmed, etc.).",
         "operationId": "getConditions",
@@ -60,9 +56,7 @@
     },
     "/api/damage_types": {
       "get": {
-        "tags": [
-          "reference"
-        ],
+        "tags": ["reference"],
         "summary": "Get Damage Types",
         "description": "Get all damage types (Fire, Cold, Poison, etc.).",
         "operationId": "getDamageTypes",
@@ -86,9 +80,7 @@
     },
     "/api/weapon_properties": {
       "get": {
-        "tags": [
-          "reference"
-        ],
+        "tags": ["reference"],
         "summary": "Get Weapon Properties",
         "description": "Get all weapon properties (Finesse, Versatile, etc.).",
         "operationId": "getWeaponProperties",
@@ -112,9 +104,7 @@
     },
     "/api/skills": {
       "get": {
-        "tags": [
-          "reference"
-        ],
+        "tags": ["reference"],
         "summary": "Get Skills",
         "description": "Get all skills mapped to abilities.",
         "operationId": "getSkills",
@@ -138,9 +128,7 @@
     },
     "/api/spell-components": {
       "get": {
-        "tags": [
-          "reference"
-        ],
+        "tags": ["reference"],
         "summary": "Get Spell Components",
         "description": "Get all spell component types (V, S, M).",
         "operationId": "getSpellComponents",
@@ -164,9 +152,7 @@
     },
     "/api/spells": {
       "get": {
-        "tags": [
-          "spells"
-        ],
+        "tags": ["spells"],
         "summary": "List Spells",
         "description": "List all spells with optional filtering.",
         "operationId": "listSpells",
@@ -259,9 +245,7 @@
         }
       },
       "post": {
-        "tags": [
-          "spells"
-        ],
+        "tags": ["spells"],
         "summary": "Create Spell",
         "description": "Create a new spell.",
         "operationId": "createSpell",
@@ -311,9 +295,7 @@
     },
     "/api/spells/{spell_id}/players": {
       "get": {
-        "tags": [
-          "spells"
-        ],
+        "tags": ["spells"],
         "summary": "Get Spell Players",
         "description": "Get all players assigned to a spell.",
         "operationId": "getSpellPlayers",
@@ -366,9 +348,7 @@
         }
       },
       "put": {
-        "tags": [
-          "spells"
-        ],
+        "tags": ["spells"],
         "summary": "Replace Spell Players",
         "description": "Replace all player assignments for a spell.",
         "operationId": "replaceSpellPlayers",
@@ -443,9 +423,7 @@
     },
     "/api/spells/{spell_id}": {
       "get": {
-        "tags": [
-          "spells"
-        ],
+        "tags": ["spells"],
         "summary": "Get Spell",
         "description": "Get a specific spell by ID.",
         "operationId": "getSpell",
@@ -494,9 +472,7 @@
         }
       },
       "put": {
-        "tags": [
-          "spells"
-        ],
+        "tags": ["spells"],
         "summary": "Update Spell",
         "description": "Update an existing spell.",
         "operationId": "updateSpell",
@@ -565,9 +541,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "spells"
-        ],
+        "tags": ["spells"],
         "summary": "Delete Spell",
         "description": "Delete a spell.",
         "operationId": "deleteSpell",
@@ -621,9 +595,7 @@
     },
     "/api/spells/by-title/{spell_name}": {
       "get": {
-        "tags": [
-          "spells"
-        ],
+        "tags": ["spells"],
         "summary": "Get Spell By Title",
         "description": "Get a specific spell by name.",
         "operationId": "getSpellByTitle",
@@ -674,9 +646,7 @@
     },
     "/api/monsters": {
       "get": {
-        "tags": [
-          "monsters"
-        ],
+        "tags": ["monsters"],
         "summary": "List Monsters",
         "description": "List all monsters.",
         "operationId": "listMonsters",
@@ -733,9 +703,7 @@
         }
       },
       "post": {
-        "tags": [
-          "monsters"
-        ],
+        "tags": ["monsters"],
         "summary": "Create Monster",
         "description": "Create a new monster.",
         "operationId": "createMonster",
@@ -805,9 +773,7 @@
     },
     "/api/monsters/{monster_id}": {
       "get": {
-        "tags": [
-          "monsters"
-        ],
+        "tags": ["monsters"],
         "summary": "Get Monster",
         "description": "Get a specific monster by ID.",
         "operationId": "getMonster",
@@ -846,9 +812,7 @@
         }
       },
       "put": {
-        "tags": [
-          "monsters"
-        ],
+        "tags": ["monsters"],
         "summary": "Update Monster",
         "description": "Update an existing monster.",
         "operationId": "updateMonster",
@@ -927,9 +891,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "monsters"
-        ],
+        "tags": ["monsters"],
         "summary": "Delete Monster",
         "description": "Delete a monster.",
         "operationId": "deleteMonster",
@@ -983,9 +945,7 @@
     },
     "/api/monsters/by-name/{name}": {
       "get": {
-        "tags": [
-          "monsters"
-        ],
+        "tags": ["monsters"],
         "summary": "Get Monster By Name",
         "description": "Get a specific monster by name.",
         "operationId": "getMonsterByName",
@@ -1036,9 +996,7 @@
     },
     "/api/weapons": {
       "get": {
-        "tags": [
-          "weapons"
-        ],
+        "tags": ["weapons"],
         "summary": "List Weapons",
         "description": "List all weapons.",
         "operationId": "listWeapons",
@@ -1095,9 +1053,7 @@
         }
       },
       "post": {
-        "tags": [
-          "weapons"
-        ],
+        "tags": ["weapons"],
         "summary": "Create Weapon",
         "description": "Create a new weapon.",
         "operationId": "createWeapon",
@@ -1147,9 +1103,7 @@
     },
     "/api/weapons/{weapon_id}": {
       "get": {
-        "tags": [
-          "weapons"
-        ],
+        "tags": ["weapons"],
         "summary": "Get Weapon",
         "description": "Get a specific weapon by ID.",
         "operationId": "getWeapon",
@@ -1198,9 +1152,7 @@
         }
       },
       "put": {
-        "tags": [
-          "weapons"
-        ],
+        "tags": ["weapons"],
         "summary": "Update Weapon",
         "description": "Update an existing weapon.",
         "operationId": "updateWeapon",
@@ -1269,9 +1221,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "weapons"
-        ],
+        "tags": ["weapons"],
         "summary": "Delete Weapon",
         "description": "Delete a weapon.",
         "operationId": "deleteWeapon",
@@ -1325,9 +1275,7 @@
     },
     "/api/weapons/by-name/{name}": {
       "get": {
-        "tags": [
-          "weapons"
-        ],
+        "tags": ["weapons"],
         "summary": "Get Weapon By Name",
         "description": "Get a specific weapon by name.",
         "operationId": "getWeaponByName",
@@ -1378,9 +1326,7 @@
     },
     "/api/weapons/{weapon_id}/players": {
       "get": {
-        "tags": [
-          "weapons"
-        ],
+        "tags": ["weapons"],
         "summary": "Get Weapon Players",
         "description": "List the players a weapon is assigned to.",
         "operationId": "getWeaponPlayers",
@@ -1435,9 +1381,7 @@
     },
     "/api/items": {
       "get": {
-        "tags": [
-          "items"
-        ],
+        "tags": ["items"],
         "summary": "List Items",
         "description": "List catalog items.",
         "operationId": "listItems",
@@ -1494,9 +1438,7 @@
         }
       },
       "post": {
-        "tags": [
-          "items"
-        ],
+        "tags": ["items"],
         "summary": "Create Item",
         "description": "Create a catalog item.",
         "operationId": "createItem",
@@ -1536,9 +1478,7 @@
     },
     "/api/items/{item_id}": {
       "get": {
-        "tags": [
-          "items"
-        ],
+        "tags": ["items"],
         "summary": "Get Item",
         "description": "Get a catalog item by ID.",
         "operationId": "getItem",
@@ -1587,9 +1527,7 @@
         }
       },
       "put": {
-        "tags": [
-          "items"
-        ],
+        "tags": ["items"],
         "summary": "Update Item",
         "description": "Update a catalog item.",
         "operationId": "updateItem",
@@ -1648,9 +1586,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "items"
-        ],
+        "tags": ["items"],
         "summary": "Delete Item",
         "description": "Delete a catalog item.",
         "operationId": "deleteItem",
@@ -1694,9 +1630,7 @@
     },
     "/api/loot-bundles": {
       "get": {
-        "tags": [
-          "loot"
-        ],
+        "tags": ["loot"],
         "summary": "List Loot Bundles",
         "description": "List loot bundles.",
         "operationId": "listLootBundles",
@@ -1753,9 +1687,7 @@
         }
       },
       "post": {
-        "tags": [
-          "loot"
-        ],
+        "tags": ["loot"],
         "summary": "Create Loot Bundle",
         "description": "Create a loot bundle.",
         "operationId": "createLootBundle",
@@ -1805,9 +1737,7 @@
     },
     "/api/loot-bundles/{bundle_id}": {
       "get": {
-        "tags": [
-          "loot"
-        ],
+        "tags": ["loot"],
         "summary": "Get Loot Bundle",
         "description": "Get a loot bundle by ID.",
         "operationId": "getLootBundle",
@@ -1856,9 +1786,7 @@
         }
       },
       "put": {
-        "tags": [
-          "loot"
-        ],
+        "tags": ["loot"],
         "summary": "Update Loot Bundle",
         "description": "Update a loot bundle.",
         "operationId": "updateLootBundle",
@@ -1927,9 +1855,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "loot"
-        ],
+        "tags": ["loot"],
         "summary": "Delete Loot Bundle",
         "description": "Delete a loot bundle.",
         "operationId": "deleteLootBundle",
@@ -1983,9 +1909,7 @@
     },
     "/api/players": {
       "get": {
-        "tags": [
-          "players"
-        ],
+        "tags": ["players"],
         "summary": "List Players",
         "description": "List all players.",
         "operationId": "listPlayers",
@@ -2042,9 +1966,7 @@
         }
       },
       "post": {
-        "tags": [
-          "players"
-        ],
+        "tags": ["players"],
         "summary": "Create Player",
         "description": "Create a new player.",
         "operationId": "createPlayer",
@@ -2104,9 +2026,7 @@
     },
     "/api/players/spellbook": {
       "get": {
-        "tags": [
-          "players"
-        ],
+        "tags": ["players"],
         "summary": "Get Player Spellbook",
         "description": "Get every player's assigned spells as a combined spellbook bootstrap.",
         "operationId": "getPlayerSpellbook",
@@ -2130,9 +2050,7 @@
     },
     "/api/players/{player_id}": {
       "get": {
-        "tags": [
-          "players"
-        ],
+        "tags": ["players"],
         "summary": "Get Player",
         "description": "Get a specific player by ID.",
         "operationId": "getPlayer",
@@ -2181,9 +2099,7 @@
         }
       },
       "put": {
-        "tags": [
-          "players"
-        ],
+        "tags": ["players"],
         "summary": "Update Player",
         "description": "Update an existing player.",
         "operationId": "updatePlayer",
@@ -2252,9 +2168,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "players"
-        ],
+        "tags": ["players"],
         "summary": "Delete Player",
         "description": "Delete a player.",
         "operationId": "deletePlayer",
@@ -2308,9 +2222,7 @@
     },
     "/api/players/{player_id}/spells": {
       "get": {
-        "tags": [
-          "players"
-        ],
+        "tags": ["players"],
         "summary": "Get Player Spells",
         "description": "Get all spells assigned to a player.",
         "operationId": "getPlayerSpells",
@@ -2363,9 +2275,7 @@
         }
       },
       "put": {
-        "tags": [
-          "players"
-        ],
+        "tags": ["players"],
         "summary": "Replace Player Spells",
         "description": "Replace all spell assignments for a player.",
         "operationId": "replacePlayerSpells",
@@ -2440,9 +2350,7 @@
     },
     "/api/players/{player_id}/spells/{spell_id}": {
       "post": {
-        "tags": [
-          "players"
-        ],
+        "tags": ["players"],
         "summary": "Add Spell To Player",
         "description": "Assign a spell to a player.",
         "operationId": "addSpellToPlayer",
@@ -2508,9 +2416,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "players"
-        ],
+        "tags": ["players"],
         "summary": "Remove Spell From Player",
         "description": "Remove a spell from a player.",
         "operationId": "removeSpellFromPlayer",
@@ -2573,9 +2479,7 @@
     },
     "/api/players/{player_id}/weapons": {
       "get": {
-        "tags": [
-          "players"
-        ],
+        "tags": ["players"],
         "summary": "Get Player Weapons",
         "description": "Get all weapons assigned to a player.",
         "operationId": "getPlayerWeapons",
@@ -2628,9 +2532,7 @@
         }
       },
       "put": {
-        "tags": [
-          "players"
-        ],
+        "tags": ["players"],
         "summary": "Replace Player Weapons",
         "description": "Replace all weapon assignments for a player.",
         "operationId": "replacePlayerWeapons",
@@ -2705,9 +2607,7 @@
     },
     "/api/players/{player_id}/detail": {
       "get": {
-        "tags": [
-          "players"
-        ],
+        "tags": ["players"],
         "summary": "Get Player Detail",
         "description": "Fetch complete player detail with spells and weapons.",
         "operationId": "getPlayerDetail",
@@ -2758,9 +2658,7 @@
     },
     "/api/players/{player_id}/weapons/{weapon_id}": {
       "post": {
-        "tags": [
-          "players"
-        ],
+        "tags": ["players"],
         "summary": "Add Weapon To Player",
         "description": "Assign a weapon to a player.",
         "operationId": "addWeaponToPlayer",
@@ -2826,9 +2724,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "players"
-        ],
+        "tags": ["players"],
         "summary": "Remove Weapon From Player",
         "description": "Remove a weapon from a player.",
         "operationId": "removeWeaponFromPlayer",
@@ -2891,9 +2787,7 @@
     },
     "/api/npcs": {
       "get": {
-        "tags": [
-          "npcs"
-        ],
+        "tags": ["npcs"],
         "summary": "List Npcs",
         "description": "List all NPCs.",
         "operationId": "listNpcs",
@@ -2950,9 +2844,7 @@
         }
       },
       "post": {
-        "tags": [
-          "npcs"
-        ],
+        "tags": ["npcs"],
         "summary": "Create Npc",
         "description": "Create a new NPC.",
         "operationId": "createNpc",
@@ -3012,9 +2904,7 @@
     },
     "/api/npcs/{npc_id}": {
       "get": {
-        "tags": [
-          "npcs"
-        ],
+        "tags": ["npcs"],
         "summary": "Get Npc",
         "description": "Get a specific NPC by ID.",
         "operationId": "getNpc",
@@ -3063,9 +2953,7 @@
         }
       },
       "put": {
-        "tags": [
-          "npcs"
-        ],
+        "tags": ["npcs"],
         "summary": "Update Npc",
         "description": "Update an existing NPC.",
         "operationId": "updateNpc",
@@ -3134,9 +3022,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "npcs"
-        ],
+        "tags": ["npcs"],
         "summary": "Delete Npc",
         "description": "Delete an NPC.",
         "operationId": "deleteNpc",
@@ -3190,9 +3076,7 @@
     },
     "/api/encounters": {
       "get": {
-        "tags": [
-          "encounters"
-        ],
+        "tags": ["encounters"],
         "summary": "List Encounters",
         "description": "List all encounters.",
         "operationId": "listEncounters",
@@ -3249,9 +3133,7 @@
         }
       },
       "post": {
-        "tags": [
-          "encounters"
-        ],
+        "tags": ["encounters"],
         "summary": "Create Encounter",
         "description": "Create a new encounter.",
         "operationId": "createEncounter",
@@ -3301,9 +3183,7 @@
     },
     "/api/encounters/{encounter_id}": {
       "get": {
-        "tags": [
-          "encounters"
-        ],
+        "tags": ["encounters"],
         "summary": "Get Encounter",
         "description": "Get a specific encounter by ID.",
         "operationId": "getEncounter",
@@ -3352,9 +3232,7 @@
         }
       },
       "put": {
-        "tags": [
-          "encounters"
-        ],
+        "tags": ["encounters"],
         "summary": "Update Encounter",
         "description": "Update an existing encounter.",
         "operationId": "updateEncounter",
@@ -3423,9 +3301,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "encounters"
-        ],
+        "tags": ["encounters"],
         "summary": "Delete Encounter",
         "description": "Delete an encounter.",
         "operationId": "deleteEncounter",
@@ -3479,9 +3355,7 @@
     },
     "/api/dungeons": {
       "get": {
-        "tags": [
-          "dungeons"
-        ],
+        "tags": ["dungeons"],
         "summary": "List Dungeons",
         "description": "List all dungeons.",
         "operationId": "listDungeons",
@@ -3538,9 +3412,7 @@
         }
       },
       "post": {
-        "tags": [
-          "dungeons"
-        ],
+        "tags": ["dungeons"],
         "summary": "Create Dungeon",
         "description": "Create a new dungeon.",
         "operationId": "createDungeon",
@@ -3590,9 +3462,7 @@
     },
     "/api/dungeons/{dungeon_id}": {
       "get": {
-        "tags": [
-          "dungeons"
-        ],
+        "tags": ["dungeons"],
         "summary": "Get Dungeon",
         "description": "Get a specific dungeon by ID.",
         "operationId": "getDungeon",
@@ -3641,9 +3511,7 @@
         }
       },
       "put": {
-        "tags": [
-          "dungeons"
-        ],
+        "tags": ["dungeons"],
         "summary": "Update Dungeon",
         "description": "Update an existing dungeon.",
         "operationId": "updateDungeon",
@@ -3712,9 +3580,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "dungeons"
-        ],
+        "tags": ["dungeons"],
         "summary": "Delete Dungeon",
         "description": "Delete a dungeon.",
         "operationId": "deleteDungeon",
@@ -3768,9 +3634,7 @@
     },
     "/api/dungeons/{dungeon_id}/layout": {
       "get": {
-        "tags": [
-          "layouts"
-        ],
+        "tags": ["layouts"],
         "summary": "Get Dungeon Layout",
         "description": "Get the layout for a dungeon (Map Lab editor stage)",
         "operationId": "getDungeonLayout",
@@ -3819,9 +3683,7 @@
         }
       },
       "put": {
-        "tags": [
-          "layouts"
-        ],
+        "tags": ["layouts"],
         "summary": "Save Dungeon Layout",
         "description": "Save/upsert the layout for a dungeon (Map Lab editor stage)",
         "operationId": "saveDungeonLayout",
@@ -3892,9 +3754,7 @@
     },
     "/api/dungeons/{dungeon_id}/incoming-gateways": {
       "get": {
-        "tags": [
-          "layouts"
-        ],
+        "tags": ["layouts"],
         "summary": "Get Incoming Gateways",
         "description": "List every portal in every other dungeon's layout that links into this dungeon",
         "operationId": "getIncomingGateways",
@@ -3949,9 +3809,7 @@
     },
     "/api/dungeons/{dungeon_id}/session-state": {
       "get": {
-        "tags": [
-          "session_state"
-        ],
+        "tags": ["session_state"],
         "summary": "Get Dungeon Session State",
         "description": "Get the permanent door/stair/portal toggle state for a dungeon",
         "operationId": "getDungeonSessionState",
@@ -4000,9 +3858,7 @@
         }
       },
       "put": {
-        "tags": [
-          "session_state"
-        ],
+        "tags": ["session_state"],
         "summary": "Save Dungeon Session State",
         "description": "Save/upsert normalized runtime toggle state, or clear the row when nothing remains",
         "operationId": "saveDungeonSessionState",
@@ -4071,9 +3927,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "session_state"
-        ],
+        "tags": ["session_state"],
         "summary": "Reset Dungeon Session State",
         "description": "Reset a dungeon's toggle state to its authored defaults (removes the saved row, if any)",
         "operationId": "resetDungeonSessionState",
@@ -4107,9 +3961,7 @@
     },
     "/api/dungeons/{dungeon_id}/revealed-cells": {
       "get": {
-        "tags": [
-          "fog"
-        ],
+        "tags": ["fog"],
         "summary": "Get Revealed Cells",
         "description": "Get all revealed fog cells for a dungeon",
         "operationId": "getRevealedCells",
@@ -4148,9 +4000,7 @@
         }
       },
       "put": {
-        "tags": [
-          "fog"
-        ],
+        "tags": ["fog"],
         "summary": "Reveal Cells",
         "description": "Reveal fog cells (union write \u2014 cells can only be added, never removed)",
         "operationId": "revealCells",
@@ -4221,9 +4071,7 @@
     },
     "/api/at-the-table": {
       "get": {
-        "tags": [
-          "at_the_table"
-        ],
+        "tags": ["at_the_table"],
         "summary": "Get At The Table",
         "description": "Get the dungeon currently set as 'at the table'",
         "operationId": "getAtTheTable",
@@ -4241,9 +4089,7 @@
         }
       },
       "put": {
-        "tags": [
-          "at_the_table"
-        ],
+        "tags": ["at_the_table"],
         "summary": "Set At The Table",
         "description": "Set which dungeon is at the table",
         "operationId": "setAtTheTable",
@@ -4303,9 +4149,7 @@
     },
     "/api/loom/tapestry": {
       "get": {
-        "tags": [
-          "loom"
-        ],
+        "tags": ["loom"],
         "summary": "Get Tapestry",
         "description": "One-shot read: ordered sessions, threads, and thread-exclusive nodes.",
         "operationId": "getTapestry",
@@ -4325,9 +4169,7 @@
     },
     "/api/loom/sessions": {
       "get": {
-        "tags": [
-          "loom"
-        ],
+        "tags": ["loom"],
         "summary": "List Sessions",
         "description": "List logged sessions in campaign order.",
         "operationId": "listSessions",
@@ -4384,9 +4226,7 @@
         }
       },
       "post": {
-        "tags": [
-          "loom"
-        ],
+        "tags": ["loom"],
         "summary": "Create Session",
         "description": "Create a session column on the tapestry.",
         "operationId": "createSession",
@@ -4436,9 +4276,7 @@
     },
     "/api/loom/sessions/{session_id}": {
       "put": {
-        "tags": [
-          "loom"
-        ],
+        "tags": ["loom"],
         "summary": "Update Session",
         "description": "Update a session's title or date.",
         "operationId": "updateSession",
@@ -4507,9 +4345,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "loom"
-        ],
+        "tags": ["loom"],
         "summary": "Delete Session",
         "description": "Delete a session; 422 while any node still belongs to it.",
         "operationId": "deleteSession",
@@ -4571,9 +4407,7 @@
     },
     "/api/loom/sessions/log": {
       "post": {
-        "tags": [
-          "loom"
-        ],
+        "tags": ["loom"],
         "summary": "Log Session",
         "description": "Log a new session with per-thread outcomes in one transaction.",
         "operationId": "logSession",
@@ -4631,9 +4465,7 @@
     },
     "/api/loom/threads": {
       "get": {
-        "tags": [
-          "loom"
-        ],
+        "tags": ["loom"],
         "summary": "List Threads",
         "description": "List threads.",
         "operationId": "listThreads",
@@ -4690,9 +4522,7 @@
         }
       },
       "post": {
-        "tags": [
-          "loom"
-        ],
+        "tags": ["loom"],
         "summary": "Create Thread",
         "description": "Create a thread, plus its `start` (position 0) and `end` (position 10) nodes.",
         "operationId": "createThread",
@@ -4750,9 +4580,7 @@
     },
     "/api/loom/threads/{thread_id}": {
       "put": {
-        "tags": [
-          "loom"
-        ],
+        "tags": ["loom"],
         "summary": "Update Thread",
         "description": "Update a thread's name, colour, or description.",
         "operationId": "updateThread",
@@ -4821,9 +4649,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "loom"
-        ],
+        "tags": ["loom"],
         "summary": "Delete Thread",
         "description": "Delete a thread and its exclusive start/end/beat nodes; shared session nodes survive.",
         "operationId": "deleteThread",
@@ -4877,9 +4703,7 @@
     },
     "/api/loom/nodes": {
       "post": {
-        "tags": [
-          "loom"
-        ],
+        "tags": ["loom"],
         "summary": "Create Node",
         "description": "Create an unplaced `beat` or `session` node.",
         "operationId": "createNode",
@@ -4929,9 +4753,7 @@
     },
     "/api/loom/nodes/{node_id}": {
       "put": {
-        "tags": [
-          "loom"
-        ],
+        "tags": ["loom"],
         "summary": "Update Node",
         "description": "Update a node's title or body; kind is immutable except a fulfil undo.",
         "operationId": "updateNode",
@@ -5008,9 +4830,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "loom"
-        ],
+        "tags": ["loom"],
         "summary": "Delete Node",
         "description": "Delete a `beat` or `session` node; 422 on `start`/`end`.",
         "operationId": "deleteNode",
@@ -5072,9 +4892,7 @@
     },
     "/api/loom/nodes/{node_id}/fulfil": {
       "post": {
-        "tags": [
-          "loom"
-        ],
+        "tags": ["loom"],
         "summary": "Fulfil Beat",
         "description": "Convert a placed beat into a session in place.",
         "operationId": "fulfilBeat",
@@ -5143,9 +4961,7 @@
     },
     "/api/loom/nodes/{node_id}/bank": {
       "post": {
-        "tags": [
-          "loom"
-        ],
+        "tags": ["loom"],
         "summary": "Bank Beat",
         "description": "Unplace a beat, keeping it in the Beat Bank for later reuse.",
         "operationId": "bankBeat",
@@ -5214,9 +5030,7 @@
     },
     "/api/loom/threads/{thread_id}/items": {
       "post": {
-        "tags": [
-          "loom"
-        ],
+        "tags": ["loom"],
         "summary": "Add Thread Item",
         "description": "Place an existing beat or session node on a thread; also restores a banked beat.",
         "operationId": "addThreadItem",
@@ -5295,9 +5109,7 @@
     },
     "/api/loom/threads/{thread_id}/items/{node_id}": {
       "patch": {
-        "tags": [
-          "loom"
-        ],
+        "tags": ["loom"],
         "summary": "Reorder Thread Item",
         "description": "Move a placed node to a new position within its own thread.",
         "operationId": "reorderThreadItem",
@@ -5383,9 +5195,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "loom"
-        ],
+        "tags": ["loom"],
         "summary": "Remove Thread Item",
         "description": "Unplace a node from a thread without deleting it; 422 on `start`/`end`.",
         "operationId": "removeThreadItem",
@@ -5456,9 +5266,7 @@
     },
     "/api/loom/threads/{thread_id}/items/{node_id}/move": {
       "post": {
-        "tags": [
-          "loom"
-        ],
+        "tags": ["loom"],
         "summary": "Move Thread Item",
         "description": "Atomically move a placed node to another thread at a position.",
         "operationId": "moveThreadItem",
@@ -5574,11 +5382,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "code",
-          "name"
-        ],
+        "required": ["id", "code", "name"],
         "title": "Ability"
       },
       "AbilityScores": {
@@ -5681,9 +5485,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "value"
-        ],
+        "required": ["value"],
         "title": "ArmorClass"
       },
       "ArmorClassEntry": {
@@ -5706,19 +5508,14 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "value"
-        ],
+        "required": ["value"],
         "title": "ArmorClassEntry"
       },
       "AtTheTableError": {
         "properties": {
           "code": {
             "type": "string",
-            "enum": [
-              "dungeon_not_found",
-              "failed_to_set_at_the_table"
-            ],
+            "enum": ["dungeon_not_found", "failed_to_set_at_the_table"],
             "title": "Code"
           },
           "message": {
@@ -5727,10 +5524,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "AtTheTableError"
       },
       "AtTheTableResponse": {
@@ -5758,9 +5552,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "dungeon_id"
-        ],
+        "required": ["dungeon_id"],
         "title": "AtTheTableSet"
       },
       "Attack": {
@@ -5835,9 +5627,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "kind"
-        ],
+        "required": ["kind"],
         "title": "Attack"
       },
       "AttackDamage": {
@@ -5862,9 +5652,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "formula"
-        ],
+        "required": ["formula"],
         "title": "AttackDamage"
       },
       "Condition": {
@@ -5890,10 +5678,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "name"
-        ],
+        "required": ["id", "name"],
         "title": "Condition"
       },
       "CreatureType": {
@@ -5914,14 +5699,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": [
-                  "tiny",
-                  "small",
-                  "medium",
-                  "large",
-                  "huge",
-                  "gargantuan"
-                ]
+                "enum": ["tiny", "small", "medium", "large", "huge", "gargantuan"]
               },
               {
                 "type": "null"
@@ -5932,9 +5710,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "category"
-        ],
+        "required": ["category"],
         "title": "CreatureType"
       },
       "DamageModifier": {
@@ -5963,9 +5739,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "damage_type"
-        ],
+        "required": ["damage_type"],
         "title": "DamageModifier"
       },
       "DamageType": {
@@ -5995,11 +5769,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "code",
-          "name"
-        ],
+        "required": ["id", "code", "name"],
         "title": "DamageType"
       },
       "Dungeon": {
@@ -6019,11 +5789,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "title",
-          "data"
-        ],
+        "required": ["id", "title", "data"],
         "title": "Dungeon"
       },
       "DungeonCreate": {
@@ -6039,10 +5805,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "title",
-          "data"
-        ],
+        "required": ["title", "data"],
         "title": "DungeonCreate"
       },
       "DungeonError": {
@@ -6063,10 +5826,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "DungeonError"
       },
       "DungeonUpdate": {
@@ -6082,10 +5842,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "title",
-          "data"
-        ],
+        "required": ["title", "data"],
         "title": "DungeonUpdate"
       },
       "Encounter": {
@@ -6126,10 +5883,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "title"
-        ],
+        "required": ["id", "title"],
         "title": "Encounter"
       },
       "EncounterCreate": {
@@ -6166,9 +5920,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "title"
-        ],
+        "required": ["title"],
         "title": "EncounterCreate"
       },
       "EncounterError": {
@@ -6189,10 +5941,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "EncounterError"
       },
       "EncounterUpdate": {
@@ -6229,9 +5978,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "title"
-        ],
+        "required": ["title"],
         "title": "EncounterUpdate"
       },
       "FastAPIValidationError": {
@@ -6260,11 +6007,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
+        "required": ["loc", "msg", "type"],
         "title": "FastAPIValidationError"
       },
       "FastAPIValidationErrorResponse": {
@@ -6318,19 +6061,14 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "Feature"
       },
       "FogError": {
         "properties": {
           "code": {
             "type": "string",
-            "enum": [
-              "dungeon_not_found",
-              "failed_to_reveal_cells"
-            ],
+            "enum": ["dungeon_not_found", "failed_to_reveal_cells"],
             "title": "Code"
           },
           "message": {
@@ -6339,10 +6077,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "FogError"
       },
       "HTTPValidationError": {
@@ -6378,9 +6113,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "average"
-        ],
+        "required": ["average"],
         "title": "HitPoints"
       },
       "IncomingGateway": {
@@ -6421,13 +6154,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "dungeon_id",
-          "dungeon_title",
-          "portal_id",
-          "z",
-          "cell"
-        ],
+        "required": ["dungeon_id", "dungeon_title", "portal_id", "z", "cell"],
         "title": "IncomingGateway"
       },
       "Item": {
@@ -6469,10 +6196,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "name"
-        ],
+        "required": ["id", "name"],
         "title": "Item"
       },
       "ItemCreate": {
@@ -6510,9 +6234,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "ItemCreate"
       },
       "ItemError": {
@@ -6528,10 +6250,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "ItemError"
       },
       "ItemUpdate": {
@@ -6569,20 +6288,14 @@
           }
         },
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "ItemUpdate"
       },
       "LayoutError": {
         "properties": {
           "code": {
             "type": "string",
-            "enum": [
-              "layout_not_found",
-              "dungeon_not_found",
-              "failed_to_save_layout"
-            ],
+            "enum": ["layout_not_found", "dungeon_not_found", "failed_to_save_layout"],
             "title": "Code"
           },
           "message": {
@@ -6591,10 +6304,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "LayoutError"
       },
       "LoomError": {
@@ -6652,10 +6362,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "LoomError"
       },
       "LoomNode": {
@@ -6677,12 +6384,7 @@
           },
           "kind": {
             "type": "string",
-            "enum": [
-              "start",
-              "end",
-              "beat",
-              "session"
-            ],
+            "enum": ["start", "end", "beat", "session"],
             "title": "Kind"
           },
           "title": {
@@ -6754,13 +6456,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "kind",
-          "title",
-          "position",
-          "carried_count"
-        ],
+        "required": ["id", "kind", "title", "position", "carried_count"],
         "title": "LoomNode"
       },
       "LoomNodeCreate": {
@@ -6778,10 +6474,7 @@
           },
           "kind": {
             "type": "string",
-            "enum": [
-              "beat",
-              "session"
-            ],
+            "enum": ["beat", "session"],
             "title": "Kind"
           },
           "title": {
@@ -6822,10 +6515,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "kind",
-          "title"
-        ],
+        "required": ["kind", "title"],
         "title": "LoomNodeCreate"
       },
       "LoomNodeFulfil": {
@@ -6857,10 +6547,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "target_thread_id",
-          "position"
-        ],
+        "required": ["target_thread_id", "position"],
         "title": "LoomNodeMove"
       },
       "LoomNodeUpdate": {
@@ -6878,12 +6565,7 @@
           },
           "kind": {
             "type": "string",
-            "enum": [
-              "start",
-              "end",
-              "beat",
-              "session"
-            ],
+            "enum": ["start", "end", "beat", "session"],
             "title": "Kind"
           },
           "title": {
@@ -6924,10 +6606,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "kind",
-          "title"
-        ],
+        "required": ["kind", "title"],
         "title": "LoomNodeUpdate"
       },
       "LoomSession": {
@@ -6968,11 +6647,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "ordinal",
-          "name"
-        ],
+        "required": ["id", "ordinal", "name"],
         "title": "LoomSession"
       },
       "LoomSessionCreate": {
@@ -7009,10 +6684,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "ordinal",
-          "name"
-        ],
+        "required": ["ordinal", "name"],
         "title": "LoomSessionCreate"
       },
       "LoomSessionLogRequest": {
@@ -7056,11 +6728,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "ordinal",
-          "name",
-          "outcomes"
-        ],
+        "required": ["ordinal", "name", "outcomes"],
         "title": "LoomSessionLogRequest"
       },
       "LoomSessionUpdate": {
@@ -7097,10 +6765,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "ordinal",
-          "name"
-        ],
+        "required": ["ordinal", "name"],
         "title": "LoomSessionUpdate"
       },
       "LoomTapestry": {
@@ -7128,11 +6793,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "sessions",
-          "threads",
-          "nodes"
-        ],
+        "required": ["sessions", "threads", "nodes"],
         "title": "LoomTapestry"
       },
       "LoomTapestryThread": {
@@ -7174,11 +6835,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "color"
-        ],
+        "required": ["id", "name", "color"],
         "title": "LoomTapestryThread"
       },
       "LoomThread": {
@@ -7220,11 +6877,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "color"
-        ],
+        "required": ["id", "name", "color"],
         "title": "LoomThread"
       },
       "LoomThreadCreate": {
@@ -7285,9 +6938,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "LoomThreadCreate"
       },
       "LoomThreadItemCreate": {
@@ -7302,10 +6953,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "node_id",
-          "position"
-        ],
+        "required": ["node_id", "position"],
         "title": "LoomThreadItemCreate"
       },
       "LoomThreadItemPositionUpdate": {
@@ -7316,9 +6964,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "position"
-        ],
+        "required": ["position"],
         "title": "LoomThreadItemPositionUpdate"
       },
       "LoomThreadMoveResult": {
@@ -7331,24 +6977,14 @@
           }
         },
         "type": "object",
-        "required": [
-          "source",
-          "target"
-        ],
+        "required": ["source", "target"],
         "title": "LoomThreadMoveResult"
       },
       "LoomThreadOutcome": {
         "properties": {
           "outcome": {
             "type": "string",
-            "enum": [
-              "happened",
-              "fulfilled",
-              "not_reached",
-              "carried",
-              "banked",
-              "quiet"
-            ],
+            "enum": ["happened", "fulfilled", "not_reached", "carried", "banked", "quiet"],
             "title": "Outcome"
           },
           "title": {
@@ -7364,9 +7000,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "outcome"
-        ],
+        "required": ["outcome"],
         "title": "LoomThreadOutcome"
       },
       "LoomThreadUpdate": {
@@ -7394,9 +7028,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "LoomThreadUpdate"
       },
       "LootBundle": {
@@ -7431,10 +7063,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "name"
-        ],
+        "required": ["id", "name"],
         "title": "LootBundle"
       },
       "LootBundleCreate": {
@@ -7465,9 +7094,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "LootBundleCreate"
       },
       "LootBundleUpdate": {
@@ -7498,9 +7125,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "LootBundleUpdate"
       },
       "LootError": {
@@ -7521,10 +7146,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "LootError"
       },
       "MapLayoutBlob": {
@@ -7536,9 +7158,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "MapLayoutBlob"
       },
       "MapSessionStateBlob": {
@@ -7550,9 +7170,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "MapSessionStateBlob"
       },
       "Monster": {
@@ -7572,14 +7190,7 @@
           "sizes": {
             "items": {
               "type": "string",
-              "enum": [
-                "tiny",
-                "small",
-                "medium",
-                "large",
-                "huge",
-                "gargantuan"
-              ]
+              "enum": ["tiny", "small", "medium", "large", "huge", "gargantuan"]
             },
             "type": "array",
             "title": "Sizes"
@@ -7658,14 +7269,7 @@
               "type": "integer"
             },
             "propertyNames": {
-              "enum": [
-                "str",
-                "dex",
-                "con",
-                "int",
-                "wis",
-                "cha"
-              ]
+              "enum": ["str", "dex", "con", "int", "wis", "cha"]
             },
             "type": "object",
             "title": "Saving Throws"
@@ -7818,10 +7422,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "name",
-          "id"
-        ],
+        "required": ["name", "id"],
         "title": "Monster"
       },
       "MonsterCreate": {
@@ -7841,14 +7442,7 @@
           "sizes": {
             "items": {
               "type": "string",
-              "enum": [
-                "tiny",
-                "small",
-                "medium",
-                "large",
-                "huge",
-                "gargantuan"
-              ]
+              "enum": ["tiny", "small", "medium", "large", "huge", "gargantuan"]
             },
             "type": "array",
             "title": "Sizes"
@@ -7927,14 +7521,7 @@
               "type": "integer"
             },
             "propertyNames": {
-              "enum": [
-                "str",
-                "dex",
-                "con",
-                "int",
-                "wis",
-                "cha"
-              ]
+              "enum": ["str", "dex", "con", "int", "wis", "cha"]
             },
             "type": "object",
             "title": "Saving Throws"
@@ -8072,9 +7659,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "MonsterCreate"
       },
       "MonsterError": {
@@ -8096,10 +7681,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "MonsterError"
       },
       "MonsterFeatures": {
@@ -8208,14 +7790,7 @@
           "sizes": {
             "items": {
               "type": "string",
-              "enum": [
-                "tiny",
-                "small",
-                "medium",
-                "large",
-                "huge",
-                "gargantuan"
-              ]
+              "enum": ["tiny", "small", "medium", "large", "huge", "gargantuan"]
             },
             "type": "array",
             "title": "Sizes"
@@ -8294,14 +7869,7 @@
               "type": "integer"
             },
             "propertyNames": {
-              "enum": [
-                "str",
-                "dex",
-                "con",
-                "int",
-                "wis",
-                "cha"
-              ]
+              "enum": ["str", "dex", "con", "int", "wis", "cha"]
             },
             "type": "object",
             "title": "Saving Throws"
@@ -8439,22 +8007,14 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "MonsterUpdate"
       },
       "MovementSpeed": {
         "properties": {
           "mode": {
             "type": "string",
-            "enum": [
-              "walk",
-              "burrow",
-              "climb",
-              "fly",
-              "swim"
-            ],
+            "enum": ["walk", "burrow", "climb", "fly", "swim"],
             "title": "Mode"
           },
           "feet": {
@@ -8480,10 +8040,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "mode",
-          "feet"
-        ],
+        "required": ["mode", "feet"],
         "title": "MovementSpeed"
       },
       "NPC": {
@@ -8529,14 +8086,7 @@
           "sizes": {
             "items": {
               "type": "string",
-              "enum": [
-                "tiny",
-                "small",
-                "medium",
-                "large",
-                "huge",
-                "gargantuan"
-              ]
+              "enum": ["tiny", "small", "medium", "large", "huge", "gargantuan"]
             },
             "type": "array",
             "title": "Sizes"
@@ -8604,14 +8154,7 @@
               "type": "integer"
             },
             "propertyNames": {
-              "enum": [
-                "str",
-                "dex",
-                "con",
-                "int",
-                "wis",
-                "cha"
-              ]
+              "enum": ["str", "dex", "con", "int", "wis", "cha"]
             },
             "type": "object",
             "title": "Saving Throws"
@@ -8742,10 +8285,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "name",
-          "id"
-        ],
+        "required": ["name", "id"],
         "title": "NPC"
       },
       "NPCCreate": {
@@ -8791,14 +8331,7 @@
           "sizes": {
             "items": {
               "type": "string",
-              "enum": [
-                "tiny",
-                "small",
-                "medium",
-                "large",
-                "huge",
-                "gargantuan"
-              ]
+              "enum": ["tiny", "small", "medium", "large", "huge", "gargantuan"]
             },
             "type": "array",
             "title": "Sizes"
@@ -8866,14 +8399,7 @@
               "type": "integer"
             },
             "propertyNames": {
-              "enum": [
-                "str",
-                "dex",
-                "con",
-                "int",
-                "wis",
-                "cha"
-              ]
+              "enum": ["str", "dex", "con", "int", "wis", "cha"]
             },
             "type": "object",
             "title": "Saving Throws"
@@ -9000,9 +8526,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "NPCCreate"
       },
       "NPCUpdate": {
@@ -9048,14 +8572,7 @@
           "sizes": {
             "items": {
               "type": "string",
-              "enum": [
-                "tiny",
-                "small",
-                "medium",
-                "large",
-                "huge",
-                "gargantuan"
-              ]
+              "enum": ["tiny", "small", "medium", "large", "huge", "gargantuan"]
             },
             "type": "array",
             "title": "Sizes"
@@ -9123,14 +8640,7 @@
               "type": "integer"
             },
             "propertyNames": {
-              "enum": [
-                "str",
-                "dex",
-                "con",
-                "int",
-                "wis",
-                "cha"
-              ]
+              "enum": ["str", "dex", "con", "int", "wis", "cha"]
             },
             "type": "object",
             "title": "Saving Throws"
@@ -9257,9 +8767,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "NPCUpdate"
       },
       "NpcError": {
@@ -9280,10 +8788,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "NpcError"
       },
       "Player": {
@@ -9362,14 +8867,7 @@
           "sizes": {
             "items": {
               "type": "string",
-              "enum": [
-                "tiny",
-                "small",
-                "medium",
-                "large",
-                "huge",
-                "gargantuan"
-              ]
+              "enum": ["tiny", "small", "medium", "large", "huge", "gargantuan"]
             },
             "type": "array",
             "title": "Sizes"
@@ -9437,14 +8935,7 @@
               "type": "integer"
             },
             "propertyNames": {
-              "enum": [
-                "str",
-                "dex",
-                "con",
-                "int",
-                "wis",
-                "cha"
-              ]
+              "enum": ["str", "dex", "con", "int", "wis", "cha"]
             },
             "type": "object",
             "title": "Saving Throws"
@@ -9603,10 +9094,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "name",
-          "id"
-        ],
+        "required": ["name", "id"],
         "title": "Player"
       },
       "PlayerCreate": {
@@ -9685,14 +9173,7 @@
           "sizes": {
             "items": {
               "type": "string",
-              "enum": [
-                "tiny",
-                "small",
-                "medium",
-                "large",
-                "huge",
-                "gargantuan"
-              ]
+              "enum": ["tiny", "small", "medium", "large", "huge", "gargantuan"]
             },
             "type": "array",
             "title": "Sizes"
@@ -9760,14 +9241,7 @@
               "type": "integer"
             },
             "propertyNames": {
-              "enum": [
-                "str",
-                "dex",
-                "con",
-                "int",
-                "wis",
-                "cha"
-              ]
+              "enum": ["str", "dex", "con", "int", "wis", "cha"]
             },
             "type": "object",
             "title": "Saving Throws"
@@ -9900,9 +9374,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "PlayerCreate"
       },
       "PlayerDetail": {
@@ -9981,14 +9453,7 @@
           "sizes": {
             "items": {
               "type": "string",
-              "enum": [
-                "tiny",
-                "small",
-                "medium",
-                "large",
-                "huge",
-                "gargantuan"
-              ]
+              "enum": ["tiny", "small", "medium", "large", "huge", "gargantuan"]
             },
             "type": "array",
             "title": "Sizes"
@@ -10056,14 +9521,7 @@
               "type": "integer"
             },
             "propertyNames": {
-              "enum": [
-                "str",
-                "dex",
-                "con",
-                "int",
-                "wis",
-                "cha"
-              ]
+              "enum": ["str", "dex", "con", "int", "wis", "cha"]
             },
             "type": "object",
             "title": "Saving Throws"
@@ -10236,10 +9694,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "name",
-          "id"
-        ],
+        "required": ["name", "id"],
         "title": "PlayerDetail"
       },
       "PlayerError": {
@@ -10274,10 +9729,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "PlayerError"
       },
       "PlayerSpellAssignments": {
@@ -10314,10 +9766,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "id",
-          "name"
-        ],
+        "required": ["id", "name"],
         "title": "PlayerSpellbookCharacter"
       },
       "PlayerUpdate": {
@@ -10396,14 +9845,7 @@
           "sizes": {
             "items": {
               "type": "string",
-              "enum": [
-                "tiny",
-                "small",
-                "medium",
-                "large",
-                "huge",
-                "gargantuan"
-              ]
+              "enum": ["tiny", "small", "medium", "large", "huge", "gargantuan"]
             },
             "type": "array",
             "title": "Sizes"
@@ -10471,14 +9913,7 @@
               "type": "integer"
             },
             "propertyNames": {
-              "enum": [
-                "str",
-                "dex",
-                "con",
-                "int",
-                "wis",
-                "cha"
-              ]
+              "enum": ["str", "dex", "con", "int", "wis", "cha"]
             },
             "type": "object",
             "title": "Saving Throws"
@@ -10611,9 +10046,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "PlayerUpdate"
       },
       "PlayerWeaponAssignments": {
@@ -10642,10 +10075,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "x",
-          "y"
-        ],
+        "required": ["x", "y"],
         "title": "RevealedCell"
       },
       "RevealedCellsBlob": {
@@ -10659,9 +10089,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "cells"
-        ],
+        "required": ["cells"],
         "title": "RevealedCellsBlob"
       },
       "Sense": {
@@ -10689,10 +10117,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "type",
-          "range"
-        ],
+        "required": ["type", "range"],
         "title": "Sense"
       },
       "SessionStateError": {
@@ -10712,10 +10137,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "SessionStateError"
       },
       "Skill": {
@@ -10741,10 +10163,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name",
-          "ability"
-        ],
+        "required": ["name", "ability"],
         "title": "Skill"
       },
       "Spell": {
@@ -10920,10 +10339,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": [
-                  "melee",
-                  "ranged"
-                ]
+                "enum": ["melee", "ranged"]
               },
               {
                 "type": "null"
@@ -10966,10 +10382,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "code",
-          "name"
-        ],
+        "required": ["code", "name"],
         "title": "SpellComponent"
       },
       "SpellCreate": {
@@ -11121,10 +10534,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "name",
-          "formula"
-        ],
+        "required": ["name", "formula"],
         "title": "SpellDamage"
       },
       "SpellError": {
@@ -11147,10 +10557,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "SpellError"
       },
       "SpellGroup": {
@@ -11175,9 +10582,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "label"
-        ],
+        "required": ["label"],
         "title": "SpellGroup"
       },
       "SpellHealing": {
@@ -11262,9 +10667,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "SpellReference"
       },
       "SpellUpdate": {
@@ -11404,14 +10807,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": [
-                  "str",
-                  "dex",
-                  "con",
-                  "int",
-                  "wis",
-                  "cha"
-                ]
+                "enum": ["str", "dex", "con", "int", "wis", "cha"]
               },
               {
                 "type": "null"
@@ -11462,9 +10858,7 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "SpellcastingBlock"
       },
       "ValidationError": {
@@ -11500,11 +10894,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
+        "required": ["loc", "msg", "type"],
         "title": "ValidationError"
       },
       "Weapon": {
@@ -11662,10 +11052,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "name"
-        ],
+        "required": ["id", "name"],
         "title": "Weapon"
       },
       "WeaponCreate": {
@@ -11812,10 +11199,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name",
-          "quick_rules"
-        ],
+        "required": ["name", "quick_rules"],
         "title": "WeaponCreate"
       },
       "WeaponError": {
@@ -11836,10 +11220,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "WeaponError"
       },
       "WeaponProperty": {
@@ -11869,11 +11250,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "code",
-          "name"
-        ],
+        "required": ["id", "code", "name"],
         "title": "WeaponProperty"
       },
       "WeaponUpdate": {
@@ -12020,10 +11397,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name",
-          "quick_rules"
-        ],
+        "required": ["name", "quick_rules"],
         "title": "WeaponUpdate"
       }
     }

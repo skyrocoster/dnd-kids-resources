@@ -1,35 +1,35 @@
-import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip'
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
-import './Tooltip.css'
+import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
+import "./Tooltip.css";
 
 interface TooltipProviderProps {
-  children: ReactNode
-  delay?: number
-  closeDelay?: number
-  timeout?: number
+  children: ReactNode;
+  delay?: number;
+  closeDelay?: number;
+  timeout?: number;
 }
 
 interface TooltipProps {
-  trigger: ReactNode
-  content: ReactNode
-  open?: boolean
-  defaultOpen?: boolean
-  onOpenChange?: (open: boolean) => void
-  disabled?: boolean
-  delay?: number
-  closeDelay?: number
-  closeOnClick?: boolean
-  triggerProps?: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>
-  popupClassName?: string
+  trigger: ReactNode;
+  content: ReactNode;
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  disabled?: boolean;
+  delay?: number;
+  closeDelay?: number;
+  closeOnClick?: boolean;
+  triggerProps?: Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children">;
+  popupClassName?: string;
 }
 
 /** Shares hover-delay behavior between nearby tooltips. */
 export function TooltipProvider({ children, delay, closeDelay, timeout }: TooltipProviderProps) {
   return (
-      <BaseTooltip.Provider delay={delay} closeDelay={closeDelay} timeout={timeout}>
+    <BaseTooltip.Provider delay={delay} closeDelay={closeDelay} timeout={timeout}>
       {children}
     </BaseTooltip.Provider>
-  )
+  );
 }
 
 /**
@@ -51,7 +51,7 @@ export function Tooltip({
   triggerProps,
   popupClassName,
 }: TooltipProps) {
-  const { className: triggerClassName, ...restTriggerProps } = triggerProps ?? {}
+  const { className: triggerClassName, ...restTriggerProps } = triggerProps ?? {};
   return (
     <BaseTooltip.Root
       open={open}
@@ -64,14 +64,14 @@ export function Tooltip({
         closeDelay={closeDelay}
         closeOnClick={closeOnClick}
         {...restTriggerProps}
-        className={['tooltip-trigger', triggerClassName].filter(Boolean).join(' ')}
+        className={["tooltip-trigger", triggerClassName].filter(Boolean).join(" ")}
       >
         {trigger}
       </BaseTooltip.Trigger>
       <BaseTooltip.Portal>
         <BaseTooltip.Positioner className="tooltip-positioner" sideOffset={8}>
           <BaseTooltip.Popup
-            className={['tooltip-popup', popupClassName].filter(Boolean).join(' ')}
+            className={["tooltip-popup", popupClassName].filter(Boolean).join(" ")}
             role="tooltip"
           >
             <BaseTooltip.Arrow className="tooltip-arrow" />
@@ -80,5 +80,5 @@ export function Tooltip({
         </BaseTooltip.Positioner>
       </BaseTooltip.Portal>
     </BaseTooltip.Root>
-  )
+  );
 }

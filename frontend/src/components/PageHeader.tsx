@@ -1,29 +1,29 @@
-import type { ReactNode } from 'react'
-import { createPortal } from 'react-dom'
-import { useAppShellRowSlots } from '../layout/AppShell'
-import { Tabs } from './Tabs'
-import './PageHeader.css'
+import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { useAppShellRowSlots } from "../layout/AppShell";
+import { Tabs } from "./Tabs";
+import "./PageHeader.css";
 
 interface ChapterTab {
-  key: string
-  label: string
-  icon: ReactNode
-  content?: ReactNode
+  key: string;
+  label: string;
+  icon: ReactNode;
+  content?: ReactNode;
 }
 
 interface ChapterMarker {
-  label: string
-  icon: ReactNode
+  label: string;
+  icon: ReactNode;
 }
 
 interface PageHeaderProps {
-  title: string
-  subtitle?: string
-  chapterTabs?: ChapterTab[]
-  chapterMarker?: ChapterMarker
-  activeTab?: string
-  onTabSelect?: (key: string) => void
-  actions?: ReactNode
+  title: string;
+  subtitle?: string;
+  chapterTabs?: ChapterTab[];
+  chapterMarker?: ChapterMarker;
+  activeTab?: string;
+  onTabSelect?: (key: string) => void;
+  actions?: ReactNode;
 }
 
 export function PageHeader({
@@ -35,7 +35,7 @@ export function PageHeader({
   onTabSelect,
   actions,
 }: PageHeaderProps) {
-  const { identitySlot, tabsSlot } = useAppShellRowSlots()
+  const { identitySlot, tabsSlot } = useAppShellRowSlots();
   const pageHeaderMain = (
     <div className="page-header-main">
       <div className="page-header-titles">
@@ -44,7 +44,7 @@ export function PageHeader({
       </div>
       {actions && <div className="page-header-actions">{actions}</div>}
     </div>
-  )
+  );
   const pageHeaderTabs = chapterTabs && chapterTabs.length > 0 && (
     <Tabs
       ariaLabel="Content sections"
@@ -53,13 +53,18 @@ export function PageHeader({
       tabListContainer={tabsSlot}
       tabs={chapterTabs.map((tab) => ({
         id: tab.key,
-        label: <>{tab.icon}<span>{tab.label}</span></>,
+        label: (
+          <>
+            {tab.icon}
+            <span>{tab.label}</span>
+          </>
+        ),
         content: tab.content,
       }))}
       selectedId={activeTab}
       onSelectedIdChange={onTabSelect}
     />
-  )
+  );
   const pageHeaderMarker = chapterMarker && (
     <div className="page-header-tabs page-header-tabs--static">
       <span className="page-header-tab page-header-tab--active page-header-tab--static">
@@ -67,10 +72,10 @@ export function PageHeader({
         <span>{chapterMarker.label}</span>
       </span>
     </div>
-  )
-  const pageHeaderNavigation = pageHeaderTabs || (
-    tabsSlot && pageHeaderMarker ? createPortal(pageHeaderMarker, tabsSlot) : pageHeaderMarker
-  )
+  );
+  const pageHeaderNavigation =
+    pageHeaderTabs ||
+    (tabsSlot && pageHeaderMarker ? createPortal(pageHeaderMarker, tabsSlot) : pageHeaderMarker);
 
   if (identitySlot || tabsSlot) {
     return (
@@ -78,7 +83,7 @@ export function PageHeader({
         {identitySlot ? createPortal(pageHeaderMain, identitySlot) : pageHeaderMain}
         {pageHeaderNavigation}
       </>
-    )
+    );
   }
 
   return (
@@ -86,5 +91,5 @@ export function PageHeader({
       {pageHeaderMain}
       {pageHeaderNavigation}
     </header>
-  )
+  );
 }

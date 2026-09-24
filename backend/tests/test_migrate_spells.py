@@ -40,19 +40,42 @@ TARGET_FIELDS = [
 # later category-enrichment pass. migrate_spells.py itself never produces
 # quick_rules or categories, so the two contracts are deliberately separate.
 CANONICAL_SEED_FIELDS = [
-    "id", "name", "level", "school", "description",
+    "id",
+    "name",
+    "level",
+    "school",
+    "description",
     "quick_rules",
-    "alternate_description", "damage", "healing",
-    "range", "higher_levels", "casting_times", "duration",
-    "concentration", "ritual", "components", "materials",
-    "attacks", "area_of_effect",
-    "created_at", "categories",
+    "alternate_description",
+    "damage",
+    "healing",
+    "range",
+    "higher_levels",
+    "casting_times",
+    "duration",
+    "concentration",
+    "ritual",
+    "components",
+    "materials",
+    "attacks",
+    "area_of_effect",
+    "created_at",
+    "categories",
 ]
 
 DROPPED_LEGACY_KEYS = {
-    "spell_name", "icon", "spell_text", "spell_alt_text", "heal",
-    "heal_at_spell_slots", "damage_at_higher_levels", "casting_time",
-    "attack_type", "action", "classes", "subclasses",
+    "spell_name",
+    "icon",
+    "spell_text",
+    "spell_alt_text",
+    "heal",
+    "heal_at_spell_slots",
+    "damage_at_higher_levels",
+    "casting_time",
+    "attack_type",
+    "action",
+    "classes",
+    "subclasses",
 }
 
 spec = importlib.util.spec_from_file_location("migrate_spells", SCRIPT_PATH)
@@ -64,6 +87,7 @@ spec.loader.exec_module(migrate_spells)
 # ---------------------------------------------------------------------------
 # Migration-only Pydantic v2 models (strict, for test validation only)
 # ---------------------------------------------------------------------------
+
 
 class Damage(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -126,6 +150,7 @@ class CanonicalSpell(BaseModel):
 # Fixtures and helpers
 # ---------------------------------------------------------------------------
 
+
 def base_spell(**overrides):
     spell = {
         "id": 999,
@@ -135,9 +160,7 @@ def base_spell(**overrides):
         "school": "Evocation",
         "spell_text": "A test spell description.",
         "spell_alt_text": None,
-        "damage": [
-            {"name": "initial", "damage": "3d6", "type": ["Fire"]}
-        ],
+        "damage": [{"name": "initial", "damage": "3d6", "type": ["Fire"]}],
         "heal": '{"amount": "2d8", "temp_hp": false, "max_hp": false}',
         "heal_at_spell_slots": None,
         "range": "60 feet",
@@ -149,9 +172,7 @@ def base_spell(**overrides):
         "ritual": 0,
         "components": '["V", "S", "M"]',
         "materials": "a pinch of sulfur",
-        "attack_type": [
-            {"name": "initial", "type": "ranged", "save": ["DEX"]}
-        ],
+        "attack_type": [{"name": "initial", "type": "ranged", "save": ["DEX"]}],
         "action": None,
         "area_of_effect": '{"Sphere": 20}',
         "classes": None,
@@ -189,6 +210,7 @@ def write_source(path, rows=None):
 # Explicit legacy fixture rows (for edge-case transform tests)
 # ---------------------------------------------------------------------------
 
+
 def legacy_plant_growth():
     return base_spell(
         id=348,
@@ -223,7 +245,10 @@ def legacy_absorb_elements():
         heal=None,
         range="Self",
         higher_levels="When you cast this spell using a spell slot of 2nd level or higher.",
-        damage_at_higher_levels='{"1": "1d6", "2": "2d6", "3": "3d6", "4": "4d6", "5": "5d6", "6": "6d6", "7": "7d6", "8": "8d6", "9": "9d6"}',
+        damage_at_higher_levels=(
+            '{"1": "1d6", "2": "2d6", "3": "3d6", "4": "4d6", "5": "5d6", '
+            '"6": "6d6", "7": "7d6", "8": "8d6", "9": "9d6"}'
+        ),
         casting_time="1 reaction",
         duration="1 round",
         concentration=0,
@@ -263,6 +288,7 @@ def legacy_flashdaggers():
 # S2 transform tests (retained)
 # ---------------------------------------------------------------------------
 
+
 def test_conventional_spell_transform_has_exact_ordered_contract():
     result = migrate_one(base_spell())
 
@@ -274,9 +300,7 @@ def test_conventional_spell_transform_has_exact_ordered_contract():
         "school": "evocation",
         "description": "A test spell description.",
         "alternate_description": None,
-        "damage": [
-            {"name": "initial", "formula": "3d6", "damage_types": ["fire"]}
-        ],
+        "damage": [{"name": "initial", "formula": "3d6", "damage_types": ["fire"]}],
         "healing": {"amount": "2d8", "temp_hp": False, "max_hp": False},
         "range": "60 feet",
         "higher_levels": {
@@ -335,9 +359,7 @@ def test_transform_preserves_damage_shapes():
     }
 
     scaled = migrate_one(
-        base_spell(
-            damage_at_higher_levels='{"3": "4d8", "5": "6d8", "9": "10d8"}'
-        )
+        base_spell(damage_at_higher_levels='{"3": "4d8", "5": "6d8", "9": "10d8"}')
     )
     assert list(scaled["higher_levels"]["damage_by_slot"].items()) == [
         ("3", "4d8"),
@@ -384,6 +406,7 @@ def test_attack_roll_and_saving_throw_shapes(raw_attack, expected):
 # S2 contextual error tests (retained)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.parametrize(
     ("field", "bad_value"),
     [
@@ -407,12 +430,8 @@ def test_malformed_embedded_json_has_spell_and_field_context(field, bad_value):
         lambda spell: spell.update({"unexpected": "value"}),
         lambda spell: spell.pop("duration"),
         lambda spell: spell.update({"concentration": "1"}),
-        lambda spell: spell.update(
-            {"damage": [{"name": "initial", "damage": "1d6"}]}
-        ),
-        lambda spell: spell.update(
-            {"attack_type": [{"name": "other", "type": "melee"}]}
-        ),
+        lambda spell: spell.update({"damage": [{"name": "initial", "damage": "1d6"}]}),
+        lambda spell: spell.update({"attack_type": [{"name": "other", "type": "melee"}]}),
         lambda spell: spell.update({"casting_time": "['1 action']"}),
     ],
 )
@@ -427,6 +446,7 @@ def test_unrecognized_source_shapes_fail_contextually(mutation):
 # ---------------------------------------------------------------------------
 # S2 CLI tests (retained: write/check round-trip + failure detection only)
 # ---------------------------------------------------------------------------
+
 
 def test_cli_write_matches_pure_transform_bytes(tmp_path):
     source = tmp_path / "source.json"
@@ -474,6 +494,7 @@ def test_cli_check_fails_for_missing_or_different_output(tmp_path, comparison_st
 # S3: Canonical seed shape and identity
 # ---------------------------------------------------------------------------
 
+
 def test_canonical_seed_shape_and_identity(canonical_spells):
     assert len(canonical_spells) == 525
     assert len({spell["id"] for spell in canonical_spells}) == 525
@@ -496,6 +517,7 @@ def test_canonical_seed_shape_and_identity(canonical_spells):
 # S3: Strict model validation
 # ---------------------------------------------------------------------------
 
+
 def test_strict_model_validation_accepts_canonical_rows(canonical_spells):
     for spell in canonical_spells:
         validated = CanonicalSpell.model_validate(spell)
@@ -511,11 +533,23 @@ def test_strict_model_validation_accepts_canonical_rows(canonical_spells):
 
 def good_row(**overrides):
     row = {
-        "id": 999, "name": "X", "level": 1, "school": None, "description": "X",
-        "alternate_description": None, "damage": [], "healing": Healing(),
-        "range": "Self", "higher_levels": HigherLevels(), "casting_times": ["1 action"],
-        "duration": "Instantaneous", "concentration": False, "ritual": False,
-        "components": ["V"], "materials": None, "attacks": [],
+        "id": 999,
+        "name": "X",
+        "level": 1,
+        "school": None,
+        "description": "X",
+        "alternate_description": None,
+        "damage": [],
+        "healing": Healing(),
+        "range": "Self",
+        "higher_levels": HigherLevels(),
+        "casting_times": ["1 action"],
+        "duration": "Instantaneous",
+        "concentration": False,
+        "ritual": False,
+        "components": ["V"],
+        "materials": None,
+        "attacks": [],
         "area_of_effect": AreaOfEffect(),
     }
     row.update(overrides)
@@ -541,6 +575,7 @@ def test_strict_model_rejects_invalid_rows():
 # S3: Defaults and normalized members
 # ---------------------------------------------------------------------------
 
+
 def test_canonical_defaults_and_normalized_members(canonical_spells):
     for spell in canonical_spells:
         assert isinstance(spell["components"], list)
@@ -554,15 +589,11 @@ def test_canonical_defaults_and_normalized_members(canonical_spells):
         assert "damage_by_slot" in spell["higher_levels"]
         assert "shape" in spell["area_of_effect"]
         assert "size" in spell["area_of_effect"]
-    populated_healing = [
-        s for s in canonical_spells if s["healing"]["amount"] is not None
-    ]
+    populated_healing = [s for s in canonical_spells if s["healing"]["amount"] is not None]
     for spell in populated_healing:
         assert isinstance(spell["healing"]["amount"], str)
         assert spell["healing"]["amount"]
-    populated_hl = [
-        s for s in canonical_spells if s["higher_levels"]["text"] is not None
-    ]
+    populated_hl = [s for s in canonical_spells if s["higher_levels"]["text"] is not None]
     for spell in populated_hl:
         assert isinstance(spell["higher_levels"]["text"], str)
         assert spell["higher_levels"]["text"]
@@ -590,15 +621,14 @@ def test_canonical_defaults_and_normalized_members(canonical_spells):
 # S3: Corpus acceptance totals
 # ---------------------------------------------------------------------------
 
+
 def test_canonical_corpus_acceptance_totals(canonical_spells):
     assert len(canonical_spells) == 525
     assert sum(len(spell["damage"]) for spell in canonical_spells) == 103
     assert sum(bool(spell["damage"]) for spell in canonical_spells) == 97
     assert sum(len(spell["damage"]) == 2 for spell in canonical_spells) == 6
     assert sum(len(spell["attacks"]) for spell in canonical_spells) == 249
-    assert sum(
-        bool(spell["higher_levels"]["damage_by_slot"]) for spell in canonical_spells
-    ) == 74
+    assert sum(bool(spell["higher_levels"]["damage_by_slot"]) for spell in canonical_spells) == 74
     for spell in canonical_spells:
         if spell["higher_levels"]["damage_by_slot"]:
             assert spell["higher_levels"]["text"] is not None
@@ -610,6 +640,7 @@ def test_canonical_corpus_acceptance_totals(canonical_spells):
 # S3: Known repairs present in canonical data
 # ---------------------------------------------------------------------------
 
+
 def test_canonical_plant_growth_repairs(canonical_spells):
     pg = next(s for s in canonical_spells if s["id"] == 348)
     assert pg["casting_times"] == ["1 action", "8 hours"]
@@ -618,24 +649,21 @@ def test_canonical_plant_growth_repairs(canonical_spells):
 
 def test_canonical_absorb_elements_repairs(canonical_spells):
     ae = next(s for s in canonical_spells if s["id"] == 2)
-    assert ae["damage"] == [
-        {"name": "primary", "formula": "1d6", "damage_types": []}
-    ]
+    assert ae["damage"] == [{"name": "primary", "formula": "1d6", "damage_types": []}]
 
 
 def test_canonical_flashdaggers_repairs(canonical_spells):
     fd = next(s for s in canonical_spells if s["id"] == 525)
     assert fd["school"] == "conjuration"
     assert fd["components"] == ["V", "S"]
-    assert fd["damage"] == [
-        {"name": "initial", "formula": "5d4", "damage_types": ["piercing"]}
-    ]
+    assert fd["damage"] == [{"name": "initial", "formula": "5d4", "damage_types": ["piercing"]}]
     assert fd["attacks"] == [{"kind": None, "saving_throws": ["dex"]}]
 
 
 # ---------------------------------------------------------------------------
 # S3: Reproducibility
 # ---------------------------------------------------------------------------
+
 
 def test_migration_is_pure_and_deterministic(tmp_path):
     rows = [base_spell(), legacy_plant_growth(), legacy_flashdaggers()]

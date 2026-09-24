@@ -3,13 +3,116 @@ import { ChevronDown } from "lucide-react";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import "./NavigationMenu.css";
 
-export interface NavigationMenuLinkDefinition { id:string; label:ReactNode; href:string; description?:ReactNode; target?:string }
-export interface NavigationMenuGroupDefinition { id:string; label:ReactNode; links:readonly NavigationMenuLinkDefinition[]; disabled?:boolean }
-export interface NavigationMenuDirectLinkDefinition extends NavigationMenuLinkDefinition { links?:never }
-export type NavigationMenuItemDefinition=NavigationMenuGroupDefinition|NavigationMenuDirectLinkDefinition;
-export interface NavigationMenuProps extends Omit<ComponentPropsWithoutRef<"nav">,"defaultValue"|"onChange"> { items:readonly NavigationMenuItemDefinition[]; value?:string|null; defaultValue?:string|null; onValueChange?:(value:string|null)=>void; orientation?:"horizontal"|"vertical"; delay?:number; closeDelay?:number }
-function isGroup(item:NavigationMenuItemDefinition):item is NavigationMenuGroupDefinition{return "links" in item&&Array.isArray(item.links)}
-export function NavigationMenu({items,value,defaultValue,onValueChange,orientation="horizontal",delay,closeDelay,className,...rest}:NavigationMenuProps){return <BaseNavigationMenu.Root<string> {...rest} className={["cmt-navigation-menu",className].filter(Boolean).join(" ")} value={value} defaultValue={defaultValue} onValueChange={(next)=>onValueChange?.(next)} orientation={orientation} delay={delay} closeDelay={closeDelay}>
-  <BaseNavigationMenu.List className="cmt-navigation-menu__list">{items.map(item=><BaseNavigationMenu.Item key={item.id} value={item.id}>{isGroup(item)?<><BaseNavigationMenu.Trigger className="cmt-navigation-menu__trigger" disabled={item.disabled}>{item.label}<BaseNavigationMenu.Icon className="cmt-navigation-menu__icon"><ChevronDown aria-hidden="true"/></BaseNavigationMenu.Icon></BaseNavigationMenu.Trigger><BaseNavigationMenu.Content className="cmt-navigation-menu__content"><ul className="cmt-navigation-menu__panel-list">{item.links.map(link=><li key={link.id}><BaseNavigationMenu.Link className="cmt-navigation-menu__panel-link" href={link.href} target={link.target}><span className="cmt-navigation-menu__label">{link.label}</span>{link.description?<span className="cmt-navigation-menu__description">{link.description}</span>:null}</BaseNavigationMenu.Link></li>)}</ul></BaseNavigationMenu.Content></>:<BaseNavigationMenu.Link className="cmt-navigation-menu__direct-link" href={item.href} target={item.target}>{item.label}</BaseNavigationMenu.Link>}</BaseNavigationMenu.Item>)}</BaseNavigationMenu.List>
-  <BaseNavigationMenu.Portal><BaseNavigationMenu.Positioner className="cmt-navigation-menu__positioner" sideOffset={8}><BaseNavigationMenu.Popup className="cmt-navigation-menu__popup"><BaseNavigationMenu.Arrow className="cmt-navigation-menu__arrow"/><BaseNavigationMenu.Viewport className="cmt-navigation-menu__viewport"/></BaseNavigationMenu.Popup></BaseNavigationMenu.Positioner></BaseNavigationMenu.Portal>
-</BaseNavigationMenu.Root>}
+export interface NavigationMenuLinkDefinition {
+  id: string;
+  label: ReactNode;
+  href: string;
+  description?: ReactNode;
+  target?: string;
+}
+export interface NavigationMenuGroupDefinition {
+  id: string;
+  label: ReactNode;
+  links: readonly NavigationMenuLinkDefinition[];
+  disabled?: boolean;
+}
+export interface NavigationMenuDirectLinkDefinition extends NavigationMenuLinkDefinition {
+  links?: never;
+}
+export type NavigationMenuItemDefinition =
+  NavigationMenuGroupDefinition | NavigationMenuDirectLinkDefinition;
+export interface NavigationMenuProps extends Omit<
+  ComponentPropsWithoutRef<"nav">,
+  "defaultValue" | "onChange"
+> {
+  items: readonly NavigationMenuItemDefinition[];
+  value?: string | null;
+  defaultValue?: string | null;
+  onValueChange?: (value: string | null) => void;
+  orientation?: "horizontal" | "vertical";
+  delay?: number;
+  closeDelay?: number;
+}
+function isGroup(item: NavigationMenuItemDefinition): item is NavigationMenuGroupDefinition {
+  return "links" in item && Array.isArray(item.links);
+}
+export function NavigationMenu({
+  items,
+  value,
+  defaultValue,
+  onValueChange,
+  orientation = "horizontal",
+  delay,
+  closeDelay,
+  className,
+  ...rest
+}: NavigationMenuProps) {
+  return (
+    <BaseNavigationMenu.Root<string>
+      {...rest}
+      className={["cmt-navigation-menu", className].filter(Boolean).join(" ")}
+      value={value}
+      defaultValue={defaultValue}
+      onValueChange={(next) => onValueChange?.(next)}
+      orientation={orientation}
+      delay={delay}
+      closeDelay={closeDelay}
+    >
+      <BaseNavigationMenu.List className="cmt-navigation-menu__list">
+        {items.map((item) => (
+          <BaseNavigationMenu.Item key={item.id} value={item.id}>
+            {isGroup(item) ? (
+              <>
+                <BaseNavigationMenu.Trigger
+                  className="cmt-navigation-menu__trigger"
+                  disabled={item.disabled}
+                >
+                  {item.label}
+                  <BaseNavigationMenu.Icon className="cmt-navigation-menu__icon">
+                    <ChevronDown aria-hidden="true" />
+                  </BaseNavigationMenu.Icon>
+                </BaseNavigationMenu.Trigger>
+                <BaseNavigationMenu.Content className="cmt-navigation-menu__content">
+                  <ul className="cmt-navigation-menu__panel-list">
+                    {item.links.map((link) => (
+                      <li key={link.id}>
+                        <BaseNavigationMenu.Link
+                          className="cmt-navigation-menu__panel-link"
+                          href={link.href}
+                          target={link.target}
+                        >
+                          <span className="cmt-navigation-menu__label">{link.label}</span>
+                          {link.description ? (
+                            <span className="cmt-navigation-menu__description">
+                              {link.description}
+                            </span>
+                          ) : null}
+                        </BaseNavigationMenu.Link>
+                      </li>
+                    ))}
+                  </ul>
+                </BaseNavigationMenu.Content>
+              </>
+            ) : (
+              <BaseNavigationMenu.Link
+                className="cmt-navigation-menu__direct-link"
+                href={item.href}
+                target={item.target}
+              >
+                {item.label}
+              </BaseNavigationMenu.Link>
+            )}
+          </BaseNavigationMenu.Item>
+        ))}
+      </BaseNavigationMenu.List>
+      <BaseNavigationMenu.Portal>
+        <BaseNavigationMenu.Positioner className="cmt-navigation-menu__positioner" sideOffset={8}>
+          <BaseNavigationMenu.Popup className="cmt-navigation-menu__popup">
+            <BaseNavigationMenu.Arrow className="cmt-navigation-menu__arrow" />
+            <BaseNavigationMenu.Viewport className="cmt-navigation-menu__viewport" />
+          </BaseNavigationMenu.Popup>
+        </BaseNavigationMenu.Positioner>
+      </BaseNavigationMenu.Portal>
+    </BaseNavigationMenu.Root>
+  );
+}

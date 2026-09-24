@@ -5,7 +5,6 @@
   flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
-  
 }
 
 .dungeon-shell-heading {
@@ -78,7 +77,10 @@
   font-size: var(--type-label-size);
   font-weight: var(--type-label-weight);
   text-decoration: none;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .dungeon-shell-mode-link:hover {

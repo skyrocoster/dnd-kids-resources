@@ -1,11 +1,11 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { PageHeader } from '../components/PageHeader'
-import { navSections } from '../layout/navSections'
-import './HomePage.css'
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { PageHeader } from "../components/PageHeader";
+import { navSections } from "../layout/navSections";
+import "./HomePage.css";
 
 export function HomePage() {
-  const [activeSection, setActiveSection] = useState(navSections[0].label)
+  const [activeSection, setActiveSection] = useState(navSections[0].label);
 
   return (
     <div className="home-page">
@@ -31,5 +31,5 @@ export function HomePage() {
         onTabSelect={setActiveSection}
       />
     </div>
-  )
+  );
 }

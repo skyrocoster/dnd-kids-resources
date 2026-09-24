@@ -1,55 +1,55 @@
-import { useEffect, useState } from 'react'
-import * as api from '../../api/client'
-import type { Monster, NPC, NPCInput } from '../../api/types'
-import { Button } from '../../components/Button'
-import { Dialog } from '../../components/Dialog'
-import { CheckboxGroup } from '../../components/form/CheckboxGroup'
-import { SearchList } from '../../components/SearchList'
-import { StatePanel } from '../../components/StatePanel'
-import { applyPull, getPullableRows } from './npcPull'
-import type { PullRow } from './npcPull'
-import './PullFromMonsterDialog.css'
+import { useEffect, useState } from "react";
+import * as api from "../../api/client";
+import type { Monster, NPC, NPCInput } from "../../api/types";
+import { Button } from "../../components/Button";
+import { Dialog } from "../../components/Dialog";
+import { CheckboxGroup } from "../../components/form/CheckboxGroup";
+import { SearchList } from "../../components/SearchList";
+import { StatePanel } from "../../components/StatePanel";
+import { applyPull, getPullableRows } from "./npcPull";
+import type { PullRow } from "./npcPull";
+import "./PullFromMonsterDialog.css";
 
 interface PullFromMonsterDialogProps {
-  npc: NPC
-  onClose: () => void
-  onPulled: (npc: NPC) => void
+  npc: NPC;
+  onClose: () => void;
+  onPulled: (npc: NPC) => void;
 }
 
-const REGION_ORDER: PullRow['region'][] = ['Stats', 'Defenses', 'Abilities', 'Actions', 'Lore']
+const REGION_ORDER: PullRow["region"][] = ["Stats", "Defenses", "Abilities", "Actions", "Lore"];
 
 export function PullFromMonsterDialog({ npc, onClose, onPulled }: PullFromMonsterDialogProps) {
-  const [monsters, setMonsters] = useState<Monster[]>([])
-  const [loadError, setLoadError] = useState<string | null>(null)
-  const [loadingMonsters, setLoadingMonsters] = useState(true)
-  const [selectedMonster, setSelectedMonster] = useState<Monster | null>(null)
-  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set())
-  const [saving, setSaving] = useState(false)
-  const [status, setStatus] = useState('')
+  const [monsters, setMonsters] = useState<Monster[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadingMonsters, setLoadingMonsters] = useState(true);
+  const [selectedMonster, setSelectedMonster] = useState<Monster | null>(null);
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState("");
 
   useEffect(() => {
     api
       .listMonsters()
       .then((data) => {
-        setMonsters([...data].sort((a, b) => a.name.localeCompare(b.name)))
-        setLoadError(null)
+        setMonsters([...data].sort((a, b) => a.name.localeCompare(b.name)));
+        setLoadError(null);
       })
       .catch((error) => {
-        setLoadError(error instanceof Error ? error.message : 'Failed to load monsters.')
+        setLoadError(error instanceof Error ? error.message : "Failed to load monsters.");
       })
-      .finally(() => setLoadingMonsters(false))
-  }, [])
+      .finally(() => setLoadingMonsters(false));
+  }, []);
 
   const handleMonsterSelect = (monster: Monster) => {
-    setSelectedMonster(monster)
-    setSelectedRowIds(new Set())
-  }
+    setSelectedMonster(monster);
+    setSelectedRowIds(new Set());
+  };
 
   const handleCommit = async () => {
-    if (!selectedMonster || selectedRowIds.size === 0) return
-    setSaving(true)
-    setStatus('Pulling fields…')
-    const statblockFields = applyPull(npc, selectedMonster, selectedRowIds)
+    if (!selectedMonster || selectedRowIds.size === 0) return;
+    setSaving(true);
+    setStatus("Pulling fields…");
+    const statblockFields = applyPull(npc, selectedMonster, selectedRowIds);
     const input: NPCInput = {
       name: npc.name,
       race: npc.race ?? null,
@@ -58,25 +58,25 @@ export function PullFromMonsterDialog({ npc, onClose, onPulled }: PullFromMonste
       appearance: npc.appearance ?? null,
       notes: npc.notes ?? null,
       ...statblockFields,
-    }
+    };
     try {
-      const saved = await api.updateNPC(npc.id, input)
-      onPulled(saved)
-      onClose()
+      const saved = await api.updateNPC(npc.id, input);
+      onPulled(saved);
+      onClose();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Failed to pull fields.')
-      setSaving(false)
+      setStatus(error instanceof Error ? error.message : "Failed to pull fields.");
+      setSaving(false);
     }
-  }
+  };
 
-  const rows = selectedMonster ? getPullableRows(selectedMonster, npc) : []
-  const grouped: Record<string, PullRow[]> = {}
+  const rows = selectedMonster ? getPullableRows(selectedMonster, npc) : [];
+  const grouped: Record<string, PullRow[]> = {};
   for (const row of rows) {
-    if (!grouped[row.region]) grouped[row.region] = []
-    grouped[row.region].push(row)
+    if (!grouped[row.region]) grouped[row.region] = [];
+    grouped[row.region].push(row);
   }
 
-  const searchListStatus = loadingMonsters ? 'loading' : loadError ? 'error' : 'ready'
+  const searchListStatus = loadingMonsters ? "loading" : loadError ? "error" : "ready";
 
   return (
     <Dialog
@@ -137,39 +137,41 @@ export function PullFromMonsterDialog({ npc, onClose, onPulled }: PullFromMonste
         {!loadError && selectedMonster && (
           <div className="pull-from-monster-tree">
             {REGION_ORDER.map((region) => {
-              const regionRows = grouped[region]
-              if (!regionRows) return null
+              const regionRows = grouped[region];
+              if (!regionRows) return null;
               return (
-                  <section key={region} className="pull-from-monster-region">
-                    <h3 className="pull-from-monster-region-title">{region}</h3>
-                    <CheckboxGroup
-                      className="pull-from-monster-checkbox-group"
-                      label={<span className="fc-visually-hidden">{region} fields</span>}
-                      options={regionRows.map((row) => ({
-                        value: row.id,
-                        label: (
-                          <>
-                            <span className="pull-from-monster-row-label">{row.label}</span>
-                            {row.currentValueLabel && (
-                              <span className="pull-from-monster-row-existing">
-                                ← you have {row.currentValueLabel}
-                              </span>
-                            )}
-                          </>
-                        ),
-                      }))}
-                      value={regionRows.filter((row) => selectedRowIds.has(row.id)).map((row) => row.id)}
-                      onValueChange={(regionSelection) => {
-                        const regionRowIds = new Set(regionRows.map((row) => row.id))
-                        setSelectedRowIds((previous) => {
-                          const next = new Set([...previous].filter((id) => !regionRowIds.has(id)))
-                          regionSelection.forEach((id) => next.add(id))
-                          return next
-                        })
-                      }}
-                    />
-                  </section>
-              )
+                <section key={region} className="pull-from-monster-region">
+                  <h3 className="pull-from-monster-region-title">{region}</h3>
+                  <CheckboxGroup
+                    className="pull-from-monster-checkbox-group"
+                    label={<span className="fc-visually-hidden">{region} fields</span>}
+                    options={regionRows.map((row) => ({
+                      value: row.id,
+                      label: (
+                        <>
+                          <span className="pull-from-monster-row-label">{row.label}</span>
+                          {row.currentValueLabel && (
+                            <span className="pull-from-monster-row-existing">
+                              ← you have {row.currentValueLabel}
+                            </span>
+                          )}
+                        </>
+                      ),
+                    }))}
+                    value={regionRows
+                      .filter((row) => selectedRowIds.has(row.id))
+                      .map((row) => row.id)}
+                    onValueChange={(regionSelection) => {
+                      const regionRowIds = new Set(regionRows.map((row) => row.id));
+                      setSelectedRowIds((previous) => {
+                        const next = new Set([...previous].filter((id) => !regionRowIds.has(id)));
+                        regionSelection.forEach((id) => next.add(id));
+                        return next;
+                      });
+                    }}
+                  />
+                </section>
+              );
             })}
             {rows.length === 0 && (
               <p className="pull-from-monster-empty">This monster has no fields to pull.</p>
@@ -178,5 +180,5 @@ export function PullFromMonsterDialog({ npc, onClose, onPulled }: PullFromMonste
         )}
       </div>
     </Dialog>
-  )
+  );
 }

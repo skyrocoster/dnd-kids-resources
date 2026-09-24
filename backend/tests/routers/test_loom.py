@@ -182,7 +182,9 @@ def test_thread_update_and_validation_errors(test_client):
     )
     assert missing.status_code == 404
 
-    bad_color = test_client.post("/api/loom/threads", json={"name": "Bad Color", "color": "thread-9"})
+    bad_color = test_client.post(
+        "/api/loom/threads", json={"name": "Bad Color", "color": "thread-9"}
+    )
     assert bad_color.status_code == 422
 
 
@@ -211,7 +213,11 @@ def test_delete_thread_removes_all_its_nodes_and_nulls_spawn_origin(test_client)
     assert not any(node["thread_id"] == parent["id"] for node in data["nodes"])
     assert any(node["thread_id"] == other["id"] for node in data["nodes"])
 
-    updated_spawned = next(thread for thread in test_client.get("/api/loom/threads").json() if thread["id"] == spawned["id"])
+    updated_spawned = next(
+        thread
+        for thread in test_client.get("/api/loom/threads").json()
+        if thread["id"] == spawned["id"]
+    )
     assert updated_spawned["origin_node_id"] is None
 
     assert test_client.delete("/api/loom/threads/9999").status_code == 404
@@ -266,22 +272,50 @@ def test_create_update_delete_node_on_new_columns(test_client):
 
 def test_node_guards(test_client):
     """start/end nodes cannot be created, updated, or deleted directly; no canvas route."""
-    assert test_client.post("/api/loom/nodes", json={"kind": "start", "title": "Nope"}).status_code == 422
-    assert test_client.post("/api/loom/nodes", json={"kind": "end", "title": "Nope"}).status_code == 422
+    assert (
+        test_client.post("/api/loom/nodes", json={"kind": "start", "title": "Nope"}).status_code
+        == 422
+    )
+    assert (
+        test_client.post("/api/loom/nodes", json={"kind": "end", "title": "Nope"}).status_code
+        == 422
+    )
 
     thread = _create_thread(test_client, name="Guarded")
-    start = next(node for node in _nodes_for_thread(test_client, thread["id"]) if node["kind"] == "start")
+    start = next(
+        node for node in _nodes_for_thread(test_client, thread["id"]) if node["kind"] == "start"
+    )
     assert test_client.delete(f"/api/loom/nodes/{start['id']}").status_code == 422
     assert test_client.delete("/api/loom/nodes/9999").status_code == 404
 
     beat = _create_node(test_client, kind="beat", title="Original")
-    assert test_client.put("/api/loom/nodes/9999", json={"kind": "beat", "title": "Missing"}).status_code == 404
-    assert test_client.put(f"/api/loom/nodes/{beat['id']}", json={"kind": "session", "title": "Original"}).status_code == 422
+    assert (
+        test_client.put(
+            "/api/loom/nodes/9999", json={"kind": "beat", "title": "Missing"}
+        ).status_code
+        == 404
+    )
+    assert (
+        test_client.put(
+            f"/api/loom/nodes/{beat['id']}", json={"kind": "session", "title": "Original"}
+        ).status_code
+        == 422
+    )
 
     session = _create_node(test_client, kind="session", title="Never fulfilled")
-    assert test_client.put(f"/api/loom/nodes/{session['id']}", json={"kind": "beat", "title": "Nope"}).status_code == 422
+    assert (
+        test_client.put(
+            f"/api/loom/nodes/{session['id']}", json={"kind": "beat", "title": "Nope"}
+        ).status_code
+        == 422
+    )
 
-    assert test_client.patch(f"/api/loom/nodes/{beat['id']}/position", json={"x": 1, "y": 2}).status_code == 404
+    assert (
+        test_client.patch(
+            f"/api/loom/nodes/{beat['id']}/position", json={"x": 1, "y": 2}
+        ).status_code
+        == 404
+    )
 
 
 def test_one_card_per_thread_per_session_rejected_by_api(test_client):
@@ -348,20 +382,66 @@ def test_thread_item_routes_place_reorder_remove_and_restore_nodes(test_client):
 def test_thread_item_error_paths(test_client):
     thread = _create_thread(test_client, name="Errors")
     other = _create_thread(test_client, name="Other", color="thread-2")
-    beat = _create_node(test_client, thread_id=thread["id"], kind="beat", title="Placed", position=5)
-    start = next(node for node in _nodes_for_thread(test_client, thread["id"]) if node["kind"] == "start")
+    beat = _create_node(
+        test_client, thread_id=thread["id"], kind="beat", title="Placed", position=5
+    )
+    start = next(
+        node for node in _nodes_for_thread(test_client, thread["id"]) if node["kind"] == "start"
+    )
 
-    assert test_client.post("/api/loom/threads/9999/items", json={"node_id": beat["id"], "position": 5}).status_code == 404
-    assert test_client.post(f"/api/loom/threads/{thread['id']}/items", json={"node_id": 9999, "position": 5}).status_code == 404
-    assert test_client.post(f"/api/loom/threads/{thread['id']}/items", json={"node_id": start["id"], "position": 5}).status_code == 422
-    assert test_client.post(f"/api/loom/threads/{thread['id']}/items", json={"node_id": beat["id"], "position": 5}).status_code == 422
-    assert test_client.post(f"/api/loom/threads/{other['id']}/items", json={"node_id": beat["id"], "position": 5}).status_code == 422
-    assert test_client.patch("/api/loom/threads/9999/items/1", json={"position": 5}).status_code == 404
-    assert test_client.patch(f"/api/loom/threads/{other['id']}/items/{beat['id']}", json={"position": 5}).status_code == 404
-    assert test_client.patch(f"/api/loom/threads/{thread['id']}/items/{start['id']}", json={"position": 5}).status_code == 422
+    assert (
+        test_client.post(
+            "/api/loom/threads/9999/items", json={"node_id": beat["id"], "position": 5}
+        ).status_code
+        == 404
+    )
+    assert (
+        test_client.post(
+            f"/api/loom/threads/{thread['id']}/items", json={"node_id": 9999, "position": 5}
+        ).status_code
+        == 404
+    )
+    assert (
+        test_client.post(
+            f"/api/loom/threads/{thread['id']}/items", json={"node_id": start["id"], "position": 5}
+        ).status_code
+        == 422
+    )
+    assert (
+        test_client.post(
+            f"/api/loom/threads/{thread['id']}/items", json={"node_id": beat["id"], "position": 5}
+        ).status_code
+        == 422
+    )
+    assert (
+        test_client.post(
+            f"/api/loom/threads/{other['id']}/items", json={"node_id": beat["id"], "position": 5}
+        ).status_code
+        == 422
+    )
+    assert (
+        test_client.patch("/api/loom/threads/9999/items/1", json={"position": 5}).status_code == 404
+    )
+    assert (
+        test_client.patch(
+            f"/api/loom/threads/{other['id']}/items/{beat['id']}", json={"position": 5}
+        ).status_code
+        == 404
+    )
+    assert (
+        test_client.patch(
+            f"/api/loom/threads/{thread['id']}/items/{start['id']}", json={"position": 5}
+        ).status_code
+        == 422
+    )
     assert test_client.delete("/api/loom/threads/9999/items/1").status_code == 404
-    assert test_client.delete(f"/api/loom/threads/{other['id']}/items/{beat['id']}").status_code == 404
-    assert test_client.delete(f"/api/loom/threads/{thread['id']}/items/{start['id']}").status_code == 422
+    assert (
+        test_client.delete(f"/api/loom/threads/{other['id']}/items/{beat['id']}").status_code == 404
+    )
+    assert (
+        test_client.delete(f"/api/loom/threads/{thread['id']}/items/{start['id']}").status_code
+        == 422
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -373,7 +453,9 @@ def test_fulfil_beat_requires_thread_and_session_and_stamps_provenance(test_clie
     session = _create_session(test_client)
     thread = _create_thread(test_client, name="Fulfil")
     unplaced = _create_node(test_client, kind="beat", title="Unplaced")
-    unscheduled = _create_node(test_client, thread_id=thread["id"], kind="beat", title="No Session", position=5)
+    unscheduled = _create_node(
+        test_client, thread_id=thread["id"], kind="beat", title="No Session", position=5
+    )
     beat = _create_node(
         test_client,
         thread_id=thread["id"],
@@ -428,7 +510,9 @@ def test_fulfil_and_bank_error_paths(test_client):
 
 def test_bank_beat_unplaces_and_preserves_provenance(test_client):
     thread = _create_thread(test_client, name="Bank")
-    beat = _create_node(test_client, thread_id=thread["id"], kind="beat", title="To bank", position=5)
+    beat = _create_node(
+        test_client, thread_id=thread["id"], kind="beat", title="To bank", position=5
+    )
 
     response = test_client.post(f"/api/loom/nodes/{beat['id']}/bank")
     assert response.status_code == 200
@@ -442,8 +526,12 @@ def test_bank_beat_unplaces_and_preserves_provenance(test_client):
 def test_move_node_between_threads_and_error_paths(test_client):
     source = _create_thread(test_client, name="Move Source")
     target = _create_thread(test_client, name="Move Target", color="thread-2")
-    beat = _create_node(test_client, thread_id=source["id"], kind="beat", title="Move me", position=5)
-    start = next(node for node in _nodes_for_thread(test_client, source["id"]) if node["kind"] == "start")
+    beat = _create_node(
+        test_client, thread_id=source["id"], kind="beat", title="Move me", position=5
+    )
+    start = next(
+        node for node in _nodes_for_thread(test_client, source["id"]) if node["kind"] == "start"
+    )
     unplaced = _create_node(test_client, kind="beat", title="Unplaced")
 
     response = test_client.post(
@@ -455,26 +543,41 @@ def test_move_node_between_threads_and_error_paths(test_client):
     assert beat["id"] not in [node["id"] for node in _nodes_for_thread(test_client, source["id"])]
     assert beat["id"] in [node["id"] for node in _nodes_for_thread(test_client, target["id"])]
 
-    assert test_client.post(
-        f"/api/loom/threads/9999/items/{beat['id']}/move",
-        json={"target_thread_id": target["id"], "position": 5},
-    ).status_code == 404
-    assert test_client.post(
-        f"/api/loom/threads/{target['id']}/items/{beat['id']}/move",
-        json={"target_thread_id": target["id"], "position": 5},
-    ).status_code == 422
-    assert test_client.post(
-        f"/api/loom/threads/{source['id']}/items/{unplaced['id']}/move",
-        json={"target_thread_id": target["id"], "position": 5},
-    ).status_code == 404
-    assert test_client.post(
-        f"/api/loom/threads/{source['id']}/items/{start['id']}/move",
-        json={"target_thread_id": target["id"], "position": 5},
-    ).status_code == 422
-    assert test_client.post(
-        f"/api/loom/threads/{target['id']}/items/{beat['id']}/move",
-        json={"target_thread_id": 9999, "position": 5},
-    ).status_code == 404
+    assert (
+        test_client.post(
+            f"/api/loom/threads/9999/items/{beat['id']}/move",
+            json={"target_thread_id": target["id"], "position": 5},
+        ).status_code
+        == 404
+    )
+    assert (
+        test_client.post(
+            f"/api/loom/threads/{target['id']}/items/{beat['id']}/move",
+            json={"target_thread_id": target["id"], "position": 5},
+        ).status_code
+        == 422
+    )
+    assert (
+        test_client.post(
+            f"/api/loom/threads/{source['id']}/items/{unplaced['id']}/move",
+            json={"target_thread_id": target["id"], "position": 5},
+        ).status_code
+        == 404
+    )
+    assert (
+        test_client.post(
+            f"/api/loom/threads/{source['id']}/items/{start['id']}/move",
+            json={"target_thread_id": target["id"], "position": 5},
+        ).status_code
+        == 422
+    )
+    assert (
+        test_client.post(
+            f"/api/loom/threads/{target['id']}/items/{beat['id']}/move",
+            json={"target_thread_id": 9999, "position": 5},
+        ).status_code
+        == 404
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -543,16 +646,35 @@ def test_log_session_happy_path(test_client):
     _create_node(test_client, thread_id=thread1["id"], kind="session", title="Done", position=20)
 
     beat2 = _create_node(
-        test_client, thread_id=thread2["id"], kind="beat", title="Clear the warren", position=20, carried_count=3
+        test_client,
+        thread_id=thread2["id"],
+        kind="beat",
+        title="Clear the warren",
+        position=20,
+        carried_count=3,
     )
     beat3 = _create_node(
-        test_client, thread_id=thread3["id"], kind="beat", title="Find the hat", position=20, carried_count=1
+        test_client,
+        thread_id=thread3["id"],
+        kind="beat",
+        title="Find the hat",
+        position=20,
+        carried_count=1,
     )
-    beat4 = _create_node(test_client, thread_id=thread4["id"], kind="beat", title="Track the thief", position=20)
+    beat4 = _create_node(
+        test_client, thread_id=thread4["id"], kind="beat", title="Track the thief", position=20
+    )
     beat5 = _create_node(
-        test_client, thread_id=thread5["id"], kind="beat", title="Lead the hunters", position=20, carried_count=2
+        test_client,
+        thread_id=thread5["id"],
+        kind="beat",
+        title="Lead the hunters",
+        position=20,
+        carried_count=2,
     )
-    beat6 = _create_node(test_client, thread_id=thread6["id"], kind="beat", title="Open the door", position=20)
+    beat6 = _create_node(
+        test_client, thread_id=thread6["id"], kind="beat", title="Open the door", position=20
+    )
 
     response = test_client.post(
         "/api/loom/sessions/log",
@@ -601,20 +723,33 @@ def test_log_session_error_paths(test_client):
     thread = _create_thread(test_client, name="For Errors")
 
     _create_session(test_client, ordinal=1, name="Existing")
-    assert test_client.post(
-        "/api/loom/sessions/log",
-        json={"ordinal": 1, "name": "Duplicate", "outcomes": {}},
-    ).status_code == 400
+    assert (
+        test_client.post(
+            "/api/loom/sessions/log",
+            json={"ordinal": 1, "name": "Duplicate", "outcomes": {}},
+        ).status_code
+        == 400
+    )
 
-    assert test_client.post(
-        "/api/loom/sessions/log",
-        json={"ordinal": 99, "name": "Bad", "outcomes": {"999": {"outcome": "quiet"}}},
-    ).status_code == 422
+    assert (
+        test_client.post(
+            "/api/loom/sessions/log",
+            json={"ordinal": 99, "name": "Bad", "outcomes": {"999": {"outcome": "quiet"}}},
+        ).status_code
+        == 422
+    )
 
-    assert test_client.post(
-        "/api/loom/sessions/log",
-        json={"ordinal": 99, "name": "Bad", "outcomes": {str(thread["id"]): {"outcome": "invalid"}}},
-    ).status_code == 422
+    assert (
+        test_client.post(
+            "/api/loom/sessions/log",
+            json={
+                "ordinal": 99,
+                "name": "Bad",
+                "outcomes": {str(thread["id"]): {"outcome": "invalid"}},
+            },
+        ).status_code
+        == 422
+    )
 
 
 def test_log_session_rollback_on_invalid_outcome(test_client):

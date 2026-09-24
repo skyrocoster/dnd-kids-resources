@@ -49,6 +49,7 @@ from .characters import (
     PlayerUpdate,
 )
 from .common import (
+    WINDOWS_RESERVED_AUDIO_STEMS,
     Ability,
     AbilityName,
     AbilityScoreValue,
@@ -62,10 +63,10 @@ from .common import (
     Skill,
     SpellComponent,
     StrictModel,
-    WINDOWS_RESERVED_AUDIO_STEMS,
     WeaponProperty,
 )
 from .creatures import (
+    NPC,
     AbilityScores,
     ArmorClass,
     ArmorClassEntry,
@@ -77,18 +78,17 @@ from .creatures import (
     HitPoints,
     Monster,
     MonsterCreate,
-    MonsterFields,
     MonsterFeatures,
+    MonsterFields,
     MonsterUpdate,
     MovementSpeed,
-    NPC,
     NPCCreate,
     NPCFields,
     NPCUpdate,
     Sense,
+    SpellcastingBlock,
     SpellGroup,
     SpellReference,
-    SpellcastingBlock,
 )
 from .equipment import (
     Item,
@@ -103,9 +103,9 @@ from .equipment import (
     WeaponUpdate,
 )
 from .spells import (
+    SPELL_CATEGORY_ORDER,
     PlayerSpellAssignments,
     PlayerWeaponAssignments,
-    SPELL_CATEGORY_ORDER,
     Spell,
     SpellAreaOfEffect,
     SpellAttack,

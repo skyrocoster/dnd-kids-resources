@@ -487,12 +487,12 @@
   stroke-linecap: square;
 }
 
-.maplab-wall[data-wall-kind='natural'] {
+.maplab-wall[data-wall-kind="natural"] {
   stroke: var(--wall-natural-stroke);
   stroke-dasharray: 5 2 2 2;
 }
 
-.maplab-wall[data-wall-kind='open'] {
+.maplab-wall[data-wall-kind="open"] {
   stroke: var(--wall-open-stroke);
   stroke-dasharray: 4 4;
 }
@@ -538,7 +538,7 @@
   stroke-width: 8;
 }
 
-.maplab-door[aria-pressed='true'] .maplab-door-leaf {
+.maplab-door[aria-pressed="true"] .maplab-door-leaf {
   stroke-width: 8;
 }
 
@@ -551,10 +551,96 @@
  * only carries the tab's own resting color and its selected-state override. */
 .maplab-floor-tab {
   color: var(--md-on-surface-variant);
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 
-.maplab-floor-tab[aria-selected='true'] {
+.maplab-floor-tab[aria-selected="true"] {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-color: var(--md-primary);
+}
+
+/* The editor floor selector uses the shared ToggleGroup for single-choice semantics while keeping
+ * the same unboxed row and pill treatment as the previous toolbar buttons. */
+.maplab-editor .maplab-floor-tabs.form-advanced-toggle-group {
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.maplab-editor .maplab-floor-tabs .form-advanced-toggle {
+  min-width: var(--control-height);
+  min-height: var(--control-height);
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 999px;
+  background: var(--md-surface-2);
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.maplab-editor .maplab-floor-tabs .form-advanced-toggle:hover:not([data-disabled]) {
+  border-color: var(--md-outline);
+}
+
+.maplab-editor .maplab-floor-tabs .form-advanced-toggle:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+.maplab-editor .maplab-floor-tabs .form-advanced-toggle[data-pressed] {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-color: var(--md-primary);
+}
+
+/* The viewer uses the same controlled single-choice floor control with the same local pill styling. */
+.maplab-page .maplab-floor-tabs.form-advanced-toggle-group {
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.maplab-page .maplab-floor-tabs .form-advanced-toggle {
+  min-width: var(--control-height);
+  min-height: var(--control-height);
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 999px;
+  background: var(--md-surface-2);
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.maplab-page .maplab-floor-tabs .form-advanced-toggle:hover:not([data-disabled]) {
+  border-color: var(--md-outline);
+}
+
+.maplab-page .maplab-floor-tabs .form-advanced-toggle:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+.maplab-page .maplab-floor-tabs .form-advanced-toggle[data-pressed] {
   background: var(--md-primary-container);
   color: var(--md-on-primary-container);
   border-color: var(--md-primary);
@@ -568,7 +654,9 @@
 .maplab-stair-marker {
   fill: var(--md-surface-3);
   stroke-width: 3;
-  transition: stroke 0.15s ease, stroke-width 0.15s ease;
+  transition:
+    stroke 0.15s ease,
+    stroke-width 0.15s ease;
 }
 
 .maplab-stair-icon {
@@ -627,7 +715,9 @@
 .maplab-prop-marker {
   fill: var(--md-surface-3);
   stroke-width: 3;
-  transition: stroke 0.15s ease, stroke-width 0.15s ease;
+  transition:
+    stroke 0.15s ease,
+    stroke-width 0.15s ease;
 }
 
 .maplab-prop-icon {
@@ -820,7 +910,9 @@
   font-size: var(--type-label-size);
   font-weight: var(--type-label-weight);
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .maplab-pill-button:hover {
@@ -999,7 +1091,9 @@
   max-width: 48rem;
   overflow: hidden;
   opacity: 1;
-  transition: max-width var(--motion-normal), opacity var(--motion-fast);
+  transition:
+    max-width var(--motion-normal),
+    opacity var(--motion-fast);
 }
 
 .maplab-toolbar-tray[data-collapsed] .maplab-toolbar-tray-controls {
@@ -1183,7 +1277,9 @@
 .maplab-portal-marker {
   fill: var(--md-surface-3);
   stroke-width: 3;
-  transition: stroke 0.15s ease, stroke-width 0.15s ease;
+  transition:
+    stroke 0.15s ease,
+    stroke-width 0.15s ease;
 }
 
 .maplab-portal-icon {
@@ -1401,7 +1497,9 @@
     padding: var(--space-3);
   }
 
-  .maplab-toolbar { align-items: stretch; }
+  .maplab-toolbar {
+    align-items: stretch;
+  }
 
   .maplab-toolbar-group {
     flex: 0 0 auto;

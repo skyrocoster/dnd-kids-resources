@@ -1,10 +1,14 @@
 import pytest
 
 import backend.app.db as db_module
-
 from backend.tests.conftest import db_failure_conn
 
-_PAYLOAD = {"name": "Audit Ruby", "value_gp": 50.5, "category": "gem", "description": "A polished red gemstone."}
+_PAYLOAD = {
+    "name": "Audit Ruby",
+    "value_gp": 50.5,
+    "category": "gem",
+    "description": "A polished red gemstone.",
+}
 
 
 def test_item_crud_and_seed_catalog(test_client, real_client):
@@ -38,7 +42,9 @@ def test_item_crud_and_seed_catalog(test_client, real_client):
     assert test_client.delete("/api/items/9999").status_code == 404
 
 
-@pytest.mark.parametrize(("operation", "expected"), [("create", 500), ("update", 500), ("delete", 500)])
+@pytest.mark.parametrize(
+    ("operation", "expected"), [("create", 500), ("update", 500), ("delete", 500)]
+)
 def test_item_mutations_db_failure(monkeypatch, test_client, operation, expected):
     """Items lack the shared except-handler that maps DB failures to 400, so
     create/update/delete DB failures surface as 500 — locked here as-is."""

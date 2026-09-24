@@ -6,7 +6,7 @@
   Generate new token sets via frontend/src/tools/generate-md3-tokens.mjs.
 */
 
-:root[data-theme='dark'] {
+:root[data-theme="dark"] {
   /* Primary (violet) — spells */
   --md-primary: #d0bcff;
   --md-on-primary: #381e72;
@@ -38,35 +38,35 @@
   /* passage-locked — generated via material-color-utilities from source #5b6fd9,
      Blend.harmonize()'d toward primary seed #d0bcff (hue 289.1, chroma 40.0),
      tones 80/20/30/90. */
-  --md-passage-locked: #C5C0FF;
-  --md-on-passage-locked: #2C2767;
-  --md-passage-locked-container: #433F7F;
-  --md-on-passage-locked-container: #E3DFFF;
+  --md-passage-locked: #c5c0ff;
+  --md-on-passage-locked: #2c2767;
+  --md-passage-locked-container: #433f7f;
+  --md-on-passage-locked-container: #e3dfff;
 
   /* passage-hidden — generated via material-color-utilities from source #8b8b8b,
      Blend.harmonize()'d toward primary seed #d0bcff (hue 209.5, chroma 2.0),
      tones 80/20/30/90. */
-  --md-passage-hidden: #C7C6C6;
-  --md-on-passage-hidden: #2F3031;
+  --md-passage-hidden: #c7c6c6;
+  --md-on-passage-hidden: #2f3031;
   --md-passage-hidden-container: #464747;
-  --md-on-passage-hidden-container: #E3E2E2;
+  --md-on-passage-hidden-container: #e3e2e2;
 
   /* door — generated via material-color-utilities from source #8B5E3C,
       Blend.harmonize()'d toward primary seed #d0bcff (hue 39.4, chroma 26.5),
       tones 80/20/30/90. Fixed leaf color for door markers — door status is carried by
       badges, not by recoloring the leaf. */
-  --md-door: #F9B79F;
-  --md-on-door: #4E2515;
-  --md-door-container: #683B29;
-  --md-on-door-container: #FFDBCE;
+  --md-door: #f9b79f;
+  --md-on-door: #4e2515;
+  --md-door-container: #683b29;
+  --md-on-door-container: #ffdbce;
 
   /* loot — generated via material-color-utilities from source #d4a574,
       Blend.harmonize()'d toward primary seed #d0bcff (hue 51.3, chroma 26.7),
       tones 80/20/30/90. Used by items and loot bundles. */
-  --md-loot: #F6B994;
-  --md-on-loot: #4C270C;
-  --md-loot-container: #663C20;
-  --md-on-loot-container: #FFDBC7;
+  --md-loot: #f6b994;
+  --md-on-loot: #4c270c;
+  --md-loot-container: #663c20;
+  --md-on-loot-container: #ffdbc7;
 
   /* NPC (rose/magenta) — generated via material-color-utilities from source
      #e85d9e, Blend.harmonize()'d toward the primary/violet seed (#d0bcff),
@@ -81,131 +81,131 @@
   /* loom-anchor — generated via material-color-utilities from source #e8b33d,
      Blend.harmonize()'d toward primary seed #d0bcff (hue 69.2, chroma 40),
      tones 80/20/30/90. Planned/future milestones on the Loom canvas. */
-  --md-loom-anchor: #FDB967;
-  --md-on-loom-anchor: #472A00;
-  --md-loom-anchor-container: #663E00;
-  --md-on-loom-anchor-container: #FFDDB9;
+  --md-loom-anchor: #fdb967;
+  --md-on-loom-anchor: #472a00;
+  --md-loom-anchor-container: #663e00;
+  --md-on-loom-anchor-container: #ffddb9;
 
   /* Loom thread accents — hue-spread seeds so the six thread colors stay
      mutually distinguishable at a glance. Generated via
      frontend/src/tools/generate-md3-tokens.mjs; regenerate if seed hues change. */
   /* loom-thread-1 — source #e05d5d, harmonized hue 5.5, chroma 40 */
-  --md-loom-thread-1: #FFB1C1;
-  --md-on-loom-thread-1: #59192C;
+  --md-loom-thread-1: #ffb1c1;
+  --md-on-loom-thread-1: #59192c;
   --md-loom-thread-1-container: #753042;
-  --md-on-loom-thread-1-container: #FFD9DF;
+  --md-on-loom-thread-1-container: #ffd9df;
 
   /* loom-thread-2 — source #e09a3d, harmonized hue 54.3, chroma 40 */
-  --md-loom-thread-2: #FFB784;
-  --md-on-loom-thread-2: #4F2500;
+  --md-loom-thread-2: #ffb784;
+  --md-on-loom-thread-2: #4f2500;
   --md-loom-thread-2-container: #703701;
-  --md-on-loom-thread-2-container: #FFDCC5;
+  --md-on-loom-thread-2-container: #ffdcc5;
 
   /* loom-thread-3 — source #7bc47b, harmonized hue 162.4, chroma 40 */
-  --md-loom-thread-3: #87D7AB;
+  --md-loom-thread-3: #87d7ab;
   --md-on-loom-thread-3: #003822;
   --md-loom-thread-3-container: #005234;
-  --md-on-loom-thread-3-container: #A3F4C6;
+  --md-on-loom-thread-3-container: #a3f4c6;
 
   /* loom-thread-4 — source #4fb8c9, harmonized hue 226, chroma 40 */
-  --md-loom-thread-4: #7ED1F3;
+  --md-loom-thread-4: #7ed1f3;
   --md-on-loom-thread-4: #003545;
-  --md-loom-thread-4-container: #004D62;
-  --md-on-loom-thread-4-container: #BAEAFF;
+  --md-loom-thread-4-container: #004d62;
+  --md-on-loom-thread-4-container: #baeaff;
 
   /* loom-thread-5 — source #7d8fe0, harmonized hue 288.1, chroma 40 */
-  --md-loom-thread-5: #C4C0FF;
-  --md-on-loom-thread-5: #2B2867;
-  --md-loom-thread-5-container: #423F7F;
-  --md-on-loom-thread-5-container: #E3DFFF;
+  --md-loom-thread-5: #c4c0ff;
+  --md-on-loom-thread-5: #2b2867;
+  --md-loom-thread-5-container: #423f7f;
+  --md-on-loom-thread-5-container: #e3dfff;
 
   /* loom-thread-6 — source #c97bd0, harmonized hue 314.2, chroma 40 */
-  --md-loom-thread-6: #E1B6FD;
-  --md-on-loom-thread-6: #43205C;
-  --md-loom-thread-6-container: #5B3774;
-  --md-on-loom-thread-6-container: #F3DAFF;
+  --md-loom-thread-6: #e1b6fd;
+  --md-on-loom-thread-6: #43205c;
+  --md-loom-thread-6-container: #5b3774;
+  --md-on-loom-thread-6-container: #f3daff;
 
   /* ─── Banked — damage-type and domain roles (reserved for future use) ──── */
 
   /* divine — healing, cleric, paladin, radiant damage. Generated via material-color-utilities
      from source #F9C156, Blend.harmonize()'d toward primary seed #d0bcff
      (hue 66.5, chroma 36.2), tones 80/20/30/90. */
-  --md-divine: #FBBA73;
+  --md-divine: #fbba73;
   --md-on-divine: #492900;
-  --md-divine-container: #683D00;
-  --md-on-divine-container: #FFDCBC;
+  --md-divine-container: #683d00;
+  --md-on-divine-container: #ffdcbc;
 
   /* arcane — arcane/eldritch magic, magic items, enchantment. Generated via
      material-color-utilities from source #6BD4FF, Blend.harmonize()'d toward
      primary seed #d0bcff (hue 243.5, chroma 39.2), tones 80/20/30/90. */
-  --md-arcane: #90CDFE;
-  --md-on-arcane: #00344F;
-  --md-arcane-container: #004B71;
-  --md-on-arcane-container: #CBE6FF;
+  --md-arcane: #90cdfe;
+  --md-on-arcane: #00344f;
+  --md-arcane-container: #004b71;
+  --md-on-arcane-container: #cbe6ff;
 
   /* nature — nature, druid, ranger, plants, animals. Generated via material-color-utilities
      from source #6BAF8C, Blend.harmonize()'d toward primary seed #d0bcff
      (hue 179, chroma 35.6), tones 80/20/30/90. */
-  --md-nature: #86D5C1;
-  --md-on-nature: #00382E;
+  --md-nature: #86d5c1;
+  --md-on-nature: #00382e;
   --md-nature-container: #005143;
-  --md-on-nature-container: #A2F2DD;
+  --md-on-nature-container: #a2f2dd;
 
   /* fire — fire damage, heat, lava. Generated via material-color-utilities from
      source #FF6B35, Blend.harmonize()'d toward primary seed #d0bcff
      (hue 22, chroma 40), tones 80/20/30/90. */
-  --md-fire: #FFB3AE;
-  --md-on-fire: #5A1B1A;
-  --md-fire-container: #77302E;
-  --md-on-fire-container: #FFDAD7;
+  --md-fire: #ffb3ae;
+  --md-on-fire: #5a1b1a;
+  --md-fire-container: #77302e;
+  --md-on-fire-container: #ffdad7;
 
   /* cold — cold damage, ice, water, frost. Generated via material-color-utilities
      from source #69DBD4, Blend.harmonize()'d toward primary seed #d0bcff
      (hue 206.6, chroma 40), tones 80/20/30/90. */
-  --md-cold: #73D5E1;
-  --md-on-cold: #00363B;
-  --md-cold-container: #004F56;
-  --md-on-cold-container: #90F2FD;
+  --md-cold: #73d5e1;
+  --md-on-cold: #00363b;
+  --md-cold-container: #004f56;
+  --md-on-cold-container: #90f2fd;
 
   /* lightning — lightning / thunder damage. Generated via material-color-utilities
      from source #FFD43B, Blend.harmonize()'d toward primary seed #d0bcff
      (hue 78.7, chroma 31.5), tones 80/20/30/90. */
-  --md-lightning: #ECBF79;
-  --md-on-lightning: #432C00;
-  --md-lightning-container: #5F4104;
-  --md-on-lightning-container: #FFDEAD;
+  --md-lightning: #ecbf79;
+  --md-on-lightning: #432c00;
+  --md-lightning-container: #5f4104;
+  --md-on-lightning-container: #ffdead;
 
   /* poison — poison, acid, necrotic damage. Generated via material-color-utilities
      from source #94D82D, Blend.harmonize()'d toward primary seed #d0bcff
      (hue 145.7, chroma 40), tones 80/20/30/90. */
-  --md-poison: #9BD594;
-  --md-on-poison: #01390A;
-  --md-poison-container: #1D511F;
-  --md-on-poison-container: #B7F2AE;
+  --md-poison: #9bd594;
+  --md-on-poison: #01390a;
+  --md-poison-container: #1d511f;
+  --md-on-poison-container: #b7f2ae;
 
   /* psychic — psychic damage, mind, illusion, charm. Generated via material-color-utilities
      from source #DA77F2, Blend.harmonize()'d toward primary seed #d0bcff
      (hue 312.2, chroma 40), tones 80/20/30/90. */
-  --md-psychic: #DFB7FF;
-  --md-on-psychic: #41215D;
+  --md-psychic: #dfb7ff;
+  --md-on-psychic: #41215d;
   --md-psychic-container: #593876;
-  --md-on-psychic-container: #F1DAFF;
+  --md-on-psychic-container: #f1daff;
 
   /* boss — boss enemies, legendary encounters. Generated via material-color-utilities
      from source #FF6B6B, Blend.harmonize()'d toward primary seed #d0bcff
      (hue 5.3, chroma 40), tones 80/20/30/90. */
-  --md-boss: #FFB1C1;
-  --md-on-boss: #59192C;
+  --md-boss: #ffb1c1;
+  --md-on-boss: #59192c;
   --md-boss-container: #753042;
-  --md-on-boss-container: #FFD9DF;
+  --md-on-boss-container: #ffd9df;
 
   /* skill — skills, proficiencies, ability checks. Generated via material-color-utilities
      from source #74C0FC, Blend.harmonize()'d toward primary seed #d0bcff
      (hue 259.7, chroma 40), tones 80/20/30/90. */
-  --md-skill: #A6C8FF;
-  --md-on-skill: #00315F;
-  --md-skill-container: #18477D;
-  --md-on-skill-container: #D5E3FF;
+  --md-skill: #a6c8ff;
+  --md-on-skill: #00315f;
+  --md-skill-container: #18477d;
+  --md-on-skill-container: #d5e3ff;
 
   /* Neutral surfaces — violet-tinted near-black, elevation via tone step */
   --md-surface: #1c1b1f;
@@ -224,8 +224,8 @@
   --md-surface-variant: var(--md-surface-3);
 
   /* Type scale */
-  --type-face: 'Roboto Flex', 'Segoe UI', system-ui, sans-serif;
-  --type-face-mono: 'Roboto Mono', ui-monospace, 'Consolas', monospace;
+  --type-face: "Roboto Flex", "Segoe UI", system-ui, sans-serif;
+  --type-face-mono: "Roboto Mono", ui-monospace, "Consolas", monospace;
 
   --type-headline-size: 1.5rem;
   --type-headline-line: 2rem;
@@ -317,24 +317,24 @@
   /* KID_PALETTE:START */
   /* transition â€” green family, solved via material-color-utilities
      hue 139.0, chroma 50.3, tone 58.1. */
-  --kid-transition: #609A46;
+  --kid-transition: #609a46;
   --kid-on-transition: #000000;
 
   /* opening â€” yellow family, solved via material-color-utilities
      hue 59.8, chroma 50.2, tone 72.0. */
-  --kid-opening: #F79B43;
+  --kid-opening: #f79b43;
   --kid-on-opening: #000000;
 
   /* fixture â€” blue family, solved via material-color-utilities
      hue 237.2, chroma 50.1, tone 74.9. */
-  --kid-fixture: #58C3FD;
+  --kid-fixture: #58c3fd;
   --kid-on-fixture: #000000;
 
   /* people â€” pink family, solved via material-color-utilities
      hue 315.2, chroma 49.9, tone 65.0. */
-  --kid-people: #BE88E1;
+  --kid-people: #be88e1;
   --kid-on-people: #000000;
-/* KID_PALETTE:END */
+  /* KID_PALETTE:END */
 
   --z-editor: 100;
   --z-floating: 150;
@@ -342,42 +342,42 @@
 }
 
 /* Content-role variants consumed via data-variant on Card/SearchList. */
-[data-variant='spell'] {
+[data-variant="spell"] {
   --variant-accent: var(--md-primary);
   --variant-on-accent: var(--md-on-primary);
   --variant-container: var(--md-primary-container);
   --variant-on-container: var(--md-on-primary-container);
 }
 
-[data-variant='monster'] {
+[data-variant="monster"] {
   --variant-accent: var(--md-tertiary);
   --variant-on-accent: var(--md-on-tertiary);
   --variant-container: var(--md-tertiary-container);
   --variant-on-container: var(--md-on-tertiary-container);
 }
 
-[data-variant='weapon'] {
+[data-variant="weapon"] {
   --variant-accent: var(--md-secondary);
   --variant-on-accent: var(--md-on-secondary);
   --variant-container: var(--md-secondary-container);
   --variant-on-container: var(--md-on-secondary-container);
 }
 
-[data-variant='loot'] {
+[data-variant="loot"] {
   --variant-accent: var(--md-loot);
   --variant-on-accent: var(--md-on-loot);
   --variant-container: var(--md-loot-container);
   --variant-on-container: var(--md-on-loot-container);
 }
 
-[data-variant='neutral'] {
+[data-variant="neutral"] {
   --variant-accent: var(--md-on-surface-variant);
   --variant-on-accent: var(--md-surface);
   --variant-container: var(--md-surface-3);
   --variant-on-container: var(--md-on-surface);
 }
 
-[data-variant='npc'] {
+[data-variant="npc"] {
   --variant-accent: var(--md-npc);
   --variant-on-accent: var(--md-on-npc);
   --variant-container: var(--md-npc-container);
@@ -386,70 +386,70 @@
 
 /* ─── Banked content-role variants (reserved, ready to adopt) ────────────── */
 
-[data-variant='divine'] {
+[data-variant="divine"] {
   --variant-accent: var(--md-divine);
   --variant-on-accent: var(--md-on-divine);
   --variant-container: var(--md-divine-container);
   --variant-on-container: var(--md-on-divine-container);
 }
 
-[data-variant='arcane'] {
+[data-variant="arcane"] {
   --variant-accent: var(--md-arcane);
   --variant-on-accent: var(--md-on-arcane);
   --variant-container: var(--md-arcane-container);
   --variant-on-container: var(--md-on-arcane-container);
 }
 
-[data-variant='nature'] {
+[data-variant="nature"] {
   --variant-accent: var(--md-nature);
   --variant-on-accent: var(--md-on-nature);
   --variant-container: var(--md-nature-container);
   --variant-on-container: var(--md-on-nature-container);
 }
 
-[data-variant='fire'] {
+[data-variant="fire"] {
   --variant-accent: var(--md-fire);
   --variant-on-accent: var(--md-on-fire);
   --variant-container: var(--md-fire-container);
   --variant-on-container: var(--md-on-fire-container);
 }
 
-[data-variant='cold'] {
+[data-variant="cold"] {
   --variant-accent: var(--md-cold);
   --variant-on-accent: var(--md-on-cold);
   --variant-container: var(--md-cold-container);
   --variant-on-container: var(--md-on-cold-container);
 }
 
-[data-variant='lightning'] {
+[data-variant="lightning"] {
   --variant-accent: var(--md-lightning);
   --variant-on-accent: var(--md-on-lightning);
   --variant-container: var(--md-lightning-container);
   --variant-on-container: var(--md-on-lightning-container);
 }
 
-[data-variant='poison'] {
+[data-variant="poison"] {
   --variant-accent: var(--md-poison);
   --variant-on-accent: var(--md-on-poison);
   --variant-container: var(--md-poison-container);
   --variant-on-container: var(--md-on-poison-container);
 }
 
-[data-variant='psychic'] {
+[data-variant="psychic"] {
   --variant-accent: var(--md-psychic);
   --variant-on-accent: var(--md-on-psychic);
   --variant-container: var(--md-psychic-container);
   --variant-on-container: var(--md-on-psychic-container);
 }
 
-[data-variant='boss'] {
+[data-variant="boss"] {
   --variant-accent: var(--md-boss);
   --variant-on-accent: var(--md-on-boss);
   --variant-container: var(--md-boss-container);
   --variant-on-container: var(--md-on-boss-container);
 }
 
-[data-variant='skill'] {
+[data-variant="skill"] {
   --variant-accent: var(--md-skill);
   --variant-on-accent: var(--md-on-skill);
   --variant-container: var(--md-skill-container);

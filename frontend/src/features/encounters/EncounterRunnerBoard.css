@@ -95,7 +95,8 @@
 
 /* Wide-screen nicety only: two columns when an add panel is open and there's room. */
 @media (min-width: 900px) {
-  .encounter-runner-board:not(.compact) .encounter-runner-body:has(.add-monster-panel, .add-player-panel) {
+  .encounter-runner-board:not(.compact)
+    .encounter-runner-body:has(.add-monster-panel, .add-player-panel) {
     grid-template-columns: 1fr 20rem;
     align-items: start;
   }

@@ -10,10 +10,24 @@ export interface TextInputProps extends Omit<ComponentPropsWithoutRef<"input">, 
   invalid?: boolean;
 }
 
-export function TextInput({ type = "text", leading, trailing, invalid = false, className, ...props }: TextInputProps) {
-  return <span className="fc-input-frame" data-invalid={invalid || undefined}>
-    {leading ? <span className="fc-input-slot">{leading}</span> : null}
-    <Input {...props} aria-invalid={invalid || undefined} className={["fc-text-input", className].filter(Boolean).join(" ")} type={type} />
-    {trailing ? <span className="fc-input-slot">{trailing}</span> : null}
-  </span>;
+export function TextInput({
+  type = "text",
+  leading,
+  trailing,
+  invalid = false,
+  className,
+  ...props
+}: TextInputProps) {
+  return (
+    <span className="fc-input-frame" data-invalid={invalid || undefined}>
+      {leading ? <span className="fc-input-slot">{leading}</span> : null}
+      <Input
+        {...props}
+        aria-invalid={invalid || undefined}
+        className={["fc-text-input", className].filter(Boolean).join(" ")}
+        type={type}
+      />
+      {trailing ? <span className="fc-input-slot">{trailing}</span> : null}
+    </span>
+  );
 }

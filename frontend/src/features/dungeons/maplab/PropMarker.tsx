@@ -1,52 +1,57 @@
-import { ItemIcon } from '../../../components/icons'
-import { BadgeDisc } from '../../../map/BadgeDisc'
-import { PROP_KIND_ICONS } from './fixtureTypes'
-import { boundedBadgeLayout, collapsedStatusDescriptor, collapsedStatusLabel, fixtureMarkerBadges } from '../../../map/markerBadges'
-import { fixturePresentation } from './maplabPresentation'
+import { ItemIcon } from "../../../components/icons";
+import { BadgeDisc } from "../../../map/BadgeDisc";
+import { PROP_KIND_ICONS } from "./fixtureTypes";
+import {
+  boundedBadgeLayout,
+  collapsedStatusDescriptor,
+  collapsedStatusLabel,
+  fixtureMarkerBadges,
+} from "../../../map/markerBadges";
+import { fixturePresentation } from "./maplabPresentation";
 import {
   effectiveFixtureState,
   fixtureStateFromFlags,
   type MapProp,
   type SessionFixtureState,
-} from '../../../model/maplabModel'
+} from "../../../model/maplabModel";
 import {
   MarkerHitArea,
   MarkerGlyph,
   onSquareMarkerGeometry,
   wallAttachedMarkerGeometry,
-} from '../../../map/markerShape'
+} from "../../../map/markerShape";
 
 const PROP_IDENTITY_TOKENS: Record<string, string> = {
-  chest: '--md-loot',
-  encounter: '--md-tertiary',
-  npc: '--md-npc',
-}
+  chest: "--md-loot",
+  encounter: "--md-tertiary",
+  npc: "--md-npc",
+};
 
 interface PropMarkerProps {
-  prop: MapProp
-  cellSize: number
-  selected?: boolean
+  prop: MapProp;
+  cellSize: number;
+  selected?: boolean;
   /** Live session state — the viewer merges this over the authored state; the editor omits it
    * and gets the authored state as-is. */
-  session?: SessionFixtureState
+  session?: SessionFixtureState;
   /** Whether this marker responds to pointer/keyboard — off for the read-only editor render
    * (Stage F2); Stage F3 turns it on for authoring select/click. */
-  interactive?: boolean
+  interactive?: boolean;
   /** Fractional-cell nudge (from `gridMarkerOffset`) when this on-square prop shares its cell with
    * other markers (stairs/portals/props). Ignored for wall-attached props, which anchor to their
    * wall segment instead. */
-  offset?: { dx: number; dy: number }
+  offset?: { dx: number; dy: number };
   /** True when 2+ markers share this cell — shrinks the marker to `GROUPED_MARKER_RADIUS_FRACTION`
    * so `gridMarkerOffset`'s spacing actually separates same-cell markers instead of stacking
    * full-size circles a few px apart. */
-  grouped?: boolean
-  simplified?: boolean
-  onMouseEnter?: () => void
-  onMouseLeave?: () => void
-  onFocus?: () => void
-  onBlur?: () => void
-  onClick?: () => void
-  onContextMenu?: () => void
+  grouped?: boolean;
+  simplified?: boolean;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
+  onClick?: () => void;
+  onContextMenu?: () => void;
 }
 
 /** Shared prop-marker render for both the viewer and editor pages — an on-square prop centers on
@@ -69,20 +74,32 @@ export function PropMarker({
   onClick,
   onContextMenu,
 }: PropMarkerProps) {
-  const onWall = prop.side !== undefined
+  const onWall = prop.side !== undefined;
   const { cx, cy, radius, iconSize } = onWall
     ? wallAttachedMarkerGeometry(prop.cell, prop.side!, cellSize)
-    : onSquareMarkerGeometry(prop.cell, cellSize, { offset, grouped })
+    : onSquareMarkerGeometry(prop.cell, cellSize, { offset, grouped });
 
-  const effective = effectiveFixtureState(prop.state ?? fixtureStateFromFlags(prop), session)
-  const presentation = fixturePresentation(effective)
-  const token = onWall ? presentation.token : (PROP_IDENTITY_TOKENS[prop.kind] ?? '--md-on-surface-variant')
-  const Icon = PROP_KIND_ICONS[prop.kind] ?? ItemIcon
-  const badges = fixtureMarkerBadges(prop, session)
-  const badge = collapsedStatusDescriptor(badges)
-  const badgePosition = badge ? boundedBadgeLayout(prop.cell[0] * cellSize, prop.cell[1] * cellSize, cellSize, cx, cy, radius, 8) : null
-  const dasharray = presentation.state === 'concealed' ? '4 3' : undefined
-  const label = `${prop.title ?? prop.kind} — ${collapsedStatusLabel(badges, presentation.label)}`
+  const effective = effectiveFixtureState(prop.state ?? fixtureStateFromFlags(prop), session);
+  const presentation = fixturePresentation(effective);
+  const token = onWall
+    ? presentation.token
+    : (PROP_IDENTITY_TOKENS[prop.kind] ?? "--md-on-surface-variant");
+  const Icon = PROP_KIND_ICONS[prop.kind] ?? ItemIcon;
+  const badges = fixtureMarkerBadges(prop, session);
+  const badge = collapsedStatusDescriptor(badges);
+  const badgePosition = badge
+    ? boundedBadgeLayout(
+        prop.cell[0] * cellSize,
+        prop.cell[1] * cellSize,
+        cellSize,
+        cx,
+        cy,
+        radius,
+        8,
+      )
+    : null;
+  const dasharray = presentation.state === "concealed" ? "4 3" : undefined;
+  const label = `${prop.title ?? prop.kind} — ${collapsedStatusLabel(badges, presentation.label)}`;
 
   return (
     <MarkerHitArea
@@ -127,5 +144,5 @@ export function PropMarker({
         />
       ) : null}
     </MarkerHitArea>
-  )
+  );
 }

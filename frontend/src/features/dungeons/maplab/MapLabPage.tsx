@@ -1,34 +1,35 @@
-import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import './MapLabPage.css'
-import { getAtTheTable, listDungeons, setAtTheTable } from '../../../api/client'
-import { MapLabRouteState } from './MapLabRouteState'
-import { useDungeonShellContext } from './dungeonRouteContext'
-import { useMapLabLayout } from './useMapLabLayout'
-import { useMapLabSessionState, type SessionFixtureKind } from './useMapLabSessionState'
-import { useMapCanvasZoom, type ViewportSize } from '../../../map/useMapCanvasZoom'
-import { useMapLabNavigationSession } from './useMapLabNavigationSession'
-import { EyeIcon } from '../../../components/icons'
-import { Popover } from '../../../components/Popover'
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import "./MapLabPage.css";
+import { getAtTheTable, listDungeons, setAtTheTable } from "../../../api/client";
+import { MapLabRouteState } from "./MapLabRouteState";
+import { useDungeonShellContext } from "./dungeonRouteContext";
+import { useMapLabLayout } from "./useMapLabLayout";
+import { useMapLabSessionState, type SessionFixtureKind } from "./useMapLabSessionState";
+import { useMapCanvasZoom, type ViewportSize } from "../../../map/useMapCanvasZoom";
+import { useMapLabNavigationSession } from "./useMapLabNavigationSession";
+import { EyeIcon } from "../../../components/icons";
+import { Popover } from "../../../components/Popover";
+import { ToggleGroup } from "../../../components/form/ToggleGroup";
 import {
   MAP_LAYER_KEYS,
   resolveMapDensity,
   ToolbarTray,
   useMapDensity,
   useMapLayerVisibility,
-} from './MapLabToolbar'
-export { resolveMapDensity, AUTO_DENSITY_SIMPLE_THRESHOLD } from './MapLabToolbar'
+} from "./MapLabToolbar";
+export { resolveMapDensity, AUTO_DENSITY_SIMPLE_THRESHOLD } from "./MapLabToolbar";
 export {
   ToolbarTray,
   useMapDensity,
   useMapLayerVisibility,
   useToolbarTrayCollapse,
-} from './MapLabToolbar'
-import { parseDungeonData } from '../dungeonModel'
-import { type ObstacleInspectorAdapter } from './InspectorPanel'
-import { useActiveRoom } from './useActiveRoom'
-import { MapLabViewerCanvas } from './MapLabViewerCanvas'
-import { MapLabViewerOverlays } from './MapLabViewerOverlays'
+} from "./MapLabToolbar";
+import { parseDungeonData } from "../dungeonModel";
+import { type ObstacleInspectorAdapter } from "./InspectorPanel";
+import { useActiveRoom } from "./useActiveRoom";
+import { MapLabViewerCanvas } from "./MapLabViewerCanvas";
+import { MapLabViewerOverlays } from "./MapLabViewerOverlays";
 import {
   doorsOnFloor,
   floorsInLayout,
@@ -47,19 +48,19 @@ import {
   type SessionFixtureState,
   defaultFixtureState,
   type FixtureState,
-} from '../../../model/maplabModel'
+} from "../../../model/maplabModel";
 
-const CELL_SIZE = 64
+const CELL_SIZE = 64;
 
 /** One Armed-column leaf for the shared inspector's `onToggleArmed` — a sparse session override
  *  carrying just that obstacle's armed value, merged onto the fixture's existing override. */
 function obstacleArmedLeaf(
-  obstacle: 'concealment' | 'lock' | 'trap',
+  obstacle: "concealment" | "lock" | "trap",
   armed: boolean,
 ): SessionFixtureState {
-  if (obstacle === 'concealment') return { obstacles: { concealment: { armed } } }
-  if (obstacle === 'lock') return { obstacles: { lock: { armed } } }
-  return { obstacles: { trap: { armed } } }
+  if (obstacle === "concealment") return { obstacles: { concealment: { armed } } };
+  if (obstacle === "lock") return { obstacles: { lock: { armed } } };
+  return { obstacles: { trap: { armed } } };
 }
 /** Merge a sparse session leaf onto a fixture's current override, then drop any leaf whose value
  *  equals the authored value — a leaf equal to authored is redundant because the fallback already
@@ -72,56 +73,84 @@ function mergeSparseLeaf(
   current: SessionFixtureState | undefined,
   patch: SessionFixtureState,
 ): SessionFixtureState | undefined {
-  const obstacles: SessionFixtureState['obstacles'] = {
-    concealment: { ...(current?.obstacles?.concealment ?? {}), ...(patch.obstacles?.concealment ?? {}) },
+  const obstacles: SessionFixtureState["obstacles"] = {
+    concealment: {
+      ...(current?.obstacles?.concealment ?? {}),
+      ...(patch.obstacles?.concealment ?? {}),
+    },
     lock: { ...(current?.obstacles?.lock ?? {}), ...(patch.obstacles?.lock ?? {}) },
     trap: { ...(current?.obstacles?.trap ?? {}), ...(patch.obstacles?.trap ?? {}) },
-  }
-  const merged: SessionFixtureState = { ...current, ...patch }
+  };
+  const merged: SessionFixtureState = { ...current, ...patch };
 
   if (patch.obstacles || current?.obstacles) {
-    if (obstacles.concealment?.armed !== undefined && obstacles.concealment.armed === authored.obstacles.concealment.armed) {
-      delete obstacles.concealment
+    if (
+      obstacles.concealment?.armed !== undefined &&
+      obstacles.concealment.armed === authored.obstacles.concealment.armed
+    ) {
+      delete obstacles.concealment;
     }
     if (obstacles.lock) {
-      if (obstacles.lock.armed !== undefined && obstacles.lock.armed === authored.obstacles.lock.armed) delete obstacles.lock.armed
-      if (obstacles.lock.shown !== undefined && obstacles.lock.shown === authored.obstacles.lock.shown) delete obstacles.lock.shown
-      if (Object.keys(obstacles.lock).length === 0) delete obstacles.lock
+      if (
+        obstacles.lock.armed !== undefined &&
+        obstacles.lock.armed === authored.obstacles.lock.armed
+      )
+        delete obstacles.lock.armed;
+      if (
+        obstacles.lock.shown !== undefined &&
+        obstacles.lock.shown === authored.obstacles.lock.shown
+      )
+        delete obstacles.lock.shown;
+      if (Object.keys(obstacles.lock).length === 0) delete obstacles.lock;
     }
     if (obstacles.trap) {
-      if (obstacles.trap.armed !== undefined && obstacles.trap.armed === authored.obstacles.trap.armed) delete obstacles.trap.armed
-      if (obstacles.trap.shown !== undefined && obstacles.trap.shown === authored.obstacles.trap.shown) delete obstacles.trap.shown
-      if (Object.keys(obstacles.trap).length === 0) delete obstacles.trap
+      if (
+        obstacles.trap.armed !== undefined &&
+        obstacles.trap.armed === authored.obstacles.trap.armed
+      )
+        delete obstacles.trap.armed;
+      if (
+        obstacles.trap.shown !== undefined &&
+        obstacles.trap.shown === authored.obstacles.trap.shown
+      )
+        delete obstacles.trap.shown;
+      if (Object.keys(obstacles.trap).length === 0) delete obstacles.trap;
     }
-    if (Object.keys(obstacles).length === 0) delete merged.obstacles
-    else merged.obstacles = obstacles
+    if (Object.keys(obstacles).length === 0) delete merged.obstacles;
+    else merged.obstacles = obstacles;
   }
-  if (merged.open !== undefined && merged.open === authored.open) delete merged.open
-  return Object.keys(merged).length === 0 ? undefined : merged
+  if (merged.open !== undefined && merged.open === authored.open) delete merged.open;
+  return Object.keys(merged).length === 0 ? undefined : merged;
 }
 
-
-type InspectableKind = Inspectable['kind']
+type InspectableKind = Inspectable["kind"];
 interface InspectableRef {
-  kind: InspectableKind
-  id: number
+  kind: InspectableKind;
+  id: number;
 }
 
 /** Map Lab prototype page — Stage M2.3: walls, and door/stair affordances with state + details. */
 export function MapLabPage() {
-  const route = useDungeonShellContext()
-  const navigate = useNavigate()
-  const [otherDungeonTitles, setOtherDungeonTitles] = useState<Record<number, string>>({})
-  const { layout, loading: layoutLoading, status: layoutStatus, error: layoutError } = useMapLabLayout(route.dungeonId)
-  const [parsed, setParsed] = useState(() => parseDungeonData(route.dungeon?.data ?? {}))
-  const floors = useMemo(() => floorsInLayout(layout), [layout])
-  const navigation = useMapLabNavigationSession(route.dungeonId)
-  const [activeZ, setActiveZ] = useState<number>(navigation.state.activeZ ?? floors[0]?.z ?? 0)
+  const route = useDungeonShellContext();
+  const navigate = useNavigate();
+  const [otherDungeonTitles, setOtherDungeonTitles] = useState<Record<number, string>>({});
+  const {
+    layout,
+    loading: layoutLoading,
+    status: layoutStatus,
+    error: layoutError,
+  } = useMapLabLayout(route.dungeonId);
+  const [parsed, setParsed] = useState(() => parseDungeonData(route.dungeon?.data ?? {}));
+  const floors = useMemo(() => floorsInLayout(layout), [layout]);
+  const navigation = useMapLabNavigationSession(route.dungeonId);
+  const [activeZ, setActiveZ] = useState<number>(navigation.state.activeZ ?? floors[0]?.z ?? 0);
   // The inspector follows one explicitly selected object — the same rule the editor uses. Click,
   // Enter/Space, and keyboard focus select; hovering only highlights, and nothing clears the
   // selection except selecting something else or re-selecting the same object.
-  const [selectedInspectable, setSelectedInspectable] = useState<InspectableRef | null>(navigation.state.selectedTarget as InspectableRef | null)
-  const focusSelectedRef = useRef(false)
+  const [selectedInspectable, setSelectedInspectable] = useState<InspectableRef | null>(
+    navigation.state.selectedTarget as InspectableRef | null,
+  );
+  const focusSelectedRef = useRef(false);
   const {
     doorSessions,
     stairSessions,
@@ -135,282 +164,321 @@ export function MapLabPage() {
     writeError,
     actionError,
     clearActionError,
-  } = useMapLabSessionState(route.dungeonId)
-  const [resetDungeonConfirmOpen, setResetDungeonConfirmOpen] = useState(false)
-  const [atTableDungeonId, setAtTableDungeonId] = useState<number | null>(null)
-  const [atTablePending, setAtTablePending] = useState(false)
-  const [atTableError, setAtTableError] = useState<string | null>(null)
-  const [partyRoomActionActive, setPartyRoomActionActive] = useState(false)
-  const [activeEncounterId, setActiveEncounterId] = useState<number | null>(null)
-  const [activeNpcId, setActiveNpcId] = useState<number | null>(null)
-  const [portalNavigationError, setPortalNavigationError] = useState<string | null>(null)
-  const zoomApi = useMapCanvasZoom({ initialZoom: navigation.state.zoom })
-  const navigationRouteKey = useRef(route.dungeonId)
+  } = useMapLabSessionState(route.dungeonId);
+  const [resetDungeonConfirmOpen, setResetDungeonConfirmOpen] = useState(false);
+  const [atTableDungeonId, setAtTableDungeonId] = useState<number | null>(null);
+  const [atTablePending, setAtTablePending] = useState(false);
+  const [atTableError, setAtTableError] = useState<string | null>(null);
+  const [partyRoomActionActive, setPartyRoomActionActive] = useState(false);
+  const [activeEncounterId, setActiveEncounterId] = useState<number | null>(null);
+  const [activeNpcId, setActiveNpcId] = useState<number | null>(null);
+  const [portalNavigationError, setPortalNavigationError] = useState<string | null>(null);
+  const zoomApi = useMapCanvasZoom({ initialZoom: navigation.state.zoom });
+  const navigationRouteKey = useRef(route.dungeonId);
   useEffect(() => {
     if (navigationRouteKey.current !== route.dungeonId) {
-      navigationRouteKey.current = route.dungeonId
+      navigationRouteKey.current = route.dungeonId;
       if (navigation.state.activeZ !== undefined) {
-        setActiveZ(navigation.state.activeZ)
-        return
+        setActiveZ(navigation.state.activeZ);
+        return;
       }
     }
-    navigation.setState((current) => ({ ...current, activeZ, zoom: zoomApi.zoom, selectedTarget: selectedInspectable }))
-  }, [activeZ, navigation.setState, navigation.state.activeZ, navigation.state.zoom, route.dungeonId, selectedInspectable, zoomApi.zoom])
-  const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 })
-  const handleViewportResize = useCallback((size: ViewportSize) => setViewportSize(size), [])
-  const { visible: layerVisible, toggleLayer } = useMapLayerVisibility()
-  const { density, setDensity } = useMapDensity()
-  const [viewPopoverOpen, setViewPopoverOpen] = useState(false)
-  const [finderOpen, setFinderOpen] = useState(false)
-  const viewPopoverTriggerRef = useRef<HTMLButtonElement>(null)
-  const simplified = resolveMapDensity(density, zoomApi.zoom.scale) === 'simple'
-  const allLayersHidden = MAP_LAYER_KEYS.every((key) => !layerVisible[key])
+    navigation.setState((current) => ({
+      ...current,
+      activeZ,
+      zoom: zoomApi.zoom,
+      selectedTarget: selectedInspectable,
+    }));
+  }, [
+    activeZ,
+    navigation.setState,
+    navigation.state.activeZ,
+    navigation.state.zoom,
+    route.dungeonId,
+    selectedInspectable,
+    zoomApi.zoom,
+  ]);
+  const [viewportSize, setViewportSize] = useState<ViewportSize>({ width: 0, height: 0 });
+  const handleViewportResize = useCallback((size: ViewportSize) => setViewportSize(size), []);
+  const { visible: layerVisible, toggleLayer } = useMapLayerVisibility();
+  const { density, setDensity } = useMapDensity();
+  const [viewPopoverOpen, setViewPopoverOpen] = useState(false);
+  const [finderOpen, setFinderOpen] = useState(false);
+  const viewPopoverTriggerRef = useRef<HTMLButtonElement>(null);
+  const simplified = resolveMapDensity(density, zoomApi.zoom.scale) === "simple";
+  const allLayersHidden = MAP_LAYER_KEYS.every((key) => !layerVisible[key]);
 
   useEffect(() => {
-    setParsed(parseDungeonData(route.dungeon?.data ?? {}))
-  }, [route.dungeon?.data])
+    setParsed(parseDungeonData(route.dungeon?.data ?? {}));
+  }, [route.dungeon?.data]);
 
   useEffect(() => {
     listDungeons()
-      .then((dungeons) => setOtherDungeonTitles(Object.fromEntries(dungeons.map((d) => [d.id, d.title]))))
-      .catch(() => setOtherDungeonTitles({}))
-  }, [])
+      .then((dungeons) =>
+        setOtherDungeonTitles(Object.fromEntries(dungeons.map((d) => [d.id, d.title]))),
+      )
+      .catch(() => setOtherDungeonTitles({}));
+  }, []);
 
   useEffect(() => {
     getAtTheTable()
       .then((response) => setAtTableDungeonId(response.dungeon_id))
-      .catch(() => setAtTableDungeonId(null))
-  }, [])
+      .catch(() => setAtTableDungeonId(null));
+  }, []);
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
+      if (event.key !== "Escape") return;
       if (viewPopoverOpen) {
-        setViewPopoverOpen(false)
-        return
+        setViewPopoverOpen(false);
+        return;
       }
       if (finderOpen) {
-        setFinderOpen(false)
-        return
+        setFinderOpen(false);
+        return;
       }
       if (activeEncounterId !== null) {
-        setActiveEncounterId(null)
-        return
+        setActiveEncounterId(null);
+        return;
       }
       if (activeNpcId !== null) {
-        setActiveNpcId(null)
-        return
+        setActiveNpcId(null);
+        return;
       }
       if (resetDungeonConfirmOpen) {
-        setResetDungeonConfirmOpen(false)
-        return
+        setResetDungeonConfirmOpen(false);
+        return;
       }
-      setSelectedInspectable(null)
-    }
-    window.addEventListener('keydown', handleEscape)
-    return () => window.removeEventListener('keydown', handleEscape)
-  }, [activeEncounterId, activeNpcId, finderOpen, resetDungeonConfirmOpen, viewPopoverOpen])
+      setSelectedInspectable(null);
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [activeEncounterId, activeNpcId, finderOpen, resetDungeonConfirmOpen, viewPopoverOpen]);
 
-  const isAtTable = route.dungeonId !== null && atTableDungeonId === route.dungeonId
-  const viewerError = (partyRoomActionActive ? null : actionError) ?? atTableError ?? portalNavigationError
+  const isAtTable = route.dungeonId !== null && atTableDungeonId === route.dungeonId;
+  const viewerError =
+    (partyRoomActionActive ? null : actionError) ?? atTableError ?? portalNavigationError;
 
   function clearViewerStatus() {
-    clearActionError()
-    setAtTableError(null)
-    setPartyRoomActionActive(false)
+    clearActionError();
+    setAtTableError(null);
+    setPartyRoomActionActive(false);
   }
 
   async function putThisDungeonAtTheTable() {
-    if (route.dungeonId === null) return
-    clearViewerStatus()
-    setAtTablePending(true)
+    if (route.dungeonId === null) return;
+    clearViewerStatus();
+    setAtTablePending(true);
     try {
-      const response = await setAtTheTable({ dungeon_id: route.dungeonId })
-      setAtTableDungeonId(response.dungeon_id)
+      const response = await setAtTheTable({ dungeon_id: route.dungeonId });
+      setAtTableDungeonId(response.dungeon_id);
     } catch {
-      setAtTableError("Couldn't put this map at the table. Try again.")
+      setAtTableError("Couldn't put this map at the table. Try again.");
     } finally {
-      setAtTablePending(false)
+      setAtTablePending(false);
     }
   }
 
   useEffect(() => {
-    if (floors.length === 0) return
+    if (floors.length === 0) return;
     if (!floors.some((floor) => floor.z === activeZ)) {
-      setActiveZ(floors[0].z)
+      setActiveZ(floors[0].z);
     }
-  }, [activeZ, floors])
+  }, [activeZ, floors]);
 
-  const rooms = useMemo(() => roomsOnZ(layout, activeZ), [layout, activeZ])
-  const stairs = useMemo(() => stairEndpointsForZ(layout, activeZ), [layout, activeZ])
-  const doors = useMemo(() => doorsOnFloor(layout, activeZ), [layout, activeZ])
-  const props = useMemo(() => propsOnFloor(layout, activeZ), [layout, activeZ])
-  const portals = useMemo(() => portalsOnFloor(layout, activeZ), [layout, activeZ])
-  const features = useMemo(() => layout.features.filter((f) => f.z === activeZ), [layout, activeZ])
+  const rooms = useMemo(() => roomsOnZ(layout, activeZ), [layout, activeZ]);
+  const stairs = useMemo(() => stairEndpointsForZ(layout, activeZ), [layout, activeZ]);
+  const doors = useMemo(() => doorsOnFloor(layout, activeZ), [layout, activeZ]);
+  const props = useMemo(() => propsOnFloor(layout, activeZ), [layout, activeZ]);
+  const portals = useMemo(() => portalsOnFloor(layout, activeZ), [layout, activeZ]);
+  const features = useMemo(() => layout.features.filter((f) => f.z === activeZ), [layout, activeZ]);
 
   // Bounds computed over every room, not just the active floor, so the viewBox stays
   // aligned across floor switches — proving shared coordinate space across z. Padded by
   // meta.padding on every side: the margin of visible "unknown space" around authored content.
-  const bounds = useMemo(() => paddedBounds(layout), [layout])
+  const bounds = useMemo(() => paddedBounds(layout), [layout]);
   const viewBox = `${bounds.minX * CELL_SIZE} ${bounds.minY * CELL_SIZE} ${
     (bounds.maxX - bounds.minX + 1) * CELL_SIZE
-  } ${(bounds.maxY - bounds.minY + 1) * CELL_SIZE}`
+  } ${(bounds.maxY - bounds.minY + 1) * CELL_SIZE}`;
   const contentCell = (cell: [number, number]) => ({
     x: cell[0] - bounds.minX,
     y: cell[1] - bounds.minY,
-  })
+  });
 
   // Scale ruler: one cell, ticked at both ends, sits in the padding band above the rooms.
-  const rulerX1 = (bounds.minX + 1) * CELL_SIZE
-  const rulerX2 = rulerX1 + CELL_SIZE
-  const rulerY = (bounds.minY + 1.5) * CELL_SIZE
-  const rulerTick = CELL_SIZE * 0.12
+  const rulerX1 = (bounds.minX + 1) * CELL_SIZE;
+  const rulerX2 = rulerX1 + CELL_SIZE;
+  const rulerY = (bounds.minY + 1.5) * CELL_SIZE;
+  const rulerTick = CELL_SIZE * 0.12;
 
-  const {
-    activeRoomId,
-    setActiveRoomId,
-    activeLayoutRoom,
-    activeDungeonRoom,
-  } = useActiveRoom(layout, activeZ, parsed, setActiveZ)
+  const { activeRoomId, setActiveRoomId, activeLayoutRoom, activeDungeonRoom } = useActiveRoom(
+    layout,
+    activeZ,
+    parsed,
+    setActiveZ,
+  );
 
   /** Focus an object — from the keyboard or as the first half of a click — selects it. */
-  const pendingConnectionNavigation = useRef<{ kind: 'stair' | 'portal'; id: number; timer: ReturnType<typeof setTimeout> } | null>(null)
+  const pendingConnectionNavigation = useRef<{
+    kind: "stair" | "portal";
+    id: number;
+    timer: ReturnType<typeof setTimeout>;
+  } | null>(null);
 
   function focusInspectable(ref: InspectableRef) {
-    focusSelectedRef.current = true
-    setSelectedInspectable(ref)
-    navigation.setState((current) => ({ ...current, focusTarget: ref }))
-    const fixture = ref.kind === 'room'
-      ? layout.rooms.find((room) => room.room_id === ref.id)
-      : ref.kind === 'door'
-        ? layout.doors.find((door) => door.door_id === ref.id)
-        : ref.kind === 'stair'
-          ? layout.stairs.find((stair) => stair.stair_id === ref.id)
-          : ref.kind === 'portal'
-            ? layout.portals.find((portal) => portal.portal_id === ref.id)
-            : layout.props.find((prop) => prop.prop_id === ref.id)
-    const cell = fixture && 'cell' in fixture
-      ? fixture.cell
-      : fixture && 'origin' in fixture
-        ? fixture.origin
-        : fixture && 'from' in fixture
-          ? (fixture.from.z === activeZ ? fixture.from.cell : fixture.to.cell)
-          : null
-    if (cell) zoomApi.centerOn(contentCell(cell), viewportSize)
+    focusSelectedRef.current = true;
+    setSelectedInspectable(ref);
+    navigation.setState((current) => ({ ...current, focusTarget: ref }));
+    const fixture =
+      ref.kind === "room"
+        ? layout.rooms.find((room) => room.room_id === ref.id)
+        : ref.kind === "door"
+          ? layout.doors.find((door) => door.door_id === ref.id)
+          : ref.kind === "stair"
+            ? layout.stairs.find((stair) => stair.stair_id === ref.id)
+            : ref.kind === "portal"
+              ? layout.portals.find((portal) => portal.portal_id === ref.id)
+              : layout.props.find((prop) => prop.prop_id === ref.id);
+    const cell =
+      fixture && "cell" in fixture
+        ? fixture.cell
+        : fixture && "origin" in fixture
+          ? fixture.origin
+          : fixture && "from" in fixture
+            ? fixture.from.z === activeZ
+              ? fixture.from.cell
+              : fixture.to.cell
+            : null;
+    if (cell) zoomApi.centerOn(contentCell(cell), viewportSize);
   }
 
   function navigateStair(stair: MapStair) {
-    const pending = pendingConnectionNavigation.current
-    if (pending?.kind === 'stair' && pending.id === stair.stair_id) {
-      clearTimeout(pending.timer)
-      pendingConnectionNavigation.current = null
-      focusInspectable({ kind: 'stair', id: stair.stair_id })
-      return
+    const pending = pendingConnectionNavigation.current;
+    if (pending?.kind === "stair" && pending.id === stair.stair_id) {
+      clearTimeout(pending.timer);
+      pendingConnectionNavigation.current = null;
+      focusInspectable({ kind: "stair", id: stair.stair_id });
+      return;
     }
-    if (pending) clearTimeout(pending.timer)
-    const targetZ = otherFloorZ(stair, activeZ)
-    const targetCell = stairCellForZ(stair, targetZ)
-    setActiveZ(targetZ)
-    if (targetCell && viewportSize.width > 0 && viewportSize.height > 0) zoomApi.centerOn(contentCell(targetCell), viewportSize)
+    if (pending) clearTimeout(pending.timer);
+    const targetZ = otherFloorZ(stair, activeZ);
+    const targetCell = stairCellForZ(stair, targetZ);
+    setActiveZ(targetZ);
+    if (targetCell && viewportSize.width > 0 && viewportSize.height > 0)
+      zoomApi.centerOn(contentCell(targetCell), viewportSize);
     pendingConnectionNavigation.current = {
-      kind: 'stair',
+      kind: "stair",
       id: stair.stair_id,
       timer: setTimeout(() => {
-        pendingConnectionNavigation.current = null
+        pendingConnectionNavigation.current = null;
       }, 250),
-    }
+    };
   }
 
   function navigatePortal(portal: MapPortal) {
-    const pending = pendingConnectionNavigation.current
-    if (pending?.kind === 'portal' && pending.id === portal.portal_id) {
-      clearTimeout(pending.timer)
-      pendingConnectionNavigation.current = null
-      focusInspectable({ kind: 'portal', id: portal.portal_id })
-      return
+    const pending = pendingConnectionNavigation.current;
+    if (pending?.kind === "portal" && pending.id === portal.portal_id) {
+      clearTimeout(pending.timer);
+      pendingConnectionNavigation.current = null;
+      focusInspectable({ kind: "portal", id: portal.portal_id });
+      return;
     }
-    if (pending) clearTimeout(pending.timer)
-    performPortalNavigation(portal)
+    if (pending) clearTimeout(pending.timer);
+    performPortalNavigation(portal);
     pendingConnectionNavigation.current = {
-      kind: 'portal',
+      kind: "portal",
       id: portal.portal_id,
       timer: setTimeout(() => {
-        pendingConnectionNavigation.current = null
+        pendingConnectionNavigation.current = null;
       }, 250),
-    }
+    };
   }
 
   function performPortalNavigation(portal: MapPortal) {
-    const destination = portal.to
-    setPortalNavigationError(null)
+    const destination = portal.to;
+    setPortalNavigationError(null);
     if (!destination) {
-      setPortalNavigationError('This portal has no destination.')
-      return
+      setPortalNavigationError("This portal has no destination.");
+      return;
     }
     if (destination.dungeon_id !== undefined) {
-      navigate(`/dungeons/${destination.dungeon_id}`)
-      return
+      navigate(`/dungeons/${destination.dungeon_id}`);
+      return;
     }
     if (destination.z !== undefined && destination.cell) {
-      setActiveZ(destination.z)
-      if (viewportSize.width > 0 && viewportSize.height > 0) zoomApi.centerOn(contentCell(destination.cell), viewportSize)
-      return
+      setActiveZ(destination.z);
+      if (viewportSize.width > 0 && viewportSize.height > 0)
+        zoomApi.centerOn(contentCell(destination.cell), viewportSize);
+      return;
     }
-    setPortalNavigationError('This portal has no destination.')
+    setPortalNavigationError("This portal has no destination.");
   }
 
   useEffect(() => {
-    const target = navigation.state.focusTarget
-    if (!target) return
-    setSelectedInspectable(target as InspectableRef)
-    const fixture = target.kind === 'room'
-      ? layout.rooms.find((room) => room.room_id === target.id)
-      : target.kind === 'door'
-        ? layout.doors.find((door) => door.door_id === target.id)
-        : target.kind === 'stair'
-          ? layout.stairs.find((stair) => stair.stair_id === target.id)
-          : target.kind === 'portal'
-            ? layout.portals.find((portal) => portal.portal_id === target.id)
-            : layout.props.find((prop) => prop.prop_id === target.id)
-    const cell = fixture && 'cell' in fixture
-      ? fixture.cell
-      : fixture && 'origin' in fixture
-        ? fixture.origin
-        : fixture && 'from' in fixture
-          ? (fixture.from.z === activeZ ? fixture.from.cell : fixture.to.cell)
-          : null
-    if (cell) zoomApi.centerOn(contentCell(cell), viewportSize)
-    navigation.setState((current) => current.focusTarget === target ? { ...current, focusTarget: null } : current)
-  }, [activeZ, layout, navigation.state.focusTarget, navigation.setState, viewportSize, zoomApi.centerOn])
+    const target = navigation.state.focusTarget;
+    if (!target) return;
+    setSelectedInspectable(target as InspectableRef);
+    const fixture =
+      target.kind === "room"
+        ? layout.rooms.find((room) => room.room_id === target.id)
+        : target.kind === "door"
+          ? layout.doors.find((door) => door.door_id === target.id)
+          : target.kind === "stair"
+            ? layout.stairs.find((stair) => stair.stair_id === target.id)
+            : target.kind === "portal"
+              ? layout.portals.find((portal) => portal.portal_id === target.id)
+              : layout.props.find((prop) => prop.prop_id === target.id);
+    const cell =
+      fixture && "cell" in fixture
+        ? fixture.cell
+        : fixture && "origin" in fixture
+          ? fixture.origin
+          : fixture && "from" in fixture
+            ? fixture.from.z === activeZ
+              ? fixture.from.cell
+              : fixture.to.cell
+            : null;
+    if (cell) zoomApi.centerOn(contentCell(cell), viewportSize);
+    navigation.setState((current) =>
+      current.focusTarget === target ? { ...current, focusTarget: null } : current,
+    );
+  }, [
+    activeZ,
+    layout,
+    navigation.state.focusTarget,
+    navigation.setState,
+    viewportSize,
+    zoomApi.centerOn,
+  ]);
 
   /** Click selects, and clicking the already-selected object again clears the selection. A click
    * that also moved focus here has already selected through `focusInspectable`, so it must not
    * immediately toggle that selection back off. */
   function clickInspectable(ref: InspectableRef) {
     if (focusSelectedRef.current) {
-      focusSelectedRef.current = false
-      setSelectedInspectable(ref)
-      return
+      focusSelectedRef.current = false;
+      setSelectedInspectable(ref);
+      return;
     }
     setSelectedInspectable((current) =>
       current && current.kind === ref.kind && current.id === ref.id ? null : ref,
-    )
+    );
   }
 
-    function doorSession(door: MapDoor): SessionFixtureState | undefined {
-    return doorSessions[door.door_id]
+  function doorSession(door: MapDoor): SessionFixtureState | undefined {
+    return doorSessions[door.door_id];
   }
 
   function stairSession(stair: MapStair): SessionFixtureState | undefined {
-    return stairSessions[stair.stair_id]
+    return stairSessions[stair.stair_id];
   }
 
   function portalSession(portal: MapPortal): SessionFixtureState | undefined {
-    return portalSessions[portal.portal_id]
+    return portalSessions[portal.portal_id];
   }
 
   function propSession(prop: MapProp): SessionFixtureState | undefined {
-    return propSessions[prop.prop_id]
+    return propSessions[prop.prop_id];
   }
 
   /** DM View's adapter for the shared obstacle inspector. The panel reads effective
@@ -423,85 +491,94 @@ export function MapLabPage() {
     fixture: MapDoor | MapStair | MapPortal | MapProp,
     session: SessionFixtureState | undefined,
   ): ObstacleInspectorAdapter {
-    const authored = fixture.state ?? defaultFixtureState()
+    const authored = fixture.state ?? defaultFixtureState();
     const write = (patch: SessionFixtureState) => {
-      clearViewerStatus()
-      writeFixture(kind, id, mergeSparseLeaf(authored, session, patch))
-    }
+      clearViewerStatus();
+      writeFixture(kind, id, mergeSparseLeaf(authored, session, patch));
+    };
     return {
-      heading: 'World now',
+      heading: "World now",
       onToggleOpen: (open) => write({ open }),
       onToggleArmed: (obstacle, armed) => write(obstacleArmedLeaf(obstacle, armed)),
       onToggleShown: (obstacle, shown) => {
-        if (obstacle === 'lock') write({ obstacles: { lock: { shown } } })
-        else if (obstacle === 'trap') write({ obstacles: { trap: { shown } } })
+        if (obstacle === "lock") write({ obstacles: { lock: { shown } } });
+        else if (obstacle === "trap") write({ obstacles: { trap: { shown } } });
       },
       onReset: () => {
-        clearViewerStatus()
-        resetFixture(kind, id)
+        clearViewerStatus();
+        resetFixture(kind, id);
       },
       resetDisabled: !session,
       writeError,
-    }
+    };
   }
 
-  if (route.status === 'loading' || layoutLoading) {
-    return <MapLabRouteState title="Loading map" message="Loading dungeon map…" variant="loading" />
+  if (route.status === "loading" || layoutLoading) {
+    return (
+      <MapLabRouteState title="Loading map" message="Loading dungeon map…" variant="loading" />
+    );
   }
 
-  if (layoutStatus === 'error') {
+  if (layoutStatus === "error") {
     return (
       <MapLabRouteState
-        title={route.dungeon?.title ?? 'Dungeon layout unavailable'}
-        message={layoutError?.message ?? 'Failed to load dungeon layout.'}
+        title={route.dungeon?.title ?? "Dungeon layout unavailable"}
+        message={layoutError?.message ?? "Failed to load dungeon layout."}
         variant="error"
       />
-    )
+    );
   }
 
-  const activeRef: InspectableRef | null = selectedInspectable
-  const pinnedDoorId = selectedInspectable?.kind === 'door' ? selectedInspectable.id : null
+  const activeRef: InspectableRef | null = selectedInspectable;
+  const pinnedDoorId = selectedInspectable?.kind === "door" ? selectedInspectable.id : null;
 
-  let activeInspectable: Inspectable | null = null
-  let activeAdapter: ObstacleInspectorAdapter | undefined
-  if (activeRef?.kind === 'door') {
-    const door = layout.doors.find((d) => d.door_id === activeRef.id)
+  let activeInspectable: Inspectable | null = null;
+  let activeAdapter: ObstacleInspectorAdapter | undefined;
+  if (activeRef?.kind === "door") {
+    const door = layout.doors.find((d) => d.door_id === activeRef.id);
     if (door) {
-      activeInspectable = { kind: 'door', door, session: doorSession(door) }
-      activeAdapter = dmViewFixtureAdapter('door', door.door_id, door, doorSession(door))
+      activeInspectable = { kind: "door", door, session: doorSession(door) };
+      activeAdapter = dmViewFixtureAdapter("door", door.door_id, door, doorSession(door));
     }
-  } else if (activeRef?.kind === 'stair') {
-    const stair = layout.stairs.find((s) => s.stair_id === activeRef.id)
+  } else if (activeRef?.kind === "stair") {
+    const stair = layout.stairs.find((s) => s.stair_id === activeRef.id);
     if (stair) {
-      activeInspectable = { kind: 'stair', stair, session: stairSession(stair) }
-      activeAdapter = dmViewFixtureAdapter('stair', stair.stair_id, stair, stairSession(stair))
+      activeInspectable = { kind: "stair", stair, session: stairSession(stair) };
+      activeAdapter = dmViewFixtureAdapter("stair", stair.stair_id, stair, stairSession(stair));
     }
-  } else if (activeRef?.kind === 'room') {
-    const room = layout.rooms.find((r) => r.room_id === activeRef.id)
-    if (room) activeInspectable = { kind: 'room', room }
-  } else if (activeRef?.kind === 'prop') {
-    const prop = layout.props.find((p) => p.prop_id === activeRef.id)
+  } else if (activeRef?.kind === "room") {
+    const room = layout.rooms.find((r) => r.room_id === activeRef.id);
+    if (room) activeInspectable = { kind: "room", room };
+  } else if (activeRef?.kind === "prop") {
+    const prop = layout.props.find((p) => p.prop_id === activeRef.id);
     if (prop) {
-      activeInspectable = { kind: 'prop', prop, session: propSession(prop) }
-      activeAdapter = dmViewFixtureAdapter('prop', prop.prop_id, prop, propSession(prop))
+      activeInspectable = { kind: "prop", prop, session: propSession(prop) };
+      activeAdapter = dmViewFixtureAdapter("prop", prop.prop_id, prop, propSession(prop));
     }
-  } else if (activeRef?.kind === 'portal') {
-    const portal = layout.portals.find((p) => p.portal_id === activeRef.id)
+  } else if (activeRef?.kind === "portal") {
+    const portal = layout.portals.find((p) => p.portal_id === activeRef.id);
     if (portal) {
-      activeInspectable = { kind: 'portal', portal, session: portalSession(portal) }
-      activeAdapter = dmViewFixtureAdapter('portal', portal.portal_id, portal, portalSession(portal))
+      activeInspectable = { kind: "portal", portal, session: portalSession(portal) };
+      activeAdapter = dmViewFixtureAdapter(
+        "portal",
+        portal.portal_id,
+        portal,
+        portalSession(portal),
+      );
     }
   }
 
   return (
     <div className="maplab-page">
-      {layoutStatus === 'empty' && (
-        <p className="maplab-subtitle">No saved layout yet. This dungeon is starting from a blank map.</p>
+      {layoutStatus === "empty" && (
+        <p className="maplab-subtitle">
+          No saved layout yet. This dungeon is starting from a blank map.
+        </p>
       )}
 
       <div className="maplab-toolbar">
         <ToolbarTray groupKey="viewer-session" label="Session">
-         <button
+          <button
             type="button"
             className="maplab-pill-button maplab-session-reset-button"
             onClick={() => setResetDungeonConfirmOpen(true)}
@@ -516,15 +593,15 @@ export function MapLabPage() {
             disabled={atTablePending || isAtTable}
             onClick={putThisDungeonAtTheTable}
           >
-            {isAtTable ? 'At the table' : 'Put at the table'}
+            {isAtTable ? "At the table" : "Put at the table"}
           </button>
-         </ToolbarTray>
+        </ToolbarTray>
         <div className="maplab-view-popover-wrap">
           <Popover.Root
             open={viewPopoverOpen}
             onOpenChange={(open) => {
-              setViewPopoverOpen(open)
-              if (open) setFinderOpen(false)
+              setViewPopoverOpen(open);
+              if (open) setFinderOpen(false);
             }}
           >
             <Popover.Trigger
@@ -538,18 +615,24 @@ export function MapLabPage() {
               View
             </Popover.Trigger>
             <Popover.Portal>
-              <Popover.Positioner side="bottom" align="end" className="maplab-view-popover-positioner">
+              <Popover.Positioner
+                side="bottom"
+                align="end"
+                className="maplab-view-popover-positioner"
+              >
                 <Popover.Popup
                   className="maplab-view-popover"
                   role="menu"
-                  finalFocus={(closeType) => closeType === 'keyboard' ? viewPopoverTriggerRef : false}
+                  finalFocus={(closeType) =>
+                    closeType === "keyboard" ? viewPopoverTriggerRef : false
+                  }
                 >
                   <button
                     type="button"
                     className="maplab-pill-button maplab-layer-toggle-button"
                     aria-pressed={layerVisible.outside}
                     data-active={layerVisible.outside || undefined}
-                    onClick={() => toggleLayer('outside')}
+                    onClick={() => toggleLayer("outside")}
                   >
                     Outside
                   </button>
@@ -558,7 +641,7 @@ export function MapLabPage() {
                     className="maplab-pill-button maplab-layer-toggle-button"
                     aria-pressed={layerVisible.props}
                     data-active={layerVisible.props || undefined}
-                    onClick={() => toggleLayer('props')}
+                    onClick={() => toggleLayer("props")}
                   >
                     Props
                   </button>
@@ -567,7 +650,7 @@ export function MapLabPage() {
                     className="maplab-pill-button maplab-layer-toggle-button"
                     aria-pressed={layerVisible.passages}
                     data-active={layerVisible.passages || undefined}
-                    onClick={() => toggleLayer('passages')}
+                    onClick={() => toggleLayer("passages")}
                   >
                     Passages
                   </button>
@@ -576,34 +659,34 @@ export function MapLabPage() {
                     className="maplab-pill-button maplab-layer-toggle-button"
                     aria-pressed={layerVisible.labels}
                     data-active={layerVisible.labels || undefined}
-                    onClick={() => toggleLayer('labels')}
+                    onClick={() => toggleLayer("labels")}
                   >
                     Labels
                   </button>
                   <button
                     type="button"
                     className="maplab-pill-button"
-                    aria-pressed={density === 'detailed'}
-                    data-active={density === 'detailed' || undefined}
-                    onClick={() => setDensity('detailed')}
+                    aria-pressed={density === "detailed"}
+                    data-active={density === "detailed" || undefined}
+                    onClick={() => setDensity("detailed")}
                   >
                     Detailed
                   </button>
                   <button
                     type="button"
                     className="maplab-pill-button"
-                    aria-pressed={density === 'auto'}
-                    data-active={density === 'auto' || undefined}
-                    onClick={() => setDensity('auto')}
+                    aria-pressed={density === "auto"}
+                    data-active={density === "auto" || undefined}
+                    onClick={() => setDensity("auto")}
                   >
                     Auto
                   </button>
                   <button
                     type="button"
                     className="maplab-pill-button"
-                    aria-pressed={density === 'simple'}
-                    data-active={density === 'simple' || undefined}
-                    onClick={() => setDensity('simple')}
+                    aria-pressed={density === "simple"}
+                    data-active={density === "simple" || undefined}
+                    onClick={() => setDensity("simple")}
                   >
                     Simple
                   </button>
@@ -612,71 +695,76 @@ export function MapLabPage() {
             </Popover.Portal>
           </Popover.Root>
         </div>
-        <div className="maplab-floor-tabs" role="tablist" aria-label="Dungeon floors">
-          {floors.map((floor) => (
-            <button
-              key={floor.z}
-              type="button"
-              role="tab"
-              className="maplab-pill-button maplab-floor-tab"
-              aria-selected={floor.z === activeZ}
-              onClick={() => setActiveZ(floor.z)}
-            >
-              {floor.title ?? `Floor ${floor.z}`}
-            </button>
-          ))}
-        </div>
+        <ToggleGroup
+          className="maplab-floor-tabs"
+          aria-label="Dungeon floors"
+          multiple={false}
+          value={[String(activeZ)]}
+          options={floors.map((floor) => ({
+            value: String(floor.z),
+            label: floor.title ?? `Floor ${floor.z}`,
+          }))}
+          onValueChange={(values) => {
+            const selectedZ = values[0];
+            if (selectedZ !== undefined) setActiveZ(Number(selectedZ));
+          }}
+        />
       </div>
 
-       <MapLabViewerCanvas
-         layout={layout}
-         parsed={parsed}
-         activeZ={activeZ}
-         activeRoomId={activeRoomId}
-         partyRoomId={partyRoomId}
-         rooms={rooms}
-         doors={doors}
-         stairs={stairs}
-         portals={portals}
-         props={props}
-         features={features}
-         bounds={bounds}
-         viewBox={viewBox}
-         rulerX1={rulerX1}
-         rulerX2={rulerX2}
-         rulerY={rulerY}
-         rulerTick={rulerTick}
-         layerVisible={layerVisible}
-         simplified={simplified}
-         allLayersHidden={allLayersHidden}
-         zoom={zoomApi.zoom}
-         viewerError={viewerError}
-         selectedInspectable={selectedInspectable}
-         pinnedDoorId={pinnedDoorId}
-           onSelectRoom={(id) => { setActiveRoomId(id) }}
-          onFocus={focusInspectable}
-          onClick={clickInspectable}
-          onClearSelection={() => setSelectedInspectable(null)}
-           onSetActiveZ={setActiveZ}
-          onNavigate={navigate}
-          onNavigateStair={navigateStair}
-          onNavigatePortal={navigatePortal}
-         onSetActiveEncounterId={setActiveEncounterId}
-         onWheelZoom={zoomApi.handleWheel}
-         onPanStart={zoomApi.handlePointerDown}
-         onPanMove={zoomApi.handlePointerMove}
-         onPanEnd={zoomApi.handlePointerUp}
-         onViewportResize={handleViewportResize}
-         onFit={() => zoomApi.fitToBounds(bounds, viewportSize, bounds)}
-         onZoomIn={() => zoomApi.zoomIn(viewportSize)}
-         onZoomOut={() => zoomApi.zoomOut(viewportSize)}
-         doorSession={doorSession}
-         stairSession={stairSession}
-          portalSession={portalSession}
-          propSession={propSession}
-          finderOpen={finderOpen}
-          onFinderOpenChange={(open) => { setFinderOpen(open); if (open) setViewPopoverOpen(false) }}
-          >
+      <MapLabViewerCanvas
+        layout={layout}
+        parsed={parsed}
+        activeZ={activeZ}
+        activeRoomId={activeRoomId}
+        partyRoomId={partyRoomId}
+        rooms={rooms}
+        doors={doors}
+        stairs={stairs}
+        portals={portals}
+        props={props}
+        features={features}
+        bounds={bounds}
+        viewBox={viewBox}
+        rulerX1={rulerX1}
+        rulerX2={rulerX2}
+        rulerY={rulerY}
+        rulerTick={rulerTick}
+        layerVisible={layerVisible}
+        simplified={simplified}
+        allLayersHidden={allLayersHidden}
+        zoom={zoomApi.zoom}
+        viewerError={viewerError}
+        selectedInspectable={selectedInspectable}
+        pinnedDoorId={pinnedDoorId}
+        onSelectRoom={(id) => {
+          setActiveRoomId(id);
+        }}
+        onFocus={focusInspectable}
+        onClick={clickInspectable}
+        onClearSelection={() => setSelectedInspectable(null)}
+        onSetActiveZ={setActiveZ}
+        onNavigate={navigate}
+        onNavigateStair={navigateStair}
+        onNavigatePortal={navigatePortal}
+        onSetActiveEncounterId={setActiveEncounterId}
+        onWheelZoom={zoomApi.handleWheel}
+        onPanStart={zoomApi.handlePointerDown}
+        onPanMove={zoomApi.handlePointerMove}
+        onPanEnd={zoomApi.handlePointerUp}
+        onViewportResize={handleViewportResize}
+        onFit={() => zoomApi.fitToBounds(bounds, viewportSize, bounds)}
+        onZoomIn={() => zoomApi.zoomIn(viewportSize)}
+        onZoomOut={() => zoomApi.zoomOut(viewportSize)}
+        doorSession={doorSession}
+        stairSession={stairSession}
+        portalSession={portalSession}
+        propSession={propSession}
+        finderOpen={finderOpen}
+        onFinderOpenChange={(open) => {
+          setFinderOpen(open);
+          if (open) setViewPopoverOpen(false);
+        }}
+      >
         {/*
         <button
           type="button"
@@ -1006,9 +1094,9 @@ export function MapLabPage() {
           onRunEncounter={setActiveEncounterId}
           onOpenNpc={setActiveNpcId}
           onPartyIsHere={() => {
-            clearViewerStatus()
-            setPartyRoomActionActive(true)
-            setPartyRoomId(activeRoomId)
+            clearViewerStatus();
+            setPartyRoomActionActive(true);
+            setPartyRoomId(activeRoomId);
           }}
           actionError={partyRoomActionActive ? actionError : null}
           clearActionError={clearActionError}
@@ -1019,14 +1107,13 @@ export function MapLabPage() {
           resetDungeonConfirmOpen={resetDungeonConfirmOpen}
           dungeonTitle={route.dungeon?.title}
           onConfirmReset={() => {
-            clearViewerStatus()
-            resetSessions()
-            setResetDungeonConfirmOpen(false)
+            clearViewerStatus();
+            resetSessions();
+            setResetDungeonConfirmOpen(false);
           }}
           onCancelReset={() => setResetDungeonConfirmOpen(false)}
         />
-        </MapLabViewerCanvas>
+      </MapLabViewerCanvas>
     </div>
-  )
+  );
 }
-

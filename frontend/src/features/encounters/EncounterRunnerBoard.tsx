@@ -1,85 +1,85 @@
-import { useRef, useState } from 'react'
-import type { PointerEvent as ReactPointerEvent } from 'react'
-import type { Monster } from '../../api/types'
-import { Button } from '../../components/Button'
-import { NextTurnIcon, PlusIcon } from '../../components/icons'
-import type { UseEncounterRunnerResult } from './useEncounterRunner'
-import { CombatantCard } from './CombatantCard'
-import { AddMonsterPanel } from './AddMonsterPanel'
-import { AddPlayerPanel } from './AddPlayerPanel'
-import './EncounterRunnerBoard.css'
+import { useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
+import type { Monster } from "../../api/types";
+import { Button } from "../../components/Button";
+import { NextTurnIcon, PlusIcon } from "../../components/icons";
+import type { UseEncounterRunnerResult } from "./useEncounterRunner";
+import { CombatantCard } from "./CombatantCard";
+import { AddMonsterPanel } from "./AddMonsterPanel";
+import { AddPlayerPanel } from "./AddPlayerPanel";
+import "./EncounterRunnerBoard.css";
 
 interface EncounterRunnerBoardProps {
-  runner: UseEncounterRunnerResult
-  compact?: boolean
+  runner: UseEncounterRunnerResult;
+  compact?: boolean;
 }
 
-const SYNC_LABELS: Record<UseEncounterRunnerResult['syncStatus'], string> = {
-  idle: '',
-  saving: 'Saving…',
-  saved: 'Saved',
-  error: 'Save failed',
-}
+const SYNC_LABELS: Record<UseEncounterRunnerResult["syncStatus"], string> = {
+  idle: "",
+  saving: "Saving…",
+  saved: "Saved",
+  error: "Save failed",
+};
 
 export function EncounterRunnerBoard({ runner, compact = false }: EncounterRunnerBoardProps) {
-  const [addMonsterOpen, setAddMonsterOpen] = useState(false)
-  const [addPlayerOpen, setAddPlayerOpen] = useState(false)
-  const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map())
-  const dragState = useRef<{ clientId: string; fromIndex: number } | null>(null)
-  const [draggingClientId, setDraggingClientId] = useState<string | null>(null)
+  const [addMonsterOpen, setAddMonsterOpen] = useState(false);
+  const [addPlayerOpen, setAddPlayerOpen] = useState(false);
+  const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const dragState = useRef<{ clientId: string; fromIndex: number } | null>(null);
+  const [draggingClientId, setDraggingClientId] = useState<string | null>(null);
 
-  const { state } = runner
-  const { combatants, activeClientId, round } = state
+  const { state } = runner;
+  const { combatants, activeClientId, round } = state;
 
   const handleAddMonster = (monster: Monster) => {
-    runner.addFromMonster(monster)
-  }
+    runner.addFromMonster(monster);
+  };
 
   const handleAddPlayer = (name: string, conditions?: string[]) => {
-    runner.addPlayer(name, conditions)
-  }
+    runner.addPlayer(name, conditions);
+  };
 
   const findDropIndex = (clientY: number): number => {
-    let dropIndex = combatants.length - 1
+    let dropIndex = combatants.length - 1;
     for (let i = 0; i < combatants.length; i++) {
-      const el = cardRefs.current.get(combatants[i].clientId)
-      if (!el) continue
-      const rect = el.getBoundingClientRect()
-      const midpoint = rect.top + rect.height / 2
+      const el = cardRefs.current.get(combatants[i].clientId);
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      const midpoint = rect.top + rect.height / 2;
       if (clientY < midpoint) {
-        dropIndex = i
-        break
+        dropIndex = i;
+        break;
       }
     }
-    return dropIndex
-  }
+    return dropIndex;
+  };
 
   const handlePointerMove = (event: PointerEvent) => {
-    if (!dragState.current) return
-    event.preventDefault()
-  }
+    if (!dragState.current) return;
+    event.preventDefault();
+  };
 
   const handlePointerUp = (event: PointerEvent) => {
-    if (!dragState.current) return
-    const { fromIndex } = dragState.current
-    const toIndex = findDropIndex(event.clientY)
-    if (toIndex !== fromIndex) runner.reorder(fromIndex, toIndex)
-    dragState.current = null
-    setDraggingClientId(null)
-    window.removeEventListener('pointermove', handlePointerMove)
-    window.removeEventListener('pointerup', handlePointerUp)
-  }
+    if (!dragState.current) return;
+    const { fromIndex } = dragState.current;
+    const toIndex = findDropIndex(event.clientY);
+    if (toIndex !== fromIndex) runner.reorder(fromIndex, toIndex);
+    dragState.current = null;
+    setDraggingClientId(null);
+    window.removeEventListener("pointermove", handlePointerMove);
+    window.removeEventListener("pointerup", handlePointerUp);
+  };
 
   const startDrag = (clientId: string, index: number) => (event: ReactPointerEvent) => {
-    event.preventDefault()
-    dragState.current = { clientId, fromIndex: index }
-    setDraggingClientId(clientId)
-    window.addEventListener('pointermove', handlePointerMove)
-    window.addEventListener('pointerup', handlePointerUp)
-  }
+    event.preventDefault();
+    dragState.current = { clientId, fromIndex: index };
+    setDraggingClientId(clientId);
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+  };
 
   return (
-    <div className={`encounter-runner-board ${compact ? 'compact' : ''}`}>
+    <div className={`encounter-runner-board ${compact ? "compact" : ""}`}>
       <div className="encounter-runner-header">
         <span className="encounter-runner-round">Round {round}</span>
         <Button type="button" className="encounter-runner-next-turn" onClick={runner.nextTurn}>
@@ -120,10 +120,12 @@ export function EncounterRunnerBoard({ runner, compact = false }: EncounterRunne
               <div
                 key={combatant.clientId}
                 ref={(el) => {
-                  if (el) cardRefs.current.set(combatant.clientId, el)
-                  else cardRefs.current.delete(combatant.clientId)
+                  if (el) cardRefs.current.set(combatant.clientId, el);
+                  else cardRefs.current.delete(combatant.clientId);
                 }}
-                className={draggingClientId === combatant.clientId ? 'combatant-card-dragging' : undefined}
+                className={
+                  draggingClientId === combatant.clientId ? "combatant-card-dragging" : undefined
+                }
               >
                 <CombatantCard
                   combatant={combatant}
@@ -134,7 +136,9 @@ export function EncounterRunnerBoard({ runner, compact = false }: EncounterRunne
                   onAdjustHp={(delta) => runner.adjustHp(combatant.clientId, delta)}
                   onSetHp={(hp) => runner.setHp(combatant.clientId, hp)}
                   onSetStatus={(status) => runner.setStatus(combatant.clientId, status)}
-                  onSetConditions={(conditions) => runner.setConditions(combatant.clientId, conditions)}
+                  onSetConditions={(conditions) =>
+                    runner.setConditions(combatant.clientId, conditions)
+                  }
                   onRename={(name) => runner.rename(combatant.clientId, name)}
                   onDuplicate={() => runner.duplicate(combatant.clientId)}
                   onRemove={() => runner.remove(combatant.clientId)}
@@ -152,9 +156,13 @@ export function EncounterRunnerBoard({ runner, compact = false }: EncounterRunne
           <AddMonsterPanel onAdd={handleAddMonster} onClose={() => setAddMonsterOpen(false)} />
         )}
         {addPlayerOpen && (
-          <AddPlayerPanel conditions={runner.conditions} onAdd={handleAddPlayer} onClose={() => setAddPlayerOpen(false)} />
+          <AddPlayerPanel
+            conditions={runner.conditions}
+            onAdd={handleAddPlayer}
+            onClose={() => setAddPlayerOpen(false)}
+          />
         )}
       </div>
     </div>
-  )
+  );
 }

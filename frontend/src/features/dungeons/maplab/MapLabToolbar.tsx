@@ -1,18 +1,18 @@
-import { useCallback, useState, type ReactNode } from 'react'
-import { ChevronDownIcon, ChevronUpIcon } from '../../../components/icons'
-import { Disclosure } from '../../../components/Disclosure'
-import { resolveMapDensity, AUTO_DENSITY_SIMPLE_THRESHOLD } from '../../../map/mapDensity'
-import type { MapDensity } from '../../../map/mapDensity'
+import { useCallback, useState, type ReactNode } from "react";
+import { ChevronDownIcon, ChevronUpIcon } from "../../../components/icons";
+import { Disclosure } from "../../../components/Disclosure";
+import { resolveMapDensity, AUTO_DENSITY_SIMPLE_THRESHOLD } from "../../../map/mapDensity";
+import type { MapDensity } from "../../../map/mapDensity";
 
-export { resolveMapDensity, AUTO_DENSITY_SIMPLE_THRESHOLD }
+export { resolveMapDensity, AUTO_DENSITY_SIMPLE_THRESHOLD };
 
-const TOOLBAR_TRAY_STORAGE_PREFIX = 'dnd-kids-maplab-tray-collapsed:'
+const TOOLBAR_TRAY_STORAGE_PREFIX = "dnd-kids-maplab-tray-collapsed:";
 
 function readStoredTrayCollapsed(groupKey: string): boolean {
   try {
-    return window.localStorage.getItem(TOOLBAR_TRAY_STORAGE_PREFIX + groupKey) === 'true'
+    return window.localStorage.getItem(TOOLBAR_TRAY_STORAGE_PREFIX + groupKey) === "true";
   } catch {
-    return false
+    return false;
   }
 }
 
@@ -21,34 +21,37 @@ function readStoredTrayCollapsed(groupKey: string): boolean {
  * mode" switch, since a DM running combat wants Session/Status open while rarely touching Create.
  * `localStorage`-backed per `groupKey`, default expanded — same pattern as `docs/design_plan.md`
  * DP2's `useNavCollapse`, keyed per group instead of one global flag. */
-export function useToolbarTrayCollapse(groupKey: string): { collapsed: boolean; toggle: () => void } {
-  const [collapsed, setCollapsed] = useState<boolean>(() => readStoredTrayCollapsed(groupKey))
+export function useToolbarTrayCollapse(groupKey: string): {
+  collapsed: boolean;
+  toggle: () => void;
+} {
+  const [collapsed, setCollapsed] = useState<boolean>(() => readStoredTrayCollapsed(groupKey));
 
   const toggle = useCallback(() => {
     setCollapsed((prev) => {
-      const next = !prev
+      const next = !prev;
       try {
-        window.localStorage.setItem(TOOLBAR_TRAY_STORAGE_PREFIX + groupKey, String(next))
+        window.localStorage.setItem(TOOLBAR_TRAY_STORAGE_PREFIX + groupKey, String(next));
       } catch {
         // localStorage unavailable (e.g. private mode) — collapse state just won't persist
       }
-      return next
-    })
-  }, [groupKey])
+      return next;
+    });
+  }, [groupKey]);
 
-  return { collapsed, toggle }
+  return { collapsed, toggle };
 }
 
-export type MapLayerKey = 'outside' | 'props' | 'passages' | 'labels'
+export type MapLayerKey = "outside" | "props" | "passages" | "labels";
 
-const LAYER_VISIBILITY_STORAGE_PREFIX = 'dnd-kids-maplab-layer-visible:'
-export const MAP_LAYER_KEYS: MapLayerKey[] = ['outside', 'props', 'passages', 'labels']
+const LAYER_VISIBILITY_STORAGE_PREFIX = "dnd-kids-maplab-layer-visible:";
+export const MAP_LAYER_KEYS: MapLayerKey[] = ["outside", "props", "passages", "labels"];
 
 function readStoredLayerVisible(key: MapLayerKey): boolean {
   try {
-    return window.localStorage.getItem(LAYER_VISIBILITY_STORAGE_PREFIX + key) !== 'false'
+    return window.localStorage.getItem(LAYER_VISIBILITY_STORAGE_PREFIX + key) !== "false";
   } catch {
-    return true
+    return true;
   }
 }
 
@@ -56,60 +59,60 @@ function readStoredLayerVisible(key: MapLayerKey): boolean {
  * to visible (absence of a stored value ≠ `'false'`), persisted per-key in `localStorage`. Same
  * try/catch-and-ignore pattern as `useToolbarTrayCollapse`, inverted default. */
 export function useMapLayerVisibility(): {
-  visible: Record<MapLayerKey, boolean>
-  toggleLayer: (key: MapLayerKey) => void
+  visible: Record<MapLayerKey, boolean>;
+  toggleLayer: (key: MapLayerKey) => void;
 } {
   const [visible, setVisible] = useState<Record<MapLayerKey, boolean>>(() => {
-    const initial = {} as Record<MapLayerKey, boolean>
-    for (const key of MAP_LAYER_KEYS) initial[key] = readStoredLayerVisible(key)
-    return initial
-  })
+    const initial = {} as Record<MapLayerKey, boolean>;
+    for (const key of MAP_LAYER_KEYS) initial[key] = readStoredLayerVisible(key);
+    return initial;
+  });
 
   const toggleLayer = useCallback((key: MapLayerKey) => {
     setVisible((prev) => {
-      const next = { ...prev, [key]: !prev[key] }
+      const next = { ...prev, [key]: !prev[key] };
       try {
-        window.localStorage.setItem(LAYER_VISIBILITY_STORAGE_PREFIX + key, String(next[key]))
+        window.localStorage.setItem(LAYER_VISIBILITY_STORAGE_PREFIX + key, String(next[key]));
       } catch {
         // localStorage unavailable (e.g. private mode) — visibility state just won't persist
       }
-      return next
-    })
-  }, [])
+      return next;
+    });
+  }, []);
 
-  return { visible, toggleLayer }
+  return { visible, toggleLayer };
 }
 
-const DENSITY_STORAGE_KEY = 'dnd-kids-maplab-density'
+const DENSITY_STORAGE_KEY = "dnd-kids-maplab-density";
 
 function readStoredDensity(): MapDensity {
   try {
-    const stored = window.localStorage.getItem(DENSITY_STORAGE_KEY)
-    if (stored === 'detailed' || stored === 'auto' || stored === 'simple') return stored
+    const stored = window.localStorage.getItem(DENSITY_STORAGE_KEY);
+    if (stored === "detailed" || stored === "auto" || stored === "simple") return stored;
   } catch {
     // localStorage unavailable — use default
   }
-  return 'auto'
+  return "auto";
 }
 
 /** Persisted density preference for the whole dungeon canvas — `Detailed` / `Auto` / `Simple`.
  *  Same try/catch-and-ignore pattern as `useMapLayerVisibility`. */
 export function useMapDensity(): {
-  density: MapDensity
-  setDensity: (value: MapDensity) => void
+  density: MapDensity;
+  setDensity: (value: MapDensity) => void;
 } {
-  const [density, setDensity] = useState<MapDensity>(() => readStoredDensity())
+  const [density, setDensity] = useState<MapDensity>(() => readStoredDensity());
 
   const updateDensity = useCallback((value: MapDensity) => {
-    setDensity(value)
+    setDensity(value);
     try {
-      window.localStorage.setItem(DENSITY_STORAGE_KEY, value)
+      window.localStorage.setItem(DENSITY_STORAGE_KEY, value);
     } catch {
       // localStorage unavailable (e.g. private mode) — density state just won't persist
     }
-  }, [])
+  }, []);
 
-  return { density, setDensity: updateDensity }
+  return { density, setDensity: updateDensity };
 }
 
 /** A collapsible toolbar group: label + chevron toggle always visible (so the group structure
@@ -122,23 +125,25 @@ export function ToolbarTray({
   extraClassName,
   children,
 }: {
-  groupKey: string
-  label: string
-  extraClassName?: string
-  children: ReactNode
+  groupKey: string;
+  label: string;
+  extraClassName?: string;
+  children: ReactNode;
 }) {
-  const { collapsed, toggle } = useToolbarTrayCollapse(groupKey)
-  const ChevronIcon = collapsed ? ChevronDownIcon : ChevronUpIcon
+  const { collapsed, toggle } = useToolbarTrayCollapse(groupKey);
+  const ChevronIcon = collapsed ? ChevronDownIcon : ChevronUpIcon;
   return (
     <Disclosure
-      className={`maplab-toolbar-group maplab-toolbar-tray${extraClassName ? ` ${extraClassName}` : ''}`}
+      className={`maplab-toolbar-group maplab-toolbar-tray${extraClassName ? ` ${extraClassName}` : ""}`}
       open={!collapsed}
       onOpenChange={() => toggle()}
       data-collapsed={collapsed || undefined}
       summary={
         <>
-          <span aria-hidden="true" className="maplab-toolbar-group-label">{label}</span>
-          <span className="visually-hidden">{`${collapsed ? 'Expand' : 'Collapse'} ${label} tools`}</span>
+          <span aria-hidden="true" className="maplab-toolbar-group-label">
+            {label}
+          </span>
+          <span className="visually-hidden">{`${collapsed ? "Expand" : "Collapse"} ${label} tools`}</span>
           <span className="maplab-toolbar-tray-chevron">
             <ChevronIcon width={14} height={14} aria-hidden="true" />
           </span>
@@ -147,5 +152,5 @@ export function ToolbarTray({
     >
       <div className="maplab-toolbar-tray-controls">{children}</div>
     </Disclosure>
-  )
+  );
 }

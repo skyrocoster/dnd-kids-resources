@@ -1,10 +1,11 @@
-from fastapi import Query
-from typing import List
 import json
+from typing import List
+
+from fastapi import Query
 
 from ..api_errors import ApiError, ApiRouter, error_responses
 from ..caching import cached_get
-from ..db import get_db, dict_from_row, parse_json_value
+from ..db import dict_from_row, get_db, parse_json_value
 from ..schemas import Encounter, EncounterCreate, EncounterUpdate
 from ..schemas.errors import EncounterError
 
@@ -36,7 +37,7 @@ def list_encounters(
         cursor = conn.cursor()
         cursor.execute(
             f"SELECT {SELECT_COLUMNS} FROM encounter ORDER BY name LIMIT ? OFFSET ?",
-            (limit, offset)
+            (limit, offset),
         )
         rows = cursor.fetchall()
         return [_parse_encounter_row(row) for row in rows]
@@ -56,7 +57,9 @@ def get_encounter(encounter_id: int):
         cursor.execute(f"SELECT {SELECT_COLUMNS} FROM encounter WHERE id = ?", (encounter_id,))
         row = cursor.fetchone()
         if not row:
-            raise ApiError(404, EncounterError(code="encounter_not_found", message="Encounter not found"))
+            raise ApiError(
+                404, EncounterError(code="encounter_not_found", message="Encounter not found")
+            )
         return _parse_encounter_row(row)
 
 
@@ -79,7 +82,7 @@ def create_encounter(encounter: EncounterCreate):
                     encounter.title,
                     json.dumps(encounter.creatures) if encounter.creatures else json.dumps([]),
                     encounter.active_index,
-                )
+                ),
             )
             conn.commit()
             encounter_id = cursor.lastrowid
@@ -87,7 +90,10 @@ def create_encounter(encounter: EncounterCreate):
             conn.rollback()
             raise ApiError(
                 400,
-                EncounterError(code="failed_to_create_encounter", message=f"Failed to create encounter: {str(e)}"),
+                EncounterError(
+                    code="failed_to_create_encounter",
+                    message=f"Failed to create encounter: {str(e)}",
+                ),
             )
 
         cursor.execute(f"SELECT {SELECT_COLUMNS} FROM encounter WHERE id = ?", (encounter_id,))
@@ -108,7 +114,9 @@ def update_encounter(encounter_id: int, encounter: EncounterUpdate):
 
         cursor.execute("SELECT id FROM encounter WHERE id = ?", (encounter_id,))
         if not cursor.fetchone():
-            raise ApiError(404, EncounterError(code="encounter_not_found", message="Encounter not found"))
+            raise ApiError(
+                404, EncounterError(code="encounter_not_found", message="Encounter not found")
+            )
 
         try:
             cursor.execute(
@@ -118,14 +126,17 @@ def update_encounter(encounter_id: int, encounter: EncounterUpdate):
                     json.dumps(encounter.creatures) if encounter.creatures else json.dumps([]),
                     encounter.active_index,
                     encounter_id,
-                )
+                ),
             )
             conn.commit()
         except Exception as e:
             conn.rollback()
             raise ApiError(
                 400,
-                EncounterError(code="failed_to_update_encounter", message=f"Failed to update encounter: {str(e)}"),
+                EncounterError(
+                    code="failed_to_update_encounter",
+                    message=f"Failed to update encounter: {str(e)}",
+                ),
             )
 
         cursor.execute(f"SELECT {SELECT_COLUMNS} FROM encounter WHERE id = ?", (encounter_id,))
@@ -146,7 +157,9 @@ def delete_encounter(encounter_id: int):
 
         cursor.execute("SELECT id FROM encounter WHERE id = ?", (encounter_id,))
         if not cursor.fetchone():
-            raise ApiError(404, EncounterError(code="encounter_not_found", message="Encounter not found"))
+            raise ApiError(
+                404, EncounterError(code="encounter_not_found", message="Encounter not found")
+            )
 
         try:
             cursor.execute("DELETE FROM encounter WHERE id = ?", (encounter_id,))
@@ -155,5 +168,8 @@ def delete_encounter(encounter_id: int):
             conn.rollback()
             raise ApiError(
                 400,
-                EncounterError(code="failed_to_delete_encounter", message=f"Failed to delete encounter: {str(e)}"),
+                EncounterError(
+                    code="failed_to_delete_encounter",
+                    message=f"Failed to delete encounter: {str(e)}",
+                ),
             )

@@ -9,13 +9,13 @@ import pytest
 
 from backend.app.routers.dungeons import _parse_dungeon_row
 from backend.app.routers.encounters import _parse_encounter_row
+from backend.app.routers.loot import _parse_loot_bundle_row
 from backend.app.routers.monsters import (
     _cr_sort,
     _parse_monster_row,
 )
 from backend.app.routers.npcs import _parse_npc_row
 from backend.app.routers.players import _parse_player_row
-from backend.app.routers.loot import _parse_loot_bundle_row
 from backend.app.routers.weapons import _parse_weapon_row
 
 
@@ -51,8 +51,8 @@ def test_parse_npc_row_decodes_structured_statblock():
         skills='{"arcana": 4}',
         passive_perception=11,
         damage_resistances='[{"damage_type": "necrotic"}]',
-        damage_immunities='[]',
-        damage_vulnerabilities='[]',
+        damage_immunities="[]",
+        damage_vulnerabilities="[]",
         condition_immunities='["charmed"]',
         senses='[{"type": "darkvision", "range": 60}]',
         languages='["Common", "Elvish"]',

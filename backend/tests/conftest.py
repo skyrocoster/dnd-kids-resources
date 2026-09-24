@@ -27,10 +27,9 @@ import sqlite3
 import tempfile
 from contextlib import redirect_stdout
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
-
-from unittest.mock import MagicMock
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DATABASE_DIR = REPO_ROOT / "backend" / "database"
@@ -134,15 +133,33 @@ def _seed_curated_data(conn: sqlite3.Connection) -> None:
         """INSERT INTO spells
            (id, name, level, school, description, range, duration, casting_times, components)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (1, "Magic Missile", 1, "evocation", "Unerring magical projectiles", "120 feet",
-         "Instantaneous", json.dumps(["1 action"]), json.dumps(["V", "S"])),
+        (
+            1,
+            "Magic Missile",
+            1,
+            "evocation",
+            "Unerring magical projectiles",
+            "120 feet",
+            "Instantaneous",
+            json.dumps(["1 action"]),
+            json.dumps(["V", "S"]),
+        ),
     )
     cursor.execute(
         """INSERT INTO spells
            (id, name, level, school, description, range, duration, casting_times, components)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (2, "Fireball", 3, "evocation", "A ball of fire erupts", "150 feet",
-         "Instantaneous", json.dumps(["1 action"]), json.dumps(["V", "S", "M"])),
+        (
+            2,
+            "Fireball",
+            3,
+            "evocation",
+            "A ball of fire erupts",
+            "150 feet",
+            "Instantaneous",
+            json.dumps(["1 action"]),
+            json.dumps(["V", "S", "M"]),
+        ),
     )
     # JSON-rich spell: every JSON-encoded column populated, matching real data shapes.
     cursor.execute(
@@ -150,12 +167,21 @@ def _seed_curated_data(conn: sqlite3.Connection) -> None:
            (id, name, level, school, description, range, duration, casting_times, components,
             damage, healing, attacks, area_of_effect)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (3, "Firebolt Test", 0, "evocation", "A mote of fire", "120 feet", "Instantaneous",
-         json.dumps(["1 action"]), json.dumps(["V", "S"]),
-         json.dumps([{"name": "primary", "formula": "1d10", "damage_types": ["fire"]}]),
-         json.dumps({"amount": "1d4", "temp_hp": True, "max_hp": False}),
-         json.dumps([{"kind": "ranged", "saving_throws": []}]),
-         json.dumps({"shape": "sphere", "size": 20})),
+        (
+            3,
+            "Firebolt Test",
+            0,
+            "evocation",
+            "A mote of fire",
+            "120 feet",
+            "Instantaneous",
+            json.dumps(["1 action"]),
+            json.dumps(["V", "S"]),
+            json.dumps([{"name": "primary", "formula": "1d10", "damage_types": ["fire"]}]),
+            json.dumps({"amount": "1d4", "temp_hp": True, "max_hp": False}),
+            json.dumps([{"kind": "ranged", "saving_throws": []}]),
+            json.dumps({"shape": "sphere", "size": 20}),
+        ),
     )
 
     cursor.execute(
@@ -187,33 +213,41 @@ def _seed_curated_data(conn: sqlite3.Connection) -> None:
             json.dumps([{"type": "darkvision", "range": 60, "note": None}]),
             json.dumps([]),
             "owlbear.mp3",
-            json.dumps({
-                "traits": [],
-                "spellcasting": [],
-                "actions": [
-                    {"name": "Multiattack", "description": "The owlbear makes two attacks.", "attack": None},
-                    {
-                        "name": "Beak",
-                        "description": None,
-                        "attack": {
-                            "kind": "melee_weapon",
-                            "attack_bonus": 7,
-                            "automatic_hit": False,
-                            "range_ft": 5,
-                            "long_range_ft": None,
-                            "targets": 1,
-                            "damage": [{"formula": "1d10", "bonus": 5, "damage_types": ["piercing"]}],
+            json.dumps(
+                {
+                    "traits": [],
+                    "spellcasting": [],
+                    "actions": [
+                        {
+                            "name": "Multiattack",
+                            "description": "The owlbear makes two attacks.",
+                            "attack": None,
                         },
-                    },
-                ],
-                "bonus_actions": [],
-                "reactions": [],
-                "reaction_intro": None,
-                "legendary_actions": [],
-                "legendary_intro": None,
-                "legendary_actions_per_round": None,
-                "mythic_actions": [],
-            }),
+                        {
+                            "name": "Beak",
+                            "description": None,
+                            "attack": {
+                                "kind": "melee_weapon",
+                                "attack_bonus": 7,
+                                "automatic_hit": False,
+                                "range_ft": 5,
+                                "long_range_ft": None,
+                                "targets": 1,
+                                "damage": [
+                                    {"formula": "1d10", "bonus": 5, "damage_types": ["piercing"]}
+                                ],
+                            },
+                        },
+                    ],
+                    "bonus_actions": [],
+                    "reactions": [],
+                    "reaction_intro": None,
+                    "legendary_actions": [],
+                    "legendary_intro": None,
+                    "legendary_actions_per_round": None,
+                    "mythic_actions": [],
+                }
+            ),
             "3",
             3.0,
             None,
@@ -226,9 +260,21 @@ def _seed_curated_data(conn: sqlite3.Connection) -> None:
                                 property, focus, attack, entries,
                                 quick_rules, weapon_attack_bonus, weapon_damage_bonus)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        ("Longsword", "Longsword", None, "martial", 3.0, None, json.dumps(["V"]), json.dumps([]),
-         json.dumps([{"type": "melee", "damage": "1d8", "damage_type": "slashing", "hands": 1}]),
-         json.dumps([]), None, None, None),
+        (
+            "Longsword",
+            "Longsword",
+            None,
+            "martial",
+            3.0,
+            None,
+            json.dumps(["V"]),
+            json.dumps([]),
+            json.dumps([{"type": "melee", "damage": "1d8", "damage_type": "slashing", "hands": 1}]),
+            json.dumps([]),
+            None,
+            None,
+            None,
+        ),
     )
 
     conn.commit()
@@ -294,6 +340,7 @@ def test_client(monkeypatch, test_db_path):
     conn.close()
 
     from fastapi.testclient import TestClient
+
     from backend.app.main import app
 
     # raise_server_exceptions=False so a 500 is asserted as a 500, not re-raised —
@@ -322,8 +369,9 @@ def real_client(real_db_path):
     Read-only by contract — tests using this must not create/update/delete, since
     the DB is shared across the session.
     """
-    import backend.app.db as db_module
     from fastapi.testclient import TestClient
+
+    import backend.app.db as db_module
     from backend.app.main import app
 
     original = db_module.DB_PATH

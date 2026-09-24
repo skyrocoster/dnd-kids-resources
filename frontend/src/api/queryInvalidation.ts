@@ -1,10 +1,10 @@
-import type { QueryClient, QueryKey } from '@tanstack/react-query'
-import { queryKeys } from './queryKeys'
+import type { QueryClient, QueryKey } from "@tanstack/react-query";
+import { queryKeys } from "./queryKeys";
 
-type Invalidate = Pick<QueryClient, 'invalidateQueries'>
+type Invalidate = Pick<QueryClient, "invalidateQueries">;
 
 const invalidate = (queryClient: Invalidate, ...keys: QueryKey[]) =>
-  Promise.all(keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })))
+  Promise.all(keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
 
 /** Canonical invalidation rules for every API-backed feature mutation. */
 export const queryInvalidation = {
@@ -13,7 +13,9 @@ export const queryInvalidation = {
       queryClient,
       queryKeys.spells.all,
       queryKeys.players.spellbook,
-      ...(spellId === undefined ? [] : [queryKeys.spells.detail(spellId), queryKeys.spells.players(spellId)]),
+      ...(spellId === undefined
+        ? []
+        : [queryKeys.spells.detail(spellId), queryKeys.spells.players(spellId)]),
     ),
   spellAssignments: (queryClient: Invalidate, playerId: number, spellId?: number) =>
     invalidate(
@@ -33,7 +35,9 @@ export const queryInvalidation = {
     invalidate(
       queryClient,
       queryKeys.weapons.all,
-      ...(weaponId === undefined ? [] : [queryKeys.weapons.detail(weaponId), queryKeys.weapons.players(weaponId)]),
+      ...(weaponId === undefined
+        ? []
+        : [queryKeys.weapons.detail(weaponId), queryKeys.weapons.players(weaponId)]),
     ),
   weaponAssignments: (queryClient: Invalidate, playerId: number, weaponId?: number) =>
     invalidate(
@@ -43,7 +47,11 @@ export const queryInvalidation = {
       ...(weaponId === undefined ? [] : [queryKeys.weapons.players(weaponId)]),
     ),
   items: (queryClient: Invalidate, itemId?: number) =>
-    invalidate(queryClient, queryKeys.items.all, ...(itemId === undefined ? [] : [queryKeys.items.detail(itemId)])),
+    invalidate(
+      queryClient,
+      queryKeys.items.all,
+      ...(itemId === undefined ? [] : [queryKeys.items.detail(itemId)]),
+    ),
   lootBundles: (queryClient: Invalidate, bundleId?: number) =>
     invalidate(
       queryClient,
@@ -58,7 +66,11 @@ export const queryInvalidation = {
       ...(playerId === undefined ? [] : [queryKeys.players.detail(playerId)]),
     ),
   npcs: (queryClient: Invalidate, npcId?: number) =>
-    invalidate(queryClient, queryKeys.npcs.all, ...(npcId === undefined ? [] : [queryKeys.npcs.detail(npcId)])),
+    invalidate(
+      queryClient,
+      queryKeys.npcs.all,
+      ...(npcId === undefined ? [] : [queryKeys.npcs.detail(npcId)]),
+    ),
   encounters: (queryClient: Invalidate, encounterId?: number) =>
     invalidate(
       queryClient,
@@ -88,4 +100,4 @@ export const queryInvalidation = {
       queryKeys.loom.nodes.all,
       queryKeys.loom.sessions.all,
     ),
-}
+};

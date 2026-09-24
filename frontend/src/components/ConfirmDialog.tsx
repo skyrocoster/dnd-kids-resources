@@ -1,17 +1,17 @@
-import { Button } from './Button'
-import { Dialog } from './Dialog'
+import { Button } from "./Button";
+import { Dialog } from "./Dialog";
 
 interface ConfirmDialogProps {
-  message: string
-  confirmLabel?: string
-  onConfirm: () => void
-  onCancel: () => void
-  pending?: boolean
+  message: string;
+  confirmLabel?: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  pending?: boolean;
 }
 
 export function ConfirmDialog({
   message,
-  confirmLabel = 'Delete',
+  confirmLabel = "Delete",
   onConfirm,
   onCancel,
   pending = false,
@@ -34,5 +34,5 @@ export function ConfirmDialog({
         </>
       }
     />
-  )
+  );
 }

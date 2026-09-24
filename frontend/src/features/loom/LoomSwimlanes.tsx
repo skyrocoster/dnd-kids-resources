@@ -1,28 +1,43 @@
-import type { CSSProperties } from 'react'
-import { useEffect, useRef } from 'react'
-import type { LoomNode, LoomSession, LoomTapestryThread } from '../../api/types'
-import { LoomLane } from './LoomLane'
-import { getFellDividerElement, isFellDividerFullyVisible, scrollToFellDivider } from './currentPositionScroll'
+import type { CSSProperties } from "react";
+import { useEffect, useRef } from "react";
+import type { LoomNode, LoomSession, LoomTapestryThread } from "../../api/types";
+import { LoomLane } from "./LoomLane";
+import {
+  getFellDividerElement,
+  isFellDividerFullyVisible,
+  scrollToFellDivider,
+} from "./currentPositionScroll";
 
-type LoomGridStyle = CSSProperties & { '--loom-session-count': number }
+type LoomGridStyle = CSSProperties & { "--loom-session-count": number };
 
 interface LoomSwimlanesProps {
-  threads: LoomTapestryThread[]
-  nodes: LoomNode[]
-  sessions: LoomSession[]
-  selectedNodeId?: number | null
-  onSelectNode?: (nodeId: number) => void
-  selectedThreadId?: number | null
-  onSelectThread?: (threadId: number) => void
-  onGapClick?: (threadId: number, position: number) => void
-  onReorder?: (threadId: number, nodeId: number, fromBodyIndex: number, toBodyIndex: number) => void
-  onCrossLaneDrop?: (nodeId: number, sourceThreadId: number, targetThreadId: number, position: number, nodeKind: 'beat' | 'session') => void
-  onGapRestore?: (nodeId: number, threadId: number, position: number) => void
-  onCardEdit?: (node: LoomNode) => void
-  onCardBank?: (node: LoomNode) => void
-  onCardDelete?: (node: LoomNode) => void
-  onDividerVisibilityChange?: (isVisible: boolean) => void
-  placingNodeId?: number | null
+  threads: LoomTapestryThread[];
+  nodes: LoomNode[];
+  sessions: LoomSession[];
+  selectedNodeId?: number | null;
+  onSelectNode?: (nodeId: number) => void;
+  selectedThreadId?: number | null;
+  onSelectThread?: (threadId: number) => void;
+  onGapClick?: (threadId: number, position: number) => void;
+  onReorder?: (
+    threadId: number,
+    nodeId: number,
+    fromBodyIndex: number,
+    toBodyIndex: number,
+  ) => void;
+  onCrossLaneDrop?: (
+    nodeId: number,
+    sourceThreadId: number,
+    targetThreadId: number,
+    position: number,
+    nodeKind: "beat" | "session",
+  ) => void;
+  onGapRestore?: (nodeId: number, threadId: number, position: number) => void;
+  onCardEdit?: (node: LoomNode) => void;
+  onCardBank?: (node: LoomNode) => void;
+  onCardDelete?: (node: LoomNode) => void;
+  onDividerVisibilityChange?: (isVisible: boolean) => void;
+  placingNodeId?: number | null;
 }
 
 export function LoomSwimlanes({
@@ -43,38 +58,38 @@ export function LoomSwimlanes({
   onDividerVisibilityChange,
   placingNodeId,
 }: LoomSwimlanesProps) {
-  const gridRef = useRef<HTMLElement>(null)
+  const gridRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const grid = gridRef.current
-    if (!grid) return
+    const grid = gridRef.current;
+    if (!grid) return;
 
-    const divider = getFellDividerElement()
-    if (!divider) return
+    const divider = getFellDividerElement();
+    if (!divider) return;
 
-    scrollToFellDivider(grid, divider)
-    const isVisible = isFellDividerFullyVisible(grid, divider)
-    onDividerVisibilityChange?.(isVisible)
+    scrollToFellDivider(grid, divider);
+    const isVisible = isFellDividerFullyVisible(grid, divider);
+    onDividerVisibilityChange?.(isVisible);
 
     const handleScroll = () => {
-      const divider = getFellDividerElement()
-      if (!divider) return
-      const isVisible = isFellDividerFullyVisible(grid, divider)
-      onDividerVisibilityChange?.(isVisible)
-    }
+      const divider = getFellDividerElement();
+      if (!divider) return;
+      const isVisible = isFellDividerFullyVisible(grid, divider);
+      onDividerVisibilityChange?.(isVisible);
+    };
 
-    grid.addEventListener('scroll', handleScroll)
+    grid.addEventListener("scroll", handleScroll);
     return () => {
-      grid.removeEventListener('scroll', handleScroll)
-    }
-  }, [onDividerVisibilityChange])
+      grid.removeEventListener("scroll", handleScroll);
+    };
+  }, [onDividerVisibilityChange]);
 
   return (
     <section
       ref={gridRef}
       className="loom-canvas-area loom-grid"
       aria-label="Session grid"
-      style={{ '--loom-session-count': sessions.length } as LoomGridStyle}
+      style={{ "--loom-session-count": sessions.length } as LoomGridStyle}
     >
       <div className="loom-grid-headers">
         <div className="loom-grid-corner" />
@@ -84,8 +99,13 @@ export function LoomSwimlanes({
             <span className="loom-grid-col-name">{s.name}</span>
           </div>
         ))}
-        <div className="loom-grid-col-header loom-grid-col-header--fell" aria-label="Current position" />
-        <div className="loom-grid-col-header loom-grid-col-header--warp" aria-label="Planned beats">Planned beats</div>
+        <div
+          className="loom-grid-col-header loom-grid-col-header--fell"
+          aria-label="Current position"
+        />
+        <div className="loom-grid-col-header loom-grid-col-header--warp" aria-label="Planned beats">
+          Planned beats
+        </div>
       </div>
       {threads.map((thread) => (
         <LoomLane
@@ -108,5 +128,5 @@ export function LoomSwimlanes({
         />
       ))}
     </section>
-  )
+  );
 }

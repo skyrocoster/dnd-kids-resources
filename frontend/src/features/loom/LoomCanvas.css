@@ -45,8 +45,16 @@
   padding: var(--space-3);
   overflow: auto;
   background:
-    radial-gradient(circle at top, color-mix(in srgb, var(--md-loom-anchor) 12%, transparent), transparent 38%),
-    linear-gradient(180deg, color-mix(in srgb, var(--md-surface-2) 65%, var(--md-surface)), var(--md-surface));
+    radial-gradient(
+      circle at top,
+      color-mix(in srgb, var(--md-loom-anchor) 12%, transparent),
+      transparent 38%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--md-surface-2) 65%, var(--md-surface)),
+      var(--md-surface)
+    );
 }
 
 .loom-beat-bank-tray {
@@ -103,8 +111,11 @@
 .loom-grid-fell-edge {
   width: 0.5rem;
   min-width: 0.5rem;
-  background:
-    linear-gradient(180deg, var(--md-loom-anchor), color-mix(in srgb, var(--md-loom-anchor) 60%, var(--md-surface-2)));
+  background: linear-gradient(
+    180deg,
+    var(--md-loom-anchor),
+    color-mix(in srgb, var(--md-loom-anchor) 60%, var(--md-surface-2))
+  );
   min-height: var(--control-height);
 }
 
@@ -124,7 +135,9 @@
 
 .loom-grid-row--selected .loom-grid-thread-label {
   border-color: var(--md-primary);
-  box-shadow: 0 0 0 1px var(--md-primary), 0 4px 16px color-mix(in srgb, var(--md-primary) 18%, transparent);
+  box-shadow:
+    0 0 0 1px var(--md-primary),
+    0 4px 16px color-mix(in srgb, var(--md-primary) 18%, transparent);
 }
 
 .loom-grid-row--dimmed .loom-grid-thread-label,
@@ -199,7 +212,11 @@
 
 .loom-grid-cell--cloth {
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--md-surface-1) 86%, transparent), color-mix(in srgb, var(--md-surface-2) 22%, transparent)),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--md-surface-1) 86%, transparent),
+      color-mix(in srgb, var(--md-surface-2) 22%, transparent)
+    ),
     repeating-linear-gradient(
       90deg,
       transparent 0 1px,
@@ -218,12 +235,11 @@
   gap: var(--space-2);
   padding: var(--space-1) var(--space-3);
   min-height: var(--control-height);
-  background:
-    repeating-linear-gradient(
-      90deg,
-      transparent 0 1px,
-      color-mix(in srgb, var(--md-outline-variant) 8%, transparent) 1px 2px
-    );
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 1px,
+    color-mix(in srgb, var(--md-outline-variant) 8%, transparent) 1px 2px
+  );
   border-left: 1px solid color-mix(in srgb, var(--md-outline-variant) 30%, transparent);
 }
 
@@ -268,8 +284,11 @@
 
 .loom-node--start,
 .loom-node--end {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--md-primary-container) 10%, transparent), transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--md-primary-container) 10%, transparent),
+    transparent
+  );
   color: var(--md-on-primary-container);
   border: none;
   box-shadow: none;
@@ -277,7 +296,7 @@
 
 .loom-node--start::after,
 .loom-node--end::after {
-  content: '';
+  content: "";
   position: absolute;
   top: var(--space-2);
   bottom: var(--space-2);
@@ -300,16 +319,22 @@
 }
 
 .loom-node--beat {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--md-tertiary-container) 90%, white 10%), var(--md-tertiary-container));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--md-tertiary-container) 90%, white 10%),
+    var(--md-tertiary-container)
+  );
   color: var(--md-on-tertiary-container);
   border: 2px solid var(--md-tertiary);
   box-shadow: 0 10px 24px rgb(0 0 0 / 0.14);
 }
 
 .loom-node--session {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--md-secondary-container) 90%, white 10%), var(--md-secondary-container));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--md-secondary-container) 90%, white 10%),
+    var(--md-secondary-container)
+  );
   color: var(--md-on-secondary-container);
   border: 2px solid color-mix(in srgb, var(--md-secondary) 82%, var(--md-outline-variant));
   box-shadow: 0 10px 24px rgb(0 0 0 / 0.14);
@@ -364,18 +389,18 @@
   line-height: 1.4;
 }
 
-.loom-node-marker-kind[data-kind='start'],
-.loom-node-marker-kind[data-kind='end'] {
+.loom-node-marker-kind[data-kind="start"],
+.loom-node-marker-kind[data-kind="end"] {
   background: color-mix(in srgb, var(--md-primary) 16%, transparent);
   color: var(--md-primary);
 }
 
-.loom-node-marker-kind[data-kind='beat'] {
+.loom-node-marker-kind[data-kind="beat"] {
   background: color-mix(in srgb, var(--md-tertiary) 16%, transparent);
   color: var(--md-tertiary);
 }
 
-.loom-node-marker-kind[data-kind='session'] {
+.loom-node-marker-kind[data-kind="session"] {
   background: color-mix(in srgb, var(--md-secondary) 16%, transparent);
   color: var(--md-secondary);
 }
@@ -423,33 +448,33 @@
   border-radius: var(--radius-full);
 }
 
-.loom-node-spine[data-color='thread-1'],
-.loom-weaver-thread-swatch[data-color='thread-1'] {
+.loom-node-spine[data-color="thread-1"],
+.loom-weaver-thread-swatch[data-color="thread-1"] {
   background: var(--md-loom-thread-1);
 }
 
-.loom-node-spine[data-color='thread-2'],
-.loom-weaver-thread-swatch[data-color='thread-2'] {
+.loom-node-spine[data-color="thread-2"],
+.loom-weaver-thread-swatch[data-color="thread-2"] {
   background: var(--md-loom-thread-2);
 }
 
-.loom-node-spine[data-color='thread-3'],
-.loom-weaver-thread-swatch[data-color='thread-3'] {
+.loom-node-spine[data-color="thread-3"],
+.loom-weaver-thread-swatch[data-color="thread-3"] {
   background: var(--md-loom-thread-3);
 }
 
-.loom-node-spine[data-color='thread-4'],
-.loom-weaver-thread-swatch[data-color='thread-4'] {
+.loom-node-spine[data-color="thread-4"],
+.loom-weaver-thread-swatch[data-color="thread-4"] {
   background: var(--md-loom-thread-4);
 }
 
-.loom-node-spine[data-color='thread-5'],
-.loom-weaver-thread-swatch[data-color='thread-5'] {
+.loom-node-spine[data-color="thread-5"],
+.loom-weaver-thread-swatch[data-color="thread-5"] {
   background: var(--md-loom-thread-5);
 }
 
-.loom-node-spine[data-color='thread-6'],
-.loom-weaver-thread-swatch[data-color='thread-6'] {
+.loom-node-spine[data-color="thread-6"],
+.loom-weaver-thread-swatch[data-color="thread-6"] {
   background: var(--md-loom-thread-6);
 }
 
@@ -546,36 +571,36 @@
   color: var(--md-on-surface);
 }
 
-.loom-selection-pill[data-tone='start'],
-.loom-legend-key[data-tone='start'] {
+.loom-selection-pill[data-tone="start"],
+.loom-legend-key[data-tone="start"] {
   background: color-mix(in srgb, var(--md-primary) 18%, var(--md-surface-3));
   color: var(--md-on-surface);
 }
 
-.loom-selection-pill[data-tone='end'],
-.loom-legend-key[data-tone='end'] {
+.loom-selection-pill[data-tone="end"],
+.loom-legend-key[data-tone="end"] {
   background: color-mix(in srgb, var(--md-primary) 18%, var(--md-surface-3));
   color: var(--md-on-surface);
 }
 
-.loom-selection-pill[data-tone='beat'],
-.loom-legend-key[data-tone='beat'] {
+.loom-selection-pill[data-tone="beat"],
+.loom-legend-key[data-tone="beat"] {
   background: color-mix(in srgb, var(--md-tertiary) 18%, var(--md-surface-3));
   color: var(--md-on-surface);
 }
 
-.loom-selection-pill[data-tone='session'],
-.loom-legend-key[data-tone='session'] {
+.loom-selection-pill[data-tone="session"],
+.loom-legend-key[data-tone="session"] {
   background: color-mix(in srgb, var(--md-secondary) 18%, var(--md-surface-3));
   color: var(--md-on-surface);
 }
 
-.loom-legend-key[data-tone='now'] {
+.loom-legend-key[data-tone="now"] {
   background: var(--md-primary);
   color: var(--md-on-primary);
 }
 
-.loom-legend-key[data-tone='next'] {
+.loom-legend-key[data-tone="next"] {
   background: var(--md-secondary);
   color: var(--md-on-secondary);
 }
@@ -709,7 +734,7 @@
   background: color-mix(in srgb, var(--md-surface-3) 86%, var(--md-surface-1));
 }
 
-.loom-weaver-thread-button[aria-pressed='true'] {
+.loom-weaver-thread-button[aria-pressed="true"] {
   border-color: color-mix(in srgb, var(--md-primary) 48%, var(--md-outline-variant));
   background: color-mix(in srgb, var(--md-primary-container) 26%, var(--md-surface-2));
 }
@@ -772,7 +797,7 @@
 }
 
 .loom-lane-gap::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 4px calc(50% - 1px);
   width: 2px;

@@ -3,11 +3,7 @@ import { ChevronDown } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 
 import "./form-controls.css";
-import {
-  DropdownItemBody,
-  DropdownMessage,
-  type DropdownOptionDefinition,
-} from "./DropdownParts";
+import { DropdownItemBody, DropdownMessage, type DropdownOptionDefinition } from "./DropdownParts";
 import { dropdownPositionerProps } from "./dropdownPositionerProps";
 
 export interface SelectProps {

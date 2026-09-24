@@ -9,11 +9,6 @@ import sqlite3
 from contextlib import redirect_stdout
 from pathlib import Path
 
-import pytest
-
-from backend.app.db import parse_json_list, parse_spell_row
-
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -135,15 +130,30 @@ def test_seed_categories_are_fixed_nonempty_and_round_trip(tmp_path: Path):
     db_path = tmp_path / "seed-categories.db"
     export_dir = tmp_path / "seeds"
     export_dir.mkdir()
-    allowed = {"Damage", "Heal", "Protect", "Control", "Move", "Detect", "Influence", "Create", "Summon", "Other"}
-    original = json.loads((REPO_ROOT / "data" / "seeds" / "seed_spells.json").read_text(encoding="utf-8"))
+    allowed = {
+        "Damage",
+        "Heal",
+        "Protect",
+        "Control",
+        "Move",
+        "Detect",
+        "Influence",
+        "Create",
+        "Summon",
+        "Other",
+    }
+    original = json.loads(
+        (REPO_ROOT / "data" / "seeds" / "seed_spells.json").read_text(encoding="utf-8")
+    )
 
     _init_schema(db_path)
     _seed_spells(db_path, force=True)
     assert len(original) == 525
     assert all(spell["categories"] for spell in original)
     assert all(set(spell["categories"]) <= allowed for spell in original)
-    assert all(spell["categories"] == list(dict.fromkeys(spell["categories"])) for spell in original)
+    assert all(
+        spell["categories"] == list(dict.fromkeys(spell["categories"])) for spell in original
+    )
 
     original_dir = EXPORT_DB.SEEDS_DIR
     try:
@@ -201,15 +211,18 @@ def test_json_text_columns_round_trip(tmp_path: Path):
     conn.row_factory = sqlite3.Row
     try:
         damage_row = conn.execute(
-            "SELECT damage, healing, higher_levels, casting_times, components, attacks, area_of_effect FROM spells WHERE name = ?",
+            "SELECT damage, healing, higher_levels, casting_times, components, "
+            "attacks, area_of_effect FROM spells WHERE name = ?",
             ("Absorb Elements",),
         ).fetchone()
         healing_row = conn.execute(
-            "SELECT damage, healing, higher_levels, casting_times, components, attacks, area_of_effect FROM spells WHERE name = ?",
+            "SELECT damage, healing, higher_levels, casting_times, components, "
+            "attacks, area_of_effect FROM spells WHERE name = ?",
             ("Aid",),
         ).fetchone()
         empty_row = conn.execute(
-            "SELECT damage, healing, higher_levels, casting_times, components, attacks, area_of_effect FROM spells WHERE name = ?",
+            "SELECT damage, healing, higher_levels, casting_times, components, "
+            "attacks, area_of_effect FROM spells WHERE name = ?",
             ("Abi-Dalzim's Horrid Wilting",),
         ).fetchone()
     finally:
@@ -253,7 +266,8 @@ def test_empty_collections_survive_storage(tmp_path: Path):
         conn.commit()
 
         row = conn.execute(
-            "SELECT categories, damage, healing, higher_levels, casting_times, components, attacks, area_of_effect FROM spells WHERE id = ?",
+            "SELECT categories, damage, healing, higher_levels, casting_times, "
+            "components, attacks, area_of_effect FROM spells WHERE id = ?",
             (9999,),
         ).fetchone()
         parsed = {
@@ -364,7 +378,9 @@ def test_seeded_quick_rules_round_trip_exact_strings(tmp_path: Path):
     _init_schema(db_path)
     _seed_spells(db_path, force=True)
 
-    original_spells = json.loads((REPO_ROOT / "data" / "seeds" / "seed_spells.json").read_text(encoding="utf-8"))
+    original_spells = json.loads(
+        (REPO_ROOT / "data" / "seeds" / "seed_spells.json").read_text(encoding="utf-8")
+    )
     original_quick_rules = {spell["id"]: spell.get("quick_rules") for spell in original_spells}
 
     assert len(original_quick_rules) == 525
@@ -384,6 +400,7 @@ def test_seeded_quick_rules_round_trip_exact_strings(tmp_path: Path):
     assert set(exported_quick_rules) == set(original_quick_rules)
     assert all(isinstance(value, str) and value.strip() for value in exported_quick_rules.values())
     assert exported_quick_rules == original_quick_rules
+
 
 def _quick_rule_spell(**overrides):
     spell = {
@@ -461,7 +478,10 @@ def test_quick_rules_generator_descriptive_utility():
             _quick_rule_spell(
                 id=9004,
                 name="Utility",
-                description="You create a spectral globe around a willing creature. It lasts until the spell ends.",
+                description=(
+                    "You create a spectral globe around a willing creature. "
+                    "It lasts until the spell ends."
+                ),
                 range="30 feet",
                 duration="1 hour",
             ),

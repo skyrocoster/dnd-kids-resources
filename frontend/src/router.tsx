@@ -1,64 +1,64 @@
-import { createBrowserRouter } from 'react-router-dom'
-import { DungeonBrowserPage } from './features/dungeons/DungeonBrowserPage'
-import { DungeonShell } from './features/dungeons/maplab/DungeonShell'
-import { MapLabPage } from './features/dungeons/maplab/MapLabPage'
-import { MapLabEditorPage } from './features/dungeons/maplab/MapLabEditorPage'
-import { EncounterBrowserPage } from './features/encounters/EncounterBrowserPage'
-import { EncounterRunnerPage } from './features/encounters/EncounterRunnerPage'
-import { MonsterBrowserPage } from './features/monsters/MonsterBrowserPage'
-import { MonsterEditor } from './features/monsters/MonsterEditor'
-import { NPCBrowserPage } from './features/npcs/NPCBrowserPage'
-import { PlayerBrowserPage } from './features/players/PlayerBrowserPage'
-import { SpellBrowserPage } from './features/spells/SpellBrowserPage'
-import { WeaponBrowserPage } from './features/weapons/WeaponBrowserPage'
-import { ItemBrowserPage } from './features/items/ItemBrowserPage'
-import { LootBundleBrowserPage } from './features/loot/LootBundleBrowserPage'
-import { LoomPage } from './features/loom/LoomPage'
-import { AppShell } from './layout/AppShell'
-import { ComponentDemoPage } from './pages/ComponentDemoPage'
-import { HomePage } from './pages/HomePage'
-import { PlayerHome, PlayerMapRoute, PlayerShell } from './player/PlayerShell'
-import { PlayerSpellbookRoute } from './player/PlayerSpellbookRoute'
+import { createBrowserRouter } from "react-router-dom";
+import { DungeonBrowserPage } from "./features/dungeons/DungeonBrowserPage";
+import { DungeonShell } from "./features/dungeons/maplab/DungeonShell";
+import { MapLabPage } from "./features/dungeons/maplab/MapLabPage";
+import { MapLabEditorPage } from "./features/dungeons/maplab/MapLabEditorPage";
+import { EncounterBrowserPage } from "./features/encounters/EncounterBrowserPage";
+import { EncounterRunnerPage } from "./features/encounters/EncounterRunnerPage";
+import { MonsterBrowserPage } from "./features/monsters/MonsterBrowserPage";
+import { MonsterEditor } from "./features/monsters/MonsterEditor";
+import { NPCBrowserPage } from "./features/npcs/NPCBrowserPage";
+import { PlayerBrowserPage } from "./features/players/PlayerBrowserPage";
+import { SpellBrowserPage } from "./features/spells/SpellBrowserPage";
+import { WeaponBrowserPage } from "./features/weapons/WeaponBrowserPage";
+import { ItemBrowserPage } from "./features/items/ItemBrowserPage";
+import { LootBundleBrowserPage } from "./features/loot/LootBundleBrowserPage";
+import { LoomPage } from "./features/loom/LoomPage";
+import { AppShell } from "./layout/AppShell";
+import { ComponentDemoPage } from "./pages/ComponentDemoPage";
+import { HomePage } from "./pages/HomePage";
+import { PlayerHome, PlayerMapRoute, PlayerShell } from "./player/PlayerShell";
+import { PlayerSpellbookRoute } from "./player/PlayerSpellbookRoute";
 
 export const routes = [
   {
-    path: '/',
+    path: "/",
     element: <AppShell />,
     children: [
       { index: true, element: <HomePage /> },
-      ...(import.meta.env.DEV ? [{ path: 'demo', element: <ComponentDemoPage /> }] : []),
-      { path: 'spells', element: <SpellBrowserPage /> },
-      { path: 'monsters', element: <MonsterBrowserPage /> },
-      { path: 'monsters/new', element: <MonsterEditor /> },
-      { path: 'monsters/:id/edit', element: <MonsterEditor /> },
-      { path: 'weapons', element: <WeaponBrowserPage /> },
-      { path: 'items', element: <ItemBrowserPage /> },
-      { path: 'loot', element: <LootBundleBrowserPage /> },
-      { path: 'players', element: <PlayerBrowserPage /> },
-      { path: 'npcs', element: <NPCBrowserPage /> },
-      { path: 'loom', element: <LoomPage /> },
-      { path: 'encounters', element: <EncounterBrowserPage /> },
-      { path: 'encounters/:id/run', element: <EncounterRunnerPage /> },
-      { path: 'dungeons', element: <DungeonBrowserPage /> },
+      ...(import.meta.env.DEV ? [{ path: "demo", element: <ComponentDemoPage /> }] : []),
+      { path: "spells", element: <SpellBrowserPage /> },
+      { path: "monsters", element: <MonsterBrowserPage /> },
+      { path: "monsters/new", element: <MonsterEditor /> },
+      { path: "monsters/:id/edit", element: <MonsterEditor /> },
+      { path: "weapons", element: <WeaponBrowserPage /> },
+      { path: "items", element: <ItemBrowserPage /> },
+      { path: "loot", element: <LootBundleBrowserPage /> },
+      { path: "players", element: <PlayerBrowserPage /> },
+      { path: "npcs", element: <NPCBrowserPage /> },
+      { path: "loom", element: <LoomPage /> },
+      { path: "encounters", element: <EncounterBrowserPage /> },
+      { path: "encounters/:id/run", element: <EncounterRunnerPage /> },
+      { path: "dungeons", element: <DungeonBrowserPage /> },
       {
-        path: 'dungeons/:dungeonId',
+        path: "dungeons/:dungeonId",
         element: <DungeonShell />,
         children: [
           { index: true, element: <MapLabPage /> },
-          { path: 'edit', element: <MapLabEditorPage /> },
+          { path: "edit", element: <MapLabEditorPage /> },
         ],
       },
     ],
   },
   {
-    path: '/play',
+    path: "/play",
     element: <PlayerShell />,
     children: [
       { index: true, element: <PlayerHome /> },
-      { path: 'map', element: <PlayerMapRoute /> },
-      { path: 'spells', element: <PlayerSpellbookRoute /> },
+      { path: "map", element: <PlayerMapRoute /> },
+      { path: "spells", element: <PlayerSpellbookRoute /> },
     ],
   },
-]
+];
 
-export const router = createBrowserRouter(routes)
+export const router = createBrowserRouter(routes);

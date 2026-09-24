@@ -1,27 +1,27 @@
-import type { Spell } from '../../../api/types'
+import type { Spell } from "../../../api/types";
 
 export const targetSpell: Spell = {
   id: 1,
-  name: 'Plant Growth',
+  name: "Plant Growth",
   level: 3,
-  school: 'transmutation',
-  categories: ['Create'],
-  description: 'Plants in the area grow vigorously.',
+  school: "transmutation",
+  categories: ["Create"],
+  description: "Plants in the area grow vigorously.",
   alternate_description: null,
-  quick_rules: 'Action: choose a point in range; plants in a 100-foot radius grow thick and tangled.',
+  quick_rules:
+    "Action: choose a point in range; plants in a 100-foot radius grow thick and tangled.",
   damage: [],
   healing: { amount: null, temp_hp: false, max_hp: false },
-  range: '150 feet',
+  range: "150 feet",
   higher_levels: { text: null, damage_by_slot: {} },
-  casting_times: ['1 action', '8 hours'],
-  duration: 'Instantaneous',
+  casting_times: ["1 action", "8 hours"],
+  duration: "Instantaneous",
   concentration: false,
   ritual: false,
-  components: ['V', 'S'],
+  components: ["V", "S"],
   materials: null,
   attacks: [],
-  area_of_effect: { shape: 'cylinder', size: 100 },
-}
+  area_of_effect: { shape: "cylinder", size: 100 },
+};
 
-export const targetSpells: Spell[] = [targetSpell]
-
+export const targetSpells: Spell[] = [targetSpell];

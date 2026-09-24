@@ -1,13 +1,14 @@
-from fastapi import Query
-from typing import List
-from fractions import Fraction
 import json
 import sqlite3
+from fractions import Fraction
+from typing import List
 
-from ..db import get_db, dict_from_row, parse_json_value
-from ..caching import cached_get
-from ..schemas import Monster, MonsterCreate, MonsterUpdate
+from fastapi import Query
+
 from ..api_errors import ApiError, ApiRouter, error_responses
+from ..caching import cached_get
+from ..db import dict_from_row, get_db, parse_json_value
+from ..schemas import Monster, MonsterCreate, MonsterUpdate
 from ..schemas.errors import MonsterError
 
 router = ApiRouter(prefix="/api", tags=["monsters"])
@@ -182,11 +183,26 @@ def create_monster(monster: MonsterCreate):
         except sqlite3.IntegrityError as exc:
             conn.rollback()
             if "UNIQUE" in str(exc).upper():
-                raise ApiError(409, MonsterError(code="monster_name_already_exists", message="Monster name already exists"))
-            raise ApiError(400, MonsterError(code="failed_to_create_monster", message=f"Failed to create monster: {str(exc)}"))
+                raise ApiError(
+                    409,
+                    MonsterError(
+                        code="monster_name_already_exists", message="Monster name already exists"
+                    ),
+                )
+            raise ApiError(
+                400,
+                MonsterError(
+                    code="failed_to_create_monster", message=f"Failed to create monster: {str(exc)}"
+                ),
+            )
         except Exception as exc:
             conn.rollback()
-            raise ApiError(400, MonsterError(code="failed_to_create_monster", message=f"Failed to create monster: {str(exc)}"))
+            raise ApiError(
+                400,
+                MonsterError(
+                    code="failed_to_create_monster", message=f"Failed to create monster: {str(exc)}"
+                ),
+            )
 
         return _select_monster(cursor, monster_id)
 
@@ -218,11 +234,26 @@ def update_monster(monster_id: int, monster: MonsterUpdate):
         except sqlite3.IntegrityError as exc:
             conn.rollback()
             if "UNIQUE" in str(exc).upper():
-                raise ApiError(409, MonsterError(code="monster_name_already_exists", message="Monster name already exists"))
-            raise ApiError(400, MonsterError(code="failed_to_update_monster", message=f"Failed to update monster: {str(exc)}"))
+                raise ApiError(
+                    409,
+                    MonsterError(
+                        code="monster_name_already_exists", message="Monster name already exists"
+                    ),
+                )
+            raise ApiError(
+                400,
+                MonsterError(
+                    code="failed_to_update_monster", message=f"Failed to update monster: {str(exc)}"
+                ),
+            )
         except Exception as exc:
             conn.rollback()
-            raise ApiError(400, MonsterError(code="failed_to_update_monster", message=f"Failed to update monster: {str(exc)}"))
+            raise ApiError(
+                400,
+                MonsterError(
+                    code="failed_to_update_monster", message=f"Failed to update monster: {str(exc)}"
+                ),
+            )
 
         return _select_monster(cursor, monster_id)
 
@@ -246,4 +277,9 @@ def delete_monster(monster_id: int):
             conn.commit()
         except Exception as exc:
             conn.rollback()
-            raise ApiError(400, MonsterError(code="failed_to_delete_monster", message=f"Failed to delete monster: {str(exc)}"))
+            raise ApiError(
+                400,
+                MonsterError(
+                    code="failed_to_delete_monster", message=f"Failed to delete monster: {str(exc)}"
+                ),
+            )

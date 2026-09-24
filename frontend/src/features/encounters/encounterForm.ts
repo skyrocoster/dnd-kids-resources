@@ -1,35 +1,35 @@
-import type { Condition, Encounter, EncounterCreature, EncounterInput } from '../../api/types'
+import type { Condition, Encounter, EncounterCreature, EncounterInput } from "../../api/types";
 
-let rowIdCounter = 0
+let rowIdCounter = 0;
 function nextRowId(): string {
-  rowIdCounter += 1
-  return `encounter-creature-${rowIdCounter}`
+  rowIdCounter += 1;
+  return `encounter-creature-${rowIdCounter}`;
 }
 
 export interface EncounterCreatureRow {
-  id: string
-  monsterId: string
-  originalName: string
-  name: string
-  hpCurrent: string
-  hpMax: string
-  ac: string
-  status: string
-  conditions: string[]
+  id: string;
+  monsterId: string;
+  originalName: string;
+  name: string;
+  hpCurrent: string;
+  hpMax: string;
+  ac: string;
+  status: string;
+  conditions: string[];
 }
 
 export interface EncounterFormState {
-  title: string
-  creatureRows: EncounterCreatureRow[]
+  title: string;
+  creatureRows: EncounterCreatureRow[];
 }
 
 export interface ConditionOption {
-  value: string
-  label: string
+  value: string;
+  label: string;
 }
 
 export function emptyEncounterForm(): EncounterFormState {
-  return { title: '', creatureRows: [] }
+  return { title: "", creatureRows: [] };
 }
 
 export function addEncounterCreatureRow(rows: EncounterCreatureRow[]): EncounterCreatureRow[] {
@@ -37,55 +37,55 @@ export function addEncounterCreatureRow(rows: EncounterCreatureRow[]): Encounter
     ...rows,
     {
       id: nextRowId(),
-      monsterId: '',
-      originalName: '',
-      name: '',
-      hpCurrent: '',
-      hpMax: '',
-      ac: '',
-      status: 'alive',
+      monsterId: "",
+      originalName: "",
+      name: "",
+      hpCurrent: "",
+      hpMax: "",
+      ac: "",
+      status: "alive",
       conditions: [],
     },
-  ]
+  ];
 }
 
 export function encounterToFormState(encounter: Encounter): EncounterFormState {
-  const creatures: EncounterCreature[] = encounter.creatures || []
+  const creatures: EncounterCreature[] = encounter.creatures || [];
   return {
-    title: encounter.title || '',
+    title: encounter.title || "",
     creatureRows: creatures.map((c) => ({
       id: nextRowId(),
-      monsterId: c.creature_id != null ? String(c.creature_id) : '',
-      originalName: c.original_name || '',
-      name: c.name || '',
-      hpCurrent: c.hp_current != null ? String(c.hp_current) : '',
-      hpMax: c.hp_max != null ? String(c.hp_max) : '',
-      ac: c.ac != null ? String(c.ac) : '',
-      status: c.status || 'alive',
+      monsterId: c.creature_id != null ? String(c.creature_id) : "",
+      originalName: c.original_name || "",
+      name: c.name || "",
+      hpCurrent: c.hp_current != null ? String(c.hp_current) : "",
+      hpMax: c.hp_max != null ? String(c.hp_max) : "",
+      ac: c.ac != null ? String(c.ac) : "",
+      status: c.status || "alive",
       conditions: c.conditions || [],
     })),
-  }
+  };
 }
 
 function dedupeConditions(conditions: string[]): string[] {
-  const seen = new Set<string>()
-  const result: string[] = []
+  const seen = new Set<string>();
+  const result: string[] = [];
   for (const raw of conditions) {
-    const trimmed = raw.trim()
-    if (!trimmed) continue
-    const key = trimmed.toLowerCase()
-    if (seen.has(key)) continue
-    seen.add(key)
-    result.push(trimmed)
+    const trimmed = raw.trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(trimmed);
   }
-  return result
+  return result;
 }
 
 export function formStateToEncounterInput(form: EncounterFormState): EncounterInput {
   const creatures = form.creatureRows.length
     ? form.creatureRows.map((row) => ({
         creature_id: row.monsterId ? Number(row.monsterId) : null,
-        source_kind: row.monsterId ? 'monster' as const : null,
+        source_kind: row.monsterId ? ("monster" as const) : null,
         original_name: row.originalName || null,
         name: row.name || null,
         hp_current: row.hpCurrent ? Number(row.hpCurrent) : null,
@@ -94,38 +94,41 @@ export function formStateToEncounterInput(form: EncounterFormState): EncounterIn
         status: row.status || null,
         conditions: dedupeConditions(row.conditions),
       }))
-    : null
+    : null;
 
   return {
     title: form.title,
     creatures,
-  }
+  };
 }
 
 /** Canonical conditions as checkbox options, plus any already-selected value not in the canonical
  * list (case-insensitively) appended as a "(custom)" option — so editing an old encounter with a
  * legacy/unknown condition string never silently drops it.
  */
-export function mergeConditionOptions(canonical: Condition[], selected: string[]): ConditionOption[] {
-  const canonicalLower = new Set(canonical.map((c) => c.name.toLowerCase()))
-  const options: ConditionOption[] = canonical.map((c) => ({ value: c.name, label: c.name }))
-  const seenExtra = new Set<string>()
+export function mergeConditionOptions(
+  canonical: Condition[],
+  selected: string[],
+): ConditionOption[] {
+  const canonicalLower = new Set(canonical.map((c) => c.name.toLowerCase()));
+  const options: ConditionOption[] = canonical.map((c) => ({ value: c.name, label: c.name }));
+  const seenExtra = new Set<string>();
   for (const value of selected) {
-    const key = value.toLowerCase()
-    if (canonicalLower.has(key) || seenExtra.has(key)) continue
-    seenExtra.add(key)
-    options.push({ value, label: `${value} (custom)` })
+    const key = value.toLowerCase();
+    if (canonicalLower.has(key) || seenExtra.has(key)) continue;
+    seenExtra.add(key);
+    options.push({ value, label: `${value} (custom)` });
   }
-  return options
+  return options;
 }
 
 export function isConditionSelected(selected: string[], value: string): boolean {
-  const key = value.toLowerCase()
-  return selected.some((c) => c.toLowerCase() === key)
+  const key = value.toLowerCase();
+  return selected.some((c) => c.toLowerCase() === key);
 }
 
 export function toggleCondition(selected: string[], value: string): string[] {
   return isConditionSelected(selected, value)
     ? selected.filter((c) => c.toLowerCase() !== value.toLowerCase())
-    : [...selected, value]
+    : [...selected, value];
 }

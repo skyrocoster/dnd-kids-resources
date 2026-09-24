@@ -1,78 +1,84 @@
-import { useId, useMemo, useState } from 'react'
-import type { FormEvent } from 'react'
-import { logLoomSession } from '../../api/client'
-import type { LoomSessionLogOutcome, LoomTapestry } from '../../api/types'
-import { Button } from '../../components/Button'
-import { Dialog } from '../../components/Dialog'
-import { SelectField } from '../../components/form/SelectField'
-import { TextField } from '../../components/form/TextField'
-import { liveThreads, nextBeat } from './loomGraph'
-import './LoomEditor.css'
+import { useId, useMemo, useState } from "react";
+import type { FormEvent } from "react";
+import { logLoomSession } from "../../api/client";
+import type { LoomSessionLogOutcome, LoomTapestry } from "../../api/types";
+import { Button } from "../../components/Button";
+import { Dialog } from "../../components/Dialog";
+import { SelectField } from "../../components/form/SelectField";
+import { TextField } from "../../components/form/TextField";
+import { liveThreads, nextBeat } from "./loomGraph";
+import "./LoomEditor.css";
 
 interface LoomSessionLogDialogProps {
-  tapestry: LoomTapestry
-  onClose: () => void
-  onLogged: () => void
-  onError: (msg: string) => void
+  tapestry: LoomTapestry;
+  onClose: () => void;
+  onLogged: () => void;
+  onError: (msg: string) => void;
 }
 
 interface ThreadOutcomeState {
-  outcome: LoomSessionLogOutcome
-  title: string
+  outcome: LoomSessionLogOutcome;
+  title: string;
 }
 
 const OUTCOME_OPTIONS = [
-  { value: 'happened', label: 'Happened / Done' },
-  { value: 'not_reached', label: 'Not Reached' },
-  { value: 'banked', label: 'Banked' },
-]
+  { value: "happened", label: "Happened / Done" },
+  { value: "not_reached", label: "Not Reached" },
+  { value: "banked", label: "Banked" },
+];
 
-export function LoomSessionLogDialog({ tapestry, onClose, onLogged, onError }: LoomSessionLogDialogProps) {
-  const formId = useId()
-  const live = useMemo(() => liveThreads(tapestry), [tapestry])
-  const nextOrdinal = Math.max(...tapestry.sessions.map((s) => s.ordinal), 0) + 1
+export function LoomSessionLogDialog({
+  tapestry,
+  onClose,
+  onLogged,
+  onError,
+}: LoomSessionLogDialogProps) {
+  const formId = useId();
+  const live = useMemo(() => liveThreads(tapestry), [tapestry]);
+  const nextOrdinal = Math.max(...tapestry.sessions.map((s) => s.ordinal), 0) + 1;
 
-  const [name, setName] = useState('')
-  const [ordinal, setOrdinal] = useState(String(nextOrdinal))
-  const [playedOn, setPlayedOn] = useState('')
-  const [notes, setNotes] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [name, setName] = useState("");
+  const [ordinal, setOrdinal] = useState(String(nextOrdinal));
+  const [playedOn, setPlayedOn] = useState("");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [outcomes, setOutcomes] = useState<Record<number, ThreadOutcomeState>>(() => {
-    const initial: Record<number, ThreadOutcomeState> = {}
+    const initial: Record<number, ThreadOutcomeState> = {};
     for (const thread of live) {
-      initial[thread.id] = { outcome: 'happened', title: '' }
+      initial[thread.id] = { outcome: "happened", title: "" };
     }
-    return initial
-  })
+    return initial;
+  });
 
   const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault()
-    const ordinalNum = parseInt(ordinal, 10)
+    event.preventDefault();
+    const ordinalNum = parseInt(ordinal, 10);
     if (isNaN(ordinalNum)) {
-      setError('Ordinal must be a number.')
-      return
+      setError("Ordinal must be a number.");
+      return;
     }
     if (!name.trim()) {
-      setError('Session name is required.')
-      return
+      setError("Session name is required.");
+      return;
     }
 
-    setSaving(true)
-    setError(null)
+    setSaving(true);
+    setError(null);
 
-    const allOutcomes: Record<number, { outcome: LoomSessionLogOutcome; title?: string | null }> = {}
+    const allOutcomes: Record<number, { outcome: LoomSessionLogOutcome; title?: string | null }> =
+      {};
     for (const thread of tapestry.threads) {
-      const isLive = live.some((t) => t.id === thread.id)
+      const isLive = live.some((t) => t.id === thread.id);
       if (isLive) {
-        const state = outcomes[thread.id]
+        const state = outcomes[thread.id];
         allOutcomes[thread.id] = {
-          outcome: state?.outcome ?? 'happened',
-          ...(state?.outcome === 'happened' && state?.title ? { title: state.title } : {}),
-        }
+          outcome: state?.outcome ?? "happened",
+          ...(state?.outcome === "happened" && state?.title ? { title: state.title } : {}),
+        };
       } else {
-        allOutcomes[thread.id] = { outcome: 'quiet' }
+        allOutcomes[thread.id] = { outcome: "quiet" };
       }
     }
 
@@ -83,15 +89,15 @@ export function LoomSessionLogDialog({ tapestry, onClose, onLogged, onError }: L
         played_on: playedOn || null,
         notes: notes || null,
         outcomes: allOutcomes,
-      })
-      onLogged()
+      });
+      onLogged();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to log session.'
-      setError(msg)
-      onError(msg)
-      setSaving(false)
+      const msg = err instanceof Error ? err.message : "Failed to log session.";
+      setError(msg);
+      onError(msg);
+      setSaving(false);
     }
-  }
+  };
 
   return (
     <Dialog
@@ -117,21 +123,36 @@ export function LoomSessionLogDialog({ tapestry, onClose, onLogged, onError }: L
         </p>
       )}
       <form id={formId} onSubmit={handleSubmit} className="loom-session-log-form">
-        <TextField label="Session Name" value={name} onChange={(e) => setName(e.target.value)} required />
+        <TextField
+          label="Session Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
         <TextField
           label="Ordinal"
           type="number"
           value={ordinal}
           onChange={(e) => setOrdinal(e.target.value)}
         />
-        <TextField label="Date" type="date" value={playedOn} onChange={(e) => setPlayedOn(e.target.value)} />
-        <TextField label="Notes" multiline value={notes} onChange={(e) => setNotes(e.target.value)} />
+        <TextField
+          label="Date"
+          type="date"
+          value={playedOn}
+          onChange={(e) => setPlayedOn(e.target.value)}
+        />
+        <TextField
+          label="Notes"
+          multiline
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
 
         <fieldset className="loom-session-log-outcomes">
           <legend>Thread Outcomes</legend>
           {live.map((thread) => {
-            const beat = nextBeat(thread, tapestry.nodes)
-            const state = outcomes[thread.id]
+            const beat = nextBeat(thread, tapestry.nodes);
+            const state = outcomes[thread.id];
             return (
               <div key={thread.id} className="loom-session-log-outcome-row">
                 <div className="loom-session-log-thread-name">{thread.name}</div>
@@ -139,18 +160,21 @@ export function LoomSessionLogDialog({ tapestry, onClose, onLogged, onError }: L
                 <SelectField
                   label="Outcome"
                   options={OUTCOME_OPTIONS}
-                  value={state?.outcome ?? 'happened'}
+                  value={state?.outcome ?? "happened"}
                   onChange={(e) =>
                     setOutcomes((prev) => ({
                       ...prev,
-                      [thread.id]: { ...prev[thread.id], outcome: e.target.value as LoomSessionLogOutcome },
+                      [thread.id]: {
+                        ...prev[thread.id],
+                        outcome: e.target.value as LoomSessionLogOutcome,
+                      },
                     }))
                   }
                 />
-                {state?.outcome === 'happened' && (
+                {state?.outcome === "happened" && (
                   <TextField
                     label="Custom Title"
-                    value={state?.title ?? ''}
+                    value={state?.title ?? ""}
                     onChange={(e) =>
                       setOutcomes((prev) => ({
                         ...prev,
@@ -160,10 +184,10 @@ export function LoomSessionLogDialog({ tapestry, onClose, onLogged, onError }: L
                   />
                 )}
               </div>
-            )
+            );
           })}
         </fieldset>
       </form>
     </Dialog>
-  )
+  );
 }

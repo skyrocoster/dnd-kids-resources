@@ -90,13 +90,17 @@
   background: transparent;
 }
 
-.player-floor-picker .player-floor-picker__choices > .form-advanced-toggle:hover:not([data-disabled]) {
+.player-floor-picker
+  .player-floor-picker__choices
+  > .form-advanced-toggle:hover:not([data-disabled]) {
   background: var(--md-surface-variant);
   color: var(--md-on-surface-variant);
 }
 
 .player-floor-picker .player-floor-picker__choices > .form-advanced-toggle[data-pressed],
-.player-floor-picker .player-floor-picker__choices > .form-advanced-toggle[data-pressed]:hover:not([data-disabled]) {
+.player-floor-picker
+  .player-floor-picker__choices
+  > .form-advanced-toggle[data-pressed]:hover:not([data-disabled]) {
   background: var(--md-primary-container);
   color: var(--md-on-primary-container);
 }
@@ -240,7 +244,9 @@
   z-index: 10;
   touch-action: manipulation;
   box-shadow: var(--shadow-md);
-  transition: opacity 160ms ease, transform 160ms ease;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
 }
 
 .player-map-return-btn.icon-btn:hover:not(:disabled) {

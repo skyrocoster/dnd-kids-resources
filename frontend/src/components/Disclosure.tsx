@@ -9,9 +9,27 @@ export interface DisclosureProps extends ComponentPropsWithoutRef<"div"> {
   onOpenChange?: (open: boolean) => void;
 }
 
-export function Disclosure({ summary, children, defaultOpen = false, open, onOpenChange, className, ...rest }: DisclosureProps) {
-  return <Collapsible.Root className={["cmt-disclosure", className].filter(Boolean).join(" ")} defaultOpen={defaultOpen} open={open} onOpenChange={(next) => onOpenChange?.(next)} {...rest}>
-    <Collapsible.Trigger className="cmt-disclosure__summary" type="button">{summary}</Collapsible.Trigger>
-    <Collapsible.Panel className="cmt-disclosure__panel">{children}</Collapsible.Panel>
-  </Collapsible.Root>;
+export function Disclosure({
+  summary,
+  children,
+  defaultOpen = false,
+  open,
+  onOpenChange,
+  className,
+  ...rest
+}: DisclosureProps) {
+  return (
+    <Collapsible.Root
+      className={["cmt-disclosure", className].filter(Boolean).join(" ")}
+      defaultOpen={defaultOpen}
+      open={open}
+      onOpenChange={(next) => onOpenChange?.(next)}
+      {...rest}
+    >
+      <Collapsible.Trigger className="cmt-disclosure__summary" type="button">
+        {summary}
+      </Collapsible.Trigger>
+      <Collapsible.Panel className="cmt-disclosure__panel">{children}</Collapsible.Panel>
+    </Collapsible.Root>
+  );
 }

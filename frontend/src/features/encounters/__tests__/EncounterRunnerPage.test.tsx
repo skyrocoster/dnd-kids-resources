@@ -1,30 +1,50 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import * as api from '../../../api/client'
-import type { Condition, Encounter, Monster } from '../../../api/types'
-import { EncounterRunnerPage } from '../EncounterRunnerPage'
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as api from "../../../api/client";
+import type { Condition, Encounter, Monster } from "../../../api/types";
+import { EncounterRunnerPage } from "../EncounterRunnerPage";
 
 const conditionList: Condition[] = [
-  { id: 1, name: 'Prone' },
-  { id: 2, name: 'Poisoned' },
-]
+  { id: 1, name: "Prone" },
+  { id: 2, name: "Poisoned" },
+];
 
 const baseEncounter: Encounter = {
   id: 7,
-  title: 'Kennels',
+  title: "Kennels",
   active_index: 0,
   creatures: [
-    { creature_id: 1, source_kind: 'monster', original_name: 'Goblin', name: 'Goblin', hp_current: 7, hp_max: 7, ac: 15, status: 'alive', conditions: [] },
-    { creature_id: 2, source_kind: 'monster', original_name: 'Wolf', name: 'Wolf', hp_current: 11, hp_max: 11, ac: 13, status: 'alive', conditions: [] },
+    {
+      creature_id: 1,
+      source_kind: "monster",
+      original_name: "Goblin",
+      name: "Goblin",
+      hp_current: 7,
+      hp_max: 7,
+      ac: 15,
+      status: "alive",
+      conditions: [],
+    },
+    {
+      creature_id: 2,
+      source_kind: "monster",
+      original_name: "Wolf",
+      name: "Wolf",
+      hp_current: 11,
+      hp_max: 11,
+      ac: 13,
+      status: "alive",
+      conditions: [],
+    },
   ],
-}
+};
 
 function monster(overrides: Partial<Monster>): Monster {
   return {
     id: 1,
-    name: 'Monster',
+    name: "Monster",
     aliases: [],
     sizes: [],
     family: null,
@@ -61,7 +81,7 @@ function monster(overrides: Partial<Monster>): Monster {
     cr_note: null,
     experience_points: null,
     ...overrides,
-  }
+  };
 }
 
 function renderPage(encounterId = 7) {
@@ -70,578 +90,628 @@ function renderPage(encounterId = 7) {
       <Routes>
         <Route path="/encounters/:id/run" element={<EncounterRunnerPage />} />
       </Routes>
-    </MemoryRouter>
-  )
+    </MemoryRouter>,
+  );
 }
 
 async function renderRunnerForSetHp() {
-  vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
-  const updateSpy = vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
+  vi.spyOn(api, "getEncounter").mockResolvedValue(baseEncounter);
+  const updateSpy = vi.spyOn(api, "updateEncounter").mockResolvedValue(baseEncounter);
 
-  renderPage()
+  renderPage();
   await act(async () => {
-    await Promise.resolve()
-  })
+    await Promise.resolve();
+  });
 
-  return updateSpy
+  return updateSpy;
 }
 
 function cardByName(name: string): HTMLElement {
-  return screen.getByDisplayValue(name).closest('.combatant-card') as HTMLElement
+  return screen.getByDisplayValue(name).closest(".combatant-card") as HTMLElement;
 }
 
 function allCardNames(): string[] {
-  return screen.getAllByLabelText('Combatant name').map((el) => (el as HTMLInputElement).value)
+  return screen.getAllByLabelText("Combatant name").map((el) => (el as HTMLInputElement).value);
 }
 
-describe('EncounterRunnerPage', () => {
+describe("EncounterRunnerPage", () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
-    vi.useFakeTimers()
-  })
+    vi.restoreAllMocks();
+    vi.useFakeTimers();
+  });
 
   afterEach(() => {
-    vi.runOnlyPendingTimers()
-    vi.useRealTimers()
-  })
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
+  });
 
-  it('renders the board from a mocked encounter', async () => {
-    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
+  it("renders the board from a mocked encounter", async () => {
+    vi.spyOn(api, "getEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "updateEncounter").mockResolvedValue(baseEncounter);
 
-    renderPage()
+    renderPage();
 
     await act(async () => {
-      await Promise.resolve()
-    })
+      await Promise.resolve();
+    });
 
-    expect(screen.getAllByRole('heading', { name: 'Kennels' })).toHaveLength(1)
-    expect(screen.getByRole('button', { name: 'Back to encounters' })).toBeInTheDocument()
-    expect(allCardNames()).toEqual(['Goblin', 'Wolf'])
-    expect(screen.getByText('Round 1')).toBeInTheDocument()
-    for (const label of ['Next turn', 'Add monster', 'Add player']) {
-      expect(screen.getByRole('button', { name: label })).toHaveAttribute('type', 'button')
+    expect(screen.getAllByRole("heading", { name: "Kennels" })).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Back to encounters" })).toBeInTheDocument();
+    expect(allCardNames()).toEqual(["Goblin", "Wolf"]);
+    expect(screen.getByText("Round 1")).toBeInTheDocument();
+    for (const label of ["Next turn", "Add monster", "Add player"]) {
+      expect(screen.getByRole("button", { name: label })).toHaveAttribute("type", "button");
     }
-  })
+  });
 
-  it('−10 damages HP and moves the meter into the critical tier', async () => {
-    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
+  it("−10 damages HP and moves the meter into the critical tier", async () => {
+    vi.spyOn(api, "getEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "updateEncounter").mockResolvedValue(baseEncounter);
 
-    renderPage()
+    renderPage();
     await act(async () => {
-      await Promise.resolve()
-    })
+      await Promise.resolve();
+    });
 
-    const card = cardByName('Goblin')
-    fireEvent.click(within(card).getByLabelText('Damage 10'))
+    const card = cardByName("Goblin");
+    fireEvent.click(within(card).getByLabelText("Damage 10"));
 
-    expect(card.className).toContain('combatant-card-down')
-    expect(within(card).getByText('0', { selector: '.combatant-hp-number' })).toBeInTheDocument()
-  })
+    expect(card.className).toContain("combatant-card-down");
+    expect(within(card).getByText("0", { selector: ".combatant-hp-number" })).toBeInTheDocument();
+  });
 
-  it('Set… applies a custom HP value', async () => {
-    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
+  it("Set… applies a custom HP value", async () => {
+    vi.spyOn(api, "getEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "updateEncounter").mockResolvedValue(baseEncounter);
 
-    renderPage()
+    renderPage();
     await act(async () => {
-      await Promise.resolve()
-    })
+      await Promise.resolve();
+    });
 
-    const card = cardByName('Goblin')
-    fireEvent.click(within(card).getByText('Set…'))
-    fireEvent.change(screen.getByLabelText('Set HP'), { target: { value: '1' } })
-    fireEvent.click(screen.getByText('Apply'))
+    const card = cardByName("Goblin");
+    fireEvent.click(within(card).getByText("Set…"));
+    fireEvent.change(screen.getByLabelText("Set HP"), { target: { value: "1" } });
+    fireEvent.click(screen.getByText("Apply"));
 
-    expect(within(card).getByText('1', { selector: '.combatant-hp-number' })).toBeInTheDocument()
-    expect(card.className).toContain('combatant-card-critical')
-  })
+    expect(within(card).getByText("1", { selector: ".combatant-hp-number" })).toBeInTheDocument();
+    expect(card.className).toContain("combatant-card-critical");
+  });
 
-  it('Set HP Apply applies the entered value and closes the panel', async () => {
-    await renderRunnerForSetHp()
-    const card = cardByName('Goblin')
+  it("Set HP Apply applies the entered value and closes the panel", async () => {
+    await renderRunnerForSetHp();
+    const card = cardByName("Goblin");
 
-    fireEvent.click(within(card).getByText('Set…'))
-    fireEvent.change(screen.getByLabelText('Set HP'), { target: { value: '3' } })
-    fireEvent.click(screen.getByText('Apply'))
+    fireEvent.click(within(card).getByText("Set…"));
+    fireEvent.change(screen.getByLabelText("Set HP"), { target: { value: "3" } });
+    const applyButton = screen.getByRole("button", { name: "Apply" });
+    expect(applyButton).toHaveAttribute("type", "button");
+    expect(applyButton).toHaveClass("combatant-set-apply");
+    fireEvent.click(applyButton);
 
-    expect(within(card).getByText('3', { selector: '.combatant-hp-number' })).toBeInTheDocument()
-    expect(screen.queryByLabelText('Set HP')).not.toBeInTheDocument()
-    expect(document.activeElement).toBe(document.body)
-  })
+    expect(within(card).getByText("3", { selector: ".combatant-hp-number" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Set HP")).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(document.body);
+  });
 
-  it('Set HP Enter applies the entered value, closes, and leaves focus on the document body', async () => {
-    await renderRunnerForSetHp()
-    const card = cardByName('Goblin')
+  it("Set HP Enter applies the entered value, closes, and leaves focus on the document body", async () => {
+    await renderRunnerForSetHp();
+    const card = cardByName("Goblin");
 
-    fireEvent.click(within(card).getByText('Set…'))
-    const input = screen.getByLabelText('Set HP')
-    expect(input).toHaveFocus()
-    fireEvent.change(input, { target: { value: '5' } })
-    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' })
+    fireEvent.click(within(card).getByText("Set…"));
+    const input = screen.getByLabelText("Set HP");
+    expect(input).toHaveFocus();
+    fireEvent.change(input, { target: { value: "5" } });
+    fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
 
-    expect(within(card).getByText('5', { selector: '.combatant-hp-number' })).toBeInTheDocument()
-    expect(screen.queryByLabelText('Set HP')).not.toBeInTheDocument()
-    expect(document.activeElement).toBe(document.body)
-  })
+    expect(within(card).getByText("5", { selector: ".combatant-hp-number" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Set HP")).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(document.body);
+  });
 
-  it('Set HP trigger retoggle closes the panel', async () => {
-    await renderRunnerForSetHp()
-    const card = cardByName('Goblin')
-    const trigger = within(card).getByText('Set…')
+  it("Set HP trigger retoggle closes the panel", async () => {
+    await renderRunnerForSetHp();
+    const card = cardByName("Goblin");
+    const trigger = within(card).getByText("Set…");
 
-    fireEvent.click(trigger)
-    expect(screen.getByLabelText('Set HP')).toBeInTheDocument()
+    fireEvent.click(trigger);
+    expect(screen.getByLabelText("Set HP")).toBeInTheDocument();
 
-    fireEvent.click(trigger)
-    expect(screen.queryByLabelText('Set HP')).not.toBeInTheDocument()
-  })
+    fireEvent.click(trigger);
+    expect(screen.queryByLabelText("Set HP")).not.toBeInTheDocument();
+  });
 
-  it('Set HP ignores outside presses and Escape for dismissal', async () => {
-    await renderRunnerForSetHp()
-    const card = cardByName('Goblin')
+  it("Set HP ignores outside presses and Escape for dismissal", async () => {
+    await renderRunnerForSetHp();
+    const card = cardByName("Goblin");
 
-    fireEvent.click(within(card).getByText('Set…'))
-    fireEvent.mouseDown(document.body)
-    expect(screen.getByLabelText('Set HP')).toBeInTheDocument()
+    fireEvent.click(within(card).getByText("Set…"));
+    fireEvent.mouseDown(document.body);
+    expect(screen.getByLabelText("Set HP")).toBeInTheDocument();
 
-    fireEvent.keyDown(document, { key: 'Escape', code: 'Escape' })
-    expect(screen.getByLabelText('Set HP')).toBeInTheDocument()
-  })
+    fireEvent.keyDown(document, { key: "Escape", code: "Escape" });
+    expect(screen.getByLabelText("Set HP")).toBeInTheDocument();
+  });
 
   it("Set HP applies 0 when Apply receives an empty value via Number('')", async () => {
-    await renderRunnerForSetHp()
-    const card = cardByName('Goblin')
+    await renderRunnerForSetHp();
+    const card = cardByName("Goblin");
 
-    fireEvent.click(within(card).getByText('Set…'))
-    expect(screen.getByLabelText('Set HP')).toHaveValue(null)
-    fireEvent.click(screen.getByText('Apply'))
+    fireEvent.click(within(card).getByText("Set…"));
+    expect(screen.getByLabelText("Set HP")).toHaveValue(null);
+    fireEvent.click(screen.getByText("Apply"));
 
-    expect(within(card).getByText('0', { selector: '.combatant-hp-number' })).toBeInTheDocument()
-    expect(screen.queryByLabelText('Set HP')).not.toBeInTheDocument()
-  })
+    expect(within(card).getByText("0", { selector: ".combatant-hp-number" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Set HP")).not.toBeInTheDocument();
+  });
 
-  it('Set HP handles an attempted non-finite value through the native number input', async () => {
-    await renderRunnerForSetHp()
-    const card = cardByName('Goblin')
-    fireEvent.click(within(card).getByText('Set…'))
-    const input = screen.getByLabelText('Set HP')
+  it("Set HP handles an attempted non-finite value through the native number input", async () => {
+    await renderRunnerForSetHp();
+    const card = cardByName("Goblin");
+    fireEvent.click(within(card).getByText("Set…"));
+    const input = screen.getByLabelText("Set HP");
 
-    fireEvent.change(input, { target: { value: '1e999' } })
-    if (input.value !== '1e999') {
-      expect(input).toHaveValue(null)
-      fireEvent.click(screen.getByText('Apply'))
+    fireEvent.change(input, { target: { value: "1e999" } });
+    if (input.value !== "1e999") {
+      expect(input).toHaveValue(null);
+      fireEvent.click(screen.getByText("Apply"));
 
-      expect(within(card).getByText('0', { selector: '.combatant-hp-number' })).toBeInTheDocument()
-      expect(screen.queryByLabelText('Set HP')).not.toBeInTheDocument()
-      return
+      expect(within(card).getByText("0", { selector: ".combatant-hp-number" })).toBeInTheDocument();
+      expect(screen.queryByLabelText("Set HP")).not.toBeInTheDocument();
+      return;
     }
 
-    expect(Number(input.value)).toBe(Infinity)
-    fireEvent.click(screen.getByText('Apply'))
+    expect(Number(input.value)).toBe(Infinity);
+    fireEvent.click(screen.getByText("Apply"));
 
-    expect(within(card).getByText('7', { selector: '.combatant-hp-number' })).toBeInTheDocument()
-    expect(screen.queryByLabelText('Set HP')).not.toBeInTheDocument()
+    expect(within(card).getByText("7", { selector: ".combatant-hp-number" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Set HP")).not.toBeInTheDocument();
 
-    fireEvent.click(within(card).getByText('Set…'))
-    expect(screen.getByLabelText('Set HP')).toHaveValue(null)
-  })
+    fireEvent.click(within(card).getByText("Set…"));
+    expect(screen.getByLabelText("Set HP")).toHaveValue(null);
+  });
 
-  it('duplicate adds a card and remove drops one', async () => {
-    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
+  it("duplicate adds a card and remove drops one", async () => {
+    vi.spyOn(api, "getEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "updateEncounter").mockResolvedValue(baseEncounter);
 
-    renderPage()
+    renderPage();
     await act(async () => {
-      await Promise.resolve()
-    })
+      await Promise.resolve();
+    });
 
-    const card = cardByName('Goblin')
-    fireEvent.click(within(card).getByLabelText('Duplicate combatant'))
-    expect(allCardNames()).toEqual(['Goblin', 'Goblin', 'Wolf'])
+    const card = cardByName("Goblin");
+    fireEvent.click(within(card).getByLabelText("Duplicate combatant"));
+    expect(allCardNames()).toEqual(["Goblin", "Goblin", "Wolf"]);
 
-    const [first] = screen.getAllByDisplayValue('Goblin')
-    fireEvent.click(within(first.closest('.combatant-card') as HTMLElement).getByLabelText('Remove combatant'))
-    expect(allCardNames()).toEqual(['Goblin', 'Wolf'])
-  })
+    const [first] = screen.getAllByDisplayValue("Goblin");
+    fireEvent.click(
+      within(first.closest(".combatant-card") as HTMLElement).getByLabelText("Remove combatant"),
+    );
+    expect(allCardNames()).toEqual(["Goblin", "Wolf"]);
+  });
 
-  it('add-monster inserts a combatant from the search panel', async () => {
-    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
-    const owlbear = monster({ id: 99, name: 'Owlbear', ac: { value: 13, note: null, alternatives: [] }, hp: { average: 59, formula: null } })
-    vi.spyOn(api, 'listMonsters').mockResolvedValue([owlbear])
+  it("add-monster inserts a combatant from the search panel", async () => {
+    vi.spyOn(api, "getEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "updateEncounter").mockResolvedValue(baseEncounter);
+    const owlbear = monster({
+      id: 99,
+      name: "Owlbear",
+      ac: { value: 13, note: null, alternatives: [] },
+      hp: { average: 59, formula: null },
+    });
+    vi.spyOn(api, "listMonsters").mockResolvedValue([owlbear]);
 
-    renderPage()
+    renderPage();
     await act(async () => {
-      await Promise.resolve()
-    })
+      await Promise.resolve();
+    });
 
-    fireEvent.click(screen.getByText('Add monster'))
+    fireEvent.click(screen.getByText("Add monster"));
     await act(async () => {
-      await Promise.resolve()
-    })
-    fireEvent.click(screen.getByRole('button', { name: /Owlbear/ }))
+      await Promise.resolve();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Owlbear/ }));
 
-    expect(allCardNames()).toEqual(['Goblin', 'Wolf', 'Owlbear'])
-  })
+    expect(allCardNames()).toEqual(["Goblin", "Wolf", "Owlbear"]);
+  });
 
-  it('▲/▼ reorder changes combatant order', async () => {
-    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
+  it("▲/▼ reorder changes combatant order", async () => {
+    vi.spyOn(api, "getEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "updateEncounter").mockResolvedValue(baseEncounter);
 
-    renderPage()
+    renderPage();
     await act(async () => {
-      await Promise.resolve()
-    })
+      await Promise.resolve();
+    });
 
-    expect(allCardNames()).toEqual(['Goblin', 'Wolf'])
-    const goblinCard = cardByName('Goblin')
-    const wolfCard = cardByName('Wolf')
-    expect(within(goblinCard).getByLabelText('Move Goblin up')).toBeDisabled()
-    expect(within(wolfCard).getByLabelText('Move Wolf down')).toBeDisabled()
-    fireEvent.click(within(wolfCard).getByLabelText('Move Wolf up'))
-    expect(allCardNames()).toEqual(['Wolf', 'Goblin'])
-    expect(within(cardByName('Wolf')).getByLabelText('Move Wolf up')).toBeDisabled()
-    expect(within(cardByName('Goblin')).getByLabelText('Move Goblin down')).toBeDisabled()
-  })
+    expect(allCardNames()).toEqual(["Goblin", "Wolf"]);
+    const goblinCard = cardByName("Goblin");
+    const wolfCard = cardByName("Wolf");
+    expect(within(goblinCard).getByLabelText("Move Goblin up")).toBeDisabled();
+    expect(within(wolfCard).getByLabelText("Move Wolf down")).toBeDisabled();
+    fireEvent.click(within(wolfCard).getByLabelText("Move Wolf up"));
+    expect(allCardNames()).toEqual(["Wolf", "Goblin"]);
+    expect(within(cardByName("Wolf")).getByLabelText("Move Wolf up")).toBeDisabled();
+    expect(within(cardByName("Goblin")).getByLabelText("Move Goblin down")).toBeDisabled();
+  });
 
-  it('setting a combatant active updates the pressed state', async () => {
-    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'getConditions').mockResolvedValue(conditionList)
+  it("setting a combatant active updates the pressed state", async () => {
+    vi.spyOn(api, "getEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "updateEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "getConditions").mockResolvedValue(conditionList);
 
-    renderPage()
+    renderPage();
     await act(async () => {
-      await Promise.resolve()
-    })
+      await Promise.resolve();
+    });
 
-    const goblinCard = cardByName('Goblin')
-    const wolfCard = cardByName('Wolf')
-    expect(within(goblinCard).getByRole('button', { name: 'Active', pressed: true })).toBeInTheDocument()
-    expect(within(wolfCard).getByRole('button', { name: 'Set active', pressed: false })).toBeInTheDocument()
+    const goblinCard = cardByName("Goblin");
+    const wolfCard = cardByName("Wolf");
+    expect(
+      within(goblinCard).getByRole("button", { name: "Active", pressed: true }),
+    ).toBeInTheDocument();
+    expect(
+      within(wolfCard).getByRole("button", { name: "Set active", pressed: false }),
+    ).toBeInTheDocument();
 
-    fireEvent.click(within(wolfCard).getByRole('button', { name: 'Set active', pressed: false }))
+    fireEvent.click(within(wolfCard).getByRole("button", { name: "Set active", pressed: false }));
 
-    expect(within(wolfCard).getByRole('button', { name: 'Active', pressed: true })).toBeInTheDocument()
-    expect(within(goblinCard).getByRole('button', { name: 'Set active', pressed: false })).toBeInTheDocument()
-  })
+    expect(
+      within(wolfCard).getByRole("button", { name: "Active", pressed: true }),
+    ).toBeInTheDocument();
+    expect(
+      within(goblinCard).getByRole("button", { name: "Set active", pressed: false }),
+    ).toBeInTheDocument();
+  });
 
-  it('Next turn advances the highlight and wraps to round 2', async () => {
-    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
+  it("Next turn advances the highlight and wraps to round 2", async () => {
+    vi.spyOn(api, "getEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "updateEncounter").mockResolvedValue(baseEncounter);
 
-    renderPage()
+    renderPage();
     await act(async () => {
-      await Promise.resolve()
-    })
+      await Promise.resolve();
+    });
 
-    expect(cardByName('Goblin').querySelector('.combatant-card-on-deck')).not.toBeNull()
+    expect(cardByName("Goblin").querySelector(".combatant-card-on-deck")).not.toBeNull();
 
-    fireEvent.click(screen.getByText('Next turn'))
-    expect(cardByName('Wolf').querySelector('.combatant-card-on-deck')).not.toBeNull()
-    expect(screen.getByText('Round 1')).toBeInTheDocument()
+    fireEvent.click(screen.getByText("Next turn"));
+    expect(cardByName("Wolf").querySelector(".combatant-card-on-deck")).not.toBeNull();
+    expect(screen.getByText("Round 1")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Next turn'))
-    expect(cardByName('Goblin').querySelector('.combatant-card-on-deck')).not.toBeNull()
-    expect(screen.getByText('Round 2')).toBeInTheDocument()
-  })
+    fireEvent.click(screen.getByText("Next turn"));
+    expect(cardByName("Goblin").querySelector(".combatant-card-on-deck")).not.toBeNull();
+    expect(screen.getByText("Round 2")).toBeInTheDocument();
+  });
 
-  it('renders no condition chips when a combatant has none', async () => {
-    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'getConditions').mockResolvedValue(conditionList)
+  it("renders no condition chips when a combatant has none", async () => {
+    vi.spyOn(api, "getEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "updateEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "getConditions").mockResolvedValue(conditionList);
 
-    renderPage()
+    renderPage();
     await act(async () => {
-      await Promise.resolve()
-    })
+      await Promise.resolve();
+    });
 
-    const card = cardByName('Goblin')
-    expect(within(card).queryByRole('group', { name: 'Conditions' })).not.toBeInTheDocument()
-    expect(within(card).getByText('No conditions')).toBeInTheDocument()
-  })
+    const card = cardByName("Goblin");
+    expect(within(card).queryByRole("group", { name: "Conditions" })).not.toBeInTheDocument();
+    expect(within(card).getByText("No conditions")).toBeInTheDocument();
+  });
 
-  it('toggles conditions on a combatant card', async () => {
-    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'getConditions').mockResolvedValue(conditionList)
+  it("toggles conditions on a combatant card", async () => {
+    vi.spyOn(api, "getEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "updateEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "getConditions").mockResolvedValue(conditionList);
 
-    renderPage()
+    renderPage();
     await act(async () => {
-      await Promise.resolve()
-    })
+      await Promise.resolve();
+    });
 
-    const card = cardByName('Goblin')
-    fireEvent.click(within(card).getByText('No conditions'))
-    fireEvent.click(within(screen.getByRole('dialog', { name: 'Condition options' })).getByRole('checkbox', { name: 'Prone' }))
+    const card = cardByName("Goblin");
+    fireEvent.click(within(card).getByText("No conditions"));
+    fireEvent.click(
+      within(screen.getByRole("dialog", { name: "Condition options" })).getByRole("checkbox", {
+        name: "Prone",
+      }),
+    );
 
-    expect(within(card).getByRole('group', { name: 'Conditions' })).toBeInTheDocument()
-    expect(within(within(card).getByRole('group', { name: 'Conditions' })).getByText('Prone')).toBeInTheDocument()
-  })
+    expect(within(card).getByRole("group", { name: "Conditions" })).toBeInTheDocument();
+    expect(
+      within(within(card).getByRole("group", { name: "Conditions" })).getByText("Prone"),
+    ).toBeInTheDocument();
+  });
 
-  it('add-player button renders in the board header', async () => {
-    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'getConditions').mockResolvedValue(conditionList)
+  it("add-player button renders in the board header", async () => {
+    vi.spyOn(api, "getEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "updateEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "getConditions").mockResolvedValue(conditionList);
 
-    renderPage()
+    renderPage();
     await act(async () => {
-      await Promise.resolve()
-    })
+      await Promise.resolve();
+    });
 
-    expect(screen.getByRole('button', { name: 'Add player' })).toBeInTheDocument()
-  })
+    expect(screen.getByRole("button", { name: "Add player" })).toBeInTheDocument();
+  });
 
-  const addPlayerButton = () => screen.getByRole('button', { name: 'Add player' })
+  const addPlayerButton = () => screen.getByRole("button", { name: "Add player" });
 
-  it('add-player panel opens and accepts a name', async () => {
-    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'getConditions').mockResolvedValue(conditionList)
+  it("add-player panel opens and accepts a name", async () => {
+    vi.spyOn(api, "getEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "updateEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "getConditions").mockResolvedValue(conditionList);
 
-    renderPage()
+    renderPage();
     await act(async () => {
-      await Promise.resolve()
-    })
+      await Promise.resolve();
+    });
 
-    fireEvent.click(addPlayerButton())
-    expect(screen.getByPlaceholderText('Enter player name…')).toBeInTheDocument()
+    fireEvent.click(addPlayerButton());
+    expect(screen.getByPlaceholderText("Enter player name…")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByPlaceholderText('Enter player name…'), { target: { value: 'Frodo' } })
-    expect(screen.getByText('Add')).not.toBeDisabled()
+    fireEvent.change(screen.getByPlaceholderText("Enter player name…"), {
+      target: { value: "Frodo" },
+    });
+    expect(screen.getByText("Add")).not.toBeDisabled();
 
-    fireEvent.click(screen.getByText('Add'))
-    fireEvent.click(addPlayerButton())
-    expect(allCardNames()).toEqual(['Goblin', 'Wolf', 'Frodo'])
-  })
+    fireEvent.click(screen.getByText("Add"));
+    fireEvent.click(addPlayerButton());
+    expect(allCardNames()).toEqual(["Goblin", "Wolf", "Frodo"]);
+  });
 
-  it('player card suppresses HP meter, stepper rail, AC, and status pills', async () => {
-    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'getConditions').mockResolvedValue(conditionList)
+  it("player card suppresses HP meter, stepper rail, AC, and status pills", async () => {
+    vi.spyOn(api, "getEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "updateEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "getConditions").mockResolvedValue(conditionList);
 
-    renderPage()
+    renderPage();
     await act(async () => {
-      await Promise.resolve()
-    })
+      await Promise.resolve();
+    });
 
-    fireEvent.click(addPlayerButton())
-    fireEvent.change(screen.getByPlaceholderText('Enter player name…'), { target: { value: 'Frodo' } })
-    fireEvent.click(screen.getByText('Add'))
-    fireEvent.click(addPlayerButton())
+    fireEvent.click(addPlayerButton());
+    fireEvent.change(screen.getByPlaceholderText("Enter player name…"), {
+      target: { value: "Frodo" },
+    });
+    fireEvent.click(screen.getByText("Add"));
+    fireEvent.click(addPlayerButton());
 
-    const playerCard = cardByName('Frodo')
-    expect(playerCard).toHaveClass('combatant-card-player')
-    expect(within(playerCard).getByLabelText('Player character')).toBeInTheDocument()
-    expect(within(playerCard).queryByRole('group', { name: 'Status' })).not.toBeInTheDocument()
-    expect(within(playerCard).queryByRole('img', { name: /hit points/i })).not.toBeInTheDocument()
-    expect(within(playerCard).queryByLabelText('Damage 10')).not.toBeInTheDocument()
-    expect(within(playerCard).queryByLabelText('Heal 1')).not.toBeInTheDocument()
-    expect(within(playerCard).queryByText('Set…')).not.toBeInTheDocument()
-    expect(within(playerCard).queryByText('—')).not.toBeInTheDocument()
-    expect(within(playerCard).queryByText('AC')).not.toBeInTheDocument()
+    const playerCard = cardByName("Frodo");
+    expect(playerCard).toHaveClass("combatant-card-player");
+    expect(within(playerCard).getByLabelText("Player character")).toBeInTheDocument();
+    expect(within(playerCard).queryByRole("group", { name: "Status" })).not.toBeInTheDocument();
+    expect(within(playerCard).queryByRole("img", { name: /hit points/i })).not.toBeInTheDocument();
+    expect(within(playerCard).queryByLabelText("Damage 10")).not.toBeInTheDocument();
+    expect(within(playerCard).queryByLabelText("Heal 1")).not.toBeInTheDocument();
+    expect(within(playerCard).queryByText("Set…")).not.toBeInTheDocument();
+    expect(within(playerCard).queryByText("—")).not.toBeInTheDocument();
+    expect(within(playerCard).queryByText("AC")).not.toBeInTheDocument();
 
-    expect(within(playerCard).getByDisplayValue('Frodo')).toBeInTheDocument()
-  })
+    expect(within(playerCard).getByDisplayValue("Frodo")).toBeInTheDocument();
+  });
 
-  it('status choices remain exclusive and clicking the selected status still saves', async () => {
-    const updateSpy = await renderRunnerForSetHp()
-    const card = cardByName('Goblin')
-    const group = within(card).getByRole('group', { name: 'Status' })
-    const alive = within(group).getByRole('button', { name: 'alive', pressed: true })
+  it("status choices remain exclusive and clicking the selected status still saves", async () => {
+    const updateSpy = await renderRunnerForSetHp();
+    const card = cardByName("Goblin");
+    const group = within(card).getByRole("group", { name: "Status" });
+    const alive = within(group).getByRole("button", { name: "alive", pressed: true });
 
-    fireEvent.click(alive)
+    fireEvent.click(alive);
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(600)
-    })
+      await vi.advanceTimersByTimeAsync(600);
+    });
 
-    expect(updateSpy).toHaveBeenCalledTimes(1)
-    expect(updateSpy.mock.calls[0][1].creatures?.[0].status).toBe('alive')
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+    expect(updateSpy.mock.calls[0][1].creatures?.[0].status).toBe("alive");
 
-    fireEvent.click(within(group).getByRole('button', { name: 'dead', pressed: false }))
-    expect(within(group).getAllByRole('button', { pressed: true })).toHaveLength(1)
-    expect(within(group).getByRole('button', { name: 'dead', pressed: true })).toBeInTheDocument()
+    fireEvent.click(within(group).getByRole("button", { name: "dead", pressed: false }));
+    expect(within(group).getAllByRole("button", { pressed: true })).toHaveLength(1);
+    expect(within(group).getByRole("button", { name: "dead", pressed: true })).toBeInTheDocument();
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(600)
-    })
+      await vi.advanceTimersByTimeAsync(600);
+    });
 
-    expect(updateSpy).toHaveBeenCalledTimes(2)
-    expect(updateSpy.mock.calls[1][1].creatures?.[0].status).toBe('dead')
-  })
+    expect(updateSpy).toHaveBeenCalledTimes(2);
+    expect(updateSpy.mock.calls[1][1].creatures?.[0].status).toBe("dead");
+  });
 
-  it('activates a combatant status choice with the keyboard', async () => {
-    const updateSpy = await renderRunnerForSetHp()
-    vi.useRealTimers()
+  it("activates a combatant status choice with the keyboard", async () => {
+    const updateSpy = await renderRunnerForSetHp();
+    vi.useRealTimers();
     try {
-      const user = userEvent.setup()
-      const card = cardByName('Goblin')
-      const unconscious = within(card).getByRole('button', { name: 'unconscious' })
-      unconscious.focus()
+      const user = userEvent.setup();
+      const card = cardByName("Goblin");
+      const unconscious = within(card).getByRole("button", { name: "unconscious" });
+      unconscious.focus();
 
-      await user.keyboard('{Enter}')
-      expect(within(card).getByRole('button', { name: 'unconscious', pressed: true })).toBeInTheDocument()
+      await user.keyboard("{Enter}");
+      expect(
+        within(card).getByRole("button", { name: "unconscious", pressed: true }),
+      ).toBeInTheDocument();
 
       await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 650))
-      })
+        await new Promise((resolve) => setTimeout(resolve, 650));
+      });
 
-      expect(updateSpy).toHaveBeenCalledTimes(1)
-      expect(updateSpy.mock.calls[0][1].creatures?.[0].status).toBe('unconscious')
+      expect(updateSpy).toHaveBeenCalledTimes(1);
+      expect(updateSpy.mock.calls[0][1].creatures?.[0].status).toBe("unconscious");
     } finally {
-      vi.useFakeTimers()
+      vi.useFakeTimers();
     }
-  })
+  });
 
-  it('player card allows condition toggling', async () => {
-    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'getConditions').mockResolvedValue(conditionList)
+  it("player card allows condition toggling", async () => {
+    vi.spyOn(api, "getEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "updateEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "getConditions").mockResolvedValue(conditionList);
 
-    renderPage()
+    renderPage();
     await act(async () => {
-      await Promise.resolve()
-    })
+      await Promise.resolve();
+    });
 
-    fireEvent.click(addPlayerButton())
-    fireEvent.change(screen.getByPlaceholderText('Enter player name…'), { target: { value: 'Frodo' } })
-    fireEvent.click(screen.getByText('Add'))
-    fireEvent.click(addPlayerButton())
+    fireEvent.click(addPlayerButton());
+    fireEvent.change(screen.getByPlaceholderText("Enter player name…"), {
+      target: { value: "Frodo" },
+    });
+    fireEvent.click(screen.getByText("Add"));
+    fireEvent.click(addPlayerButton());
 
-    const playerCard = cardByName('Frodo')
-    fireEvent.click(within(playerCard).getByText('No conditions'))
-    fireEvent.click(within(screen.getByRole('dialog', { name: 'Condition options' })).getByRole('checkbox', { name: 'Prone' }))
+    const playerCard = cardByName("Frodo");
+    fireEvent.click(within(playerCard).getByText("No conditions"));
+    fireEvent.click(
+      within(screen.getByRole("dialog", { name: "Condition options" })).getByRole("checkbox", {
+        name: "Prone",
+      }),
+    );
 
-    expect(within(playerCard).getByRole('group', { name: 'Conditions' })).toBeInTheDocument()
-  })
+    expect(within(playerCard).getByRole("group", { name: "Conditions" })).toBeInTheDocument();
+  });
 
   // ── VT0 scaffold seams ────────────────────────────────────────────────────
   // These it.skip seams carry real assertion bodies for VT1 to unskip.
 
-  it('shows a recoverable error state when the encounter fails to load (VT1 load-error)', async () => {
+  it("shows a recoverable error state when the encounter fails to load (VT1 load-error)", async () => {
     // VT1: useEncounterRunner must surface a load-error state; EncounterRunnerPage
     // must render it with a retry action and a link back to /encounters.
-    vi.spyOn(api, 'getEncounter').mockRejectedValue(new Error('network down'))
+    vi.spyOn(api, "getEncounter").mockRejectedValue(new Error("network down"));
 
-    renderPage()
-
-    await act(async () => {
-      await Promise.resolve()
-    })
-
-    expect(screen.getByRole('status')).toBeInTheDocument()
-    expect(screen.getByText(/error loading encounter/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
-  })
-
-  it('Retry reloads the page after an encounter load error', async () => {
-    const reloadSpy = vi.fn()
-    vi.spyOn(api, 'getEncounter').mockRejectedValue(new Error('network down'))
-
-    renderPage()
+    renderPage();
 
     await act(async () => {
-      await Promise.resolve()
-    })
+      await Promise.resolve();
+    });
 
-    const originalWindow = window
-    vi.stubGlobal('window', new Proxy(originalWindow, {
-      get: (target, property) => property === 'location'
-        ? { reload: reloadSpy }
-        : Reflect.get(target, property, target),
-    }))
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    expect(screen.getByText(/error loading encounter/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
+  });
+
+  it("Retry reloads the page after an encounter load error", async () => {
+    const reloadSpy = vi.fn();
+    vi.spyOn(api, "getEncounter").mockRejectedValue(new Error("network down"));
+
+    renderPage();
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const originalWindow = window;
+    vi.stubGlobal(
+      "window",
+      new Proxy(originalWindow, {
+        get: (target, property) =>
+          property === "location" ? { reload: reloadSpy } : Reflect.get(target, property, target),
+      }),
+    );
 
     try {
-      const retryButton = screen.getByRole('button', { name: 'Retry' })
-      expect(retryButton).toHaveAttribute('type', 'button')
-      fireEvent.click(retryButton)
-      expect(reloadSpy).toHaveBeenCalledOnce()
+      const retryButton = screen.getByRole("button", { name: "Retry" });
+      expect(retryButton).toHaveAttribute("type", "button");
+      fireEvent.click(retryButton);
+      expect(reloadSpy).toHaveBeenCalledOnce();
     } finally {
-      vi.unstubAllGlobals()
+      vi.unstubAllGlobals();
     }
-  })
+  });
 
-  it('ordinary runner controls meet the 48px touch-target floor (VT1 touch targets)', async () => {
+  it("ordinary runner controls meet the 48px touch-target floor (VT1 touch targets)", async () => {
     // VT1: header buttons (Next turn, Add monster, Add player) and card controls
     // (stepper, reorder, status chip, condition picker trigger) must meet --control-height (48px).
     // CSS ensures min-height: var(--control-height) is applied; manual verification tests actual touch targets.
-    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'getConditions').mockResolvedValue(conditionList)
+    vi.spyOn(api, "getEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "updateEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "getConditions").mockResolvedValue(conditionList);
 
-    renderPage()
-    await act(async () => { await Promise.resolve() })
+    renderPage();
+    await act(async () => {
+      await Promise.resolve();
+    });
 
-    const card = cardByName('Goblin')
+    const card = cardByName("Goblin");
 
     // Verify all required controls are present and accessible
-    expect(screen.getByText('Next turn')).toBeInTheDocument()
-    expect(screen.getByText('Add monster')).toBeInTheDocument()
-    expect(screen.getByText('Add player')).toBeInTheDocument()
-    expect(within(card).getByLabelText('Damage 1')).toBeInTheDocument()
-    expect(within(card).getByLabelText(/Move.*up/)).toBeInTheDocument()
-    expect(within(card).getByRole('button', { name: /alive/i })).toBeInTheDocument()
-    expect(within(card).getByRole('button', { name: /no conditions/i })).toBeInTheDocument()
-  })
+    expect(screen.getByText("Next turn")).toBeInTheDocument();
+    expect(screen.getByText("Add monster")).toBeInTheDocument();
+    expect(screen.getByText("Add player")).toBeInTheDocument();
+    expect(within(card).getByLabelText("Damage 1")).toBeInTheDocument();
+    expect(within(card).getByLabelText(/Move.*up/)).toBeInTheDocument();
+    expect(within(card).getByRole("button", { name: /alive/i })).toBeInTheDocument();
+    expect(within(card).getByRole("button", { name: /no conditions/i })).toBeInTheDocument();
+  });
 
-  it('table-time actions are visually separated from roster-management actions (VT1 action groups)', async () => {
+  it("table-time actions are visually separated from roster-management actions (VT1 action groups)", async () => {
     // VT1: CombatantCard must group table-time controls (HP stepper, status, conditions)
     // separately from roster-management controls (duplicate, remove, reorder).
     // Assert via distinct group containers with aria-label or role="group".
-    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'getConditions').mockResolvedValue(conditionList)
+    vi.spyOn(api, "getEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "updateEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "getConditions").mockResolvedValue(conditionList);
 
-    renderPage()
-    await act(async () => { await Promise.resolve() })
+    renderPage();
+    await act(async () => {
+      await Promise.resolve();
+    });
 
-    const card = cardByName('Goblin')
-    expect(within(card).getByRole('group', { name: /combat actions/i })).toBeInTheDocument()
-    expect(within(card).getByRole('group', { name: /roster management/i })).toBeInTheDocument()
-  })
+    const card = cardByName("Goblin");
+    expect(within(card).getByRole("group", { name: /combat actions/i })).toBeInTheDocument();
+    expect(within(card).getByRole("group", { name: /roster management/i })).toBeInTheDocument();
+  });
 
-  it('runner header actions are reachable in a narrow viewport (VT1 narrow reachability)', async () => {
+  it("runner header actions are reachable in a narrow viewport (VT1 narrow reachability)", async () => {
     // VT1: at 520px width, the runner header must keep Next turn, Add monster, Add player
     // reachable without horizontal overflow. The combatant list must remain scrollable.
-    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
+    vi.spyOn(api, "getEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "updateEncounter").mockResolvedValue(baseEncounter);
 
-    renderPage()
-    await act(async () => { await Promise.resolve() })
+    renderPage();
+    await act(async () => {
+      await Promise.resolve();
+    });
 
-    Object.defineProperty(document.querySelector('.encounter-runner-header')!, 'offsetWidth', { value: 520 })
-    const header = screen.getByText('Round 1').closest('.encounter-runner-header')!
-    expect(header.scrollWidth).toBeLessThanOrEqual(header.clientWidth + 1)
-  })
+    Object.defineProperty(document.querySelector(".encounter-runner-header")!, "offsetWidth", {
+      value: 520,
+    });
+    const header = screen.getByText("Round 1").closest(".encounter-runner-header")!;
+    expect(header.scrollWidth).toBeLessThanOrEqual(header.clientWidth + 1);
+  });
 
-  it('compact dock mode controls meet the 48px touch-target floor (VT1 dock targets)', async () => {
+  it("compact dock mode controls meet the 48px touch-target floor (VT1 dock targets)", async () => {
     // VT1: EncounterDock wraps EncounterRunnerBoard in compact mode.
     // Even in compact mode, interactive controls must remain >= 48px or document a compact exception.
     // This seam verifies the intent — the actual compact-mode rendering needs a dock harness.
     // Expected: stepper buttons, status chips, condition picker trigger remain >= 48px in compact mode.
-    expect(true).toBe(true) // placeholder — VT1 will render the actual compact dock
-  })
+    expect(true).toBe(true); // placeholder — VT1 will render the actual compact dock
+  });
 
-  it('conditions persist through save/reload', async () => {
-    vi.spyOn(api, 'getEncounter').mockResolvedValue(baseEncounter)
-    const updateSpy = vi.spyOn(api, 'updateEncounter').mockResolvedValue(baseEncounter)
-    vi.spyOn(api, 'getConditions').mockResolvedValue(conditionList)
+  it("conditions persist through save/reload", async () => {
+    vi.spyOn(api, "getEncounter").mockResolvedValue(baseEncounter);
+    const updateSpy = vi.spyOn(api, "updateEncounter").mockResolvedValue(baseEncounter);
+    vi.spyOn(api, "getConditions").mockResolvedValue(conditionList);
 
-    renderPage()
+    renderPage();
     await act(async () => {
-      await Promise.resolve()
-    })
+      await Promise.resolve();
+    });
 
-    const card = cardByName('Goblin')
-    fireEvent.click(within(card).getByText('No conditions'))
-    fireEvent.click(within(screen.getByRole('dialog', { name: 'Condition options' })).getByRole('checkbox', { name: 'Prone' }))
+    const card = cardByName("Goblin");
+    fireEvent.click(within(card).getByText("No conditions"));
+    fireEvent.click(
+      within(screen.getByRole("dialog", { name: "Condition options" })).getByRole("checkbox", {
+        name: "Prone",
+      }),
+    );
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(600)
-    })
+      await vi.advanceTimersByTimeAsync(600);
+    });
 
-    expect(updateSpy).toHaveBeenCalledTimes(1)
-    expect(updateSpy.mock.calls[0][1].creatures![0].conditions).toEqual(['Prone'])
-  })
-})
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+    expect(updateSpy.mock.calls[0][1].creatures![0].conditions).toEqual(["Prone"]);
+  });
+});

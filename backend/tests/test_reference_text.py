@@ -45,13 +45,31 @@ def test_validate_accepts_registered_spell_tokens():
     assert validate_reference_text(
         "Attack +{spell_attack_bonus}; save DC {spell_save_dc}.",
         spell_value_reference_registry,
-    ) == {"valid": True, "document": {"source": "Attack +{spell_attack_bonus}; save DC {spell_save_dc}.", "nodes": [
-        {"type": "text", "text": "Attack +", "start": 0, "end": 8},
-        {"type": "reference", "token": "spell_attack_bonus", "source": "{spell_attack_bonus}", "start": 8, "end": 28},
-        {"type": "text", "text": "; save DC ", "start": 28, "end": 38},
-        {"type": "reference", "token": "spell_save_dc", "source": "{spell_save_dc}", "start": 38, "end": 53},
-        {"type": "text", "text": ".", "start": 53, "end": 54},
-    ]}}
+    ) == {
+        "valid": True,
+        "document": {
+            "source": "Attack +{spell_attack_bonus}; save DC {spell_save_dc}.",
+            "nodes": [
+                {"type": "text", "text": "Attack +", "start": 0, "end": 8},
+                {
+                    "type": "reference",
+                    "token": "spell_attack_bonus",
+                    "source": "{spell_attack_bonus}",
+                    "start": 8,
+                    "end": 28,
+                },
+                {"type": "text", "text": "; save DC ", "start": 28, "end": 38},
+                {
+                    "type": "reference",
+                    "token": "spell_save_dc",
+                    "source": "{spell_save_dc}",
+                    "start": 38,
+                    "end": 53,
+                },
+                {"type": "text", "text": ".", "start": 53, "end": 54},
+            ],
+        },
+    }
 
 
 def test_validate_rejects_malformed_braces():
@@ -101,18 +119,38 @@ def test_validate_rejects_unknown_tokens_in_source_order():
 
 def test_resolve_tokens_uses_value_empty_and_fallback():
     doc = parse_reference_text("Roll {spell_attack_bonus}")
-    result = resolve_reference_text(doc["document"], spell_value_reference_registry, SpellValueReferenceContext(spell_attack_bonus=5))
+    result = resolve_reference_text(
+        doc["document"],
+        spell_value_reference_registry,
+        SpellValueReferenceContext(spell_attack_bonus=5),
+    )
     assert result == "Roll 5"
     unknown = parse_reference_text("Use {unknown}")
-    assert resolve_reference_text(unknown["document"], spell_value_reference_registry, SpellValueReferenceContext()) == "Use "
+    assert (
+        resolve_reference_text(
+            unknown["document"], spell_value_reference_registry, SpellValueReferenceContext()
+        )
+        == "Use "
+    )
     none_doc = parse_reference_text("DC {spell_save_dc}")
-    assert resolve_reference_text(none_doc["document"], spell_value_reference_registry, SpellValueReferenceContext(spell_save_dc=None)) == "DC your spell save DC"
+    assert (
+        resolve_reference_text(
+            none_doc["document"],
+            spell_value_reference_registry,
+            SpellValueReferenceContext(spell_save_dc=None),
+        )
+        == "DC your spell save DC"
+    )
 
 
 def test_create_registry_rejects_duplicate_token():
     definitions = [
-        ReferenceDefinition[str](token="test", kind="value", domain="spell", fallback="fallback", resolve=lambda _: None),
-        ReferenceDefinition[str](token="test", kind="value", domain="spell", fallback="fallback", resolve=lambda _: None),
+        ReferenceDefinition[str](
+            token="test", kind="value", domain="spell", fallback="fallback", resolve=lambda _: None
+        ),
+        ReferenceDefinition[str](
+            token="test", kind="value", domain="spell", fallback="fallback", resolve=lambda _: None
+        ),
     ]
     with pytest.raises(ValueError, match="Duplicate"):
         create_reference_registry(definitions)

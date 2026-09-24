@@ -1,16 +1,16 @@
-import { useState } from 'react'
-import type { LoomNode, LoomThread } from '../../api/types'
-import { ChevronDownIcon, ChevronUpIcon } from '../../components/icons'
-import { Button } from '../../components/Button'
-import { Disclosure } from '../../components/Disclosure'
+import { useState } from "react";
+import type { LoomNode, LoomThread } from "../../api/types";
+import { ChevronDownIcon, ChevronUpIcon } from "../../components/icons";
+import { Button } from "../../components/Button";
+import { Disclosure } from "../../components/Disclosure";
 
 interface LoomBeatBankTrayProps {
-  nodes: LoomNode[]
-  threads: LoomThread[]
-  onSelectNode: (node: LoomNode) => void
-  onRestoreNode: (node: LoomNode, threadId: number) => void
-  onActivateNode?: (node: LoomNode) => void
-  onManageThreads?: () => void
+  nodes: LoomNode[];
+  threads: LoomThread[];
+  onSelectNode: (node: LoomNode) => void;
+  onRestoreNode: (node: LoomNode, threadId: number) => void;
+  onActivateNode?: (node: LoomNode) => void;
+  onManageThreads?: () => void;
 }
 
 export function LoomBeatBankTray({
@@ -21,8 +21,8 @@ export function LoomBeatBankTray({
   onActivateNode,
   onManageThreads,
 }: LoomBeatBankTrayProps) {
-  const [collapsed, setCollapsed] = useState(true)
-  const [guardVisible, setGuardVisible] = useState(false)
+  const [collapsed, setCollapsed] = useState(true);
+  const [guardVisible, setGuardVisible] = useState(false);
 
   return (
     <Disclosure
@@ -55,19 +55,19 @@ export function LoomBeatBankTray({
           {nodes.length === 0 && <p className="loom-beat-bank-tray-empty">No banked beats.</p>}
           {nodes.map((node) => {
             const handleDragStart = (e: React.DragEvent) => {
-              e.dataTransfer.effectAllowed = 'move'
+              e.dataTransfer.effectAllowed = "move";
               e.dataTransfer.setData(
-                'application/json',
-                JSON.stringify({ action: 'restore', nodeId: node.id }),
-              )
-            }
+                "application/json",
+                JSON.stringify({ action: "restore", nodeId: node.id }),
+              );
+            };
             const handleActivate = () => {
               if (threads.length === 0) {
-                setGuardVisible(true)
-                return
+                setGuardVisible(true);
+                return;
               }
-              onActivateNode?.(node)
-            }
+              onActivateNode?.(node);
+            };
             return (
               <div
                 key={node.id}
@@ -79,18 +79,18 @@ export function LoomBeatBankTray({
                 tabIndex={0}
                 aria-label={node.title}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    handleActivate()
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleActivate();
                   }
                 }}
               >
                 <span className="loom-beat-bank-tray-item">{node.title}</span>
               </div>
-            )
+            );
           })}
         </div>
       )}
     </Disclosure>
-  )
+  );
 }

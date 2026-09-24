@@ -1,25 +1,25 @@
-import type { Condition, Monster } from '../../api/types'
-import { Disclosure } from '../../components/Disclosure'
-import { SelectField } from '../../components/form/SelectField'
-import { TextField } from '../../components/form/TextField'
-import { ToggleGroup } from '../../components/form/ToggleGroup'
-import { IconButton } from '../../components/IconButton'
-import { ChevronDownIcon, ChevronUpIcon, ShieldIcon, TrashIcon } from '../../components/icons'
-import { ConditionPicker } from './ConditionPicker'
-import type { EncounterCreatureRow } from './encounterForm'
-import './CreatureRowCard.css'
+import type { Condition, Monster } from "../../api/types";
+import { Disclosure } from "../../components/Disclosure";
+import { SelectField } from "../../components/form/SelectField";
+import { TextField } from "../../components/form/TextField";
+import { ToggleGroup } from "../../components/form/ToggleGroup";
+import { IconButton } from "../../components/IconButton";
+import { ChevronDownIcon, ChevronUpIcon, ShieldIcon, TrashIcon } from "../../components/icons";
+import { ConditionPicker } from "./ConditionPicker";
+import type { EncounterCreatureRow } from "./encounterForm";
+import "./CreatureRowCard.css";
 
-const STATUS_OPTIONS = ['alive', 'unconscious', 'dead', 'fled'] as const
+const STATUS_OPTIONS = ["alive", "unconscious", "dead", "fled"] as const;
 
 interface CreatureRowCardProps {
-  row: EncounterCreatureRow
-  monsters: Monster[]
-  conditions: Condition[]
-  collapsed: boolean
-  onToggleCollapsed: () => void
-  onPickMonster: (monsterId: string) => void
-  onChange: (fields: Partial<EncounterCreatureRow>) => void
-  onRemove: () => void
+  row: EncounterCreatureRow;
+  monsters: Monster[];
+  conditions: Condition[];
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
+  onPickMonster: (monsterId: string) => void;
+  onChange: (fields: Partial<EncounterCreatureRow>) => void;
+  onRemove: () => void;
 }
 
 export function CreatureRowCard({
@@ -32,8 +32,9 @@ export function CreatureRowCard({
   onChange,
   onRemove,
 }: CreatureRowCardProps) {
-  const displayName = row.name || 'Unnamed creature'
-  const hpSummary = row.hpCurrent || row.hpMax ? `${row.hpCurrent || '?'} / ${row.hpMax || '?'} HP` : 'No HP set'
+  const displayName = row.name || "Unnamed creature";
+  const hpSummary =
+    row.hpCurrent || row.hpMax ? `${row.hpCurrent || "?"} / ${row.hpMax || "?"} HP` : "No HP set";
 
   return (
     <div className="creature-row-card" data-variant="monster">
@@ -44,7 +45,11 @@ export function CreatureRowCard({
           onOpenChange={onToggleCollapsed}
           summary={
             <>
-              {collapsed ? <ChevronDownIcon size={18} aria-hidden /> : <ChevronUpIcon size={18} aria-hidden />}
+              {collapsed ? (
+                <ChevronDownIcon size={18} aria-hidden />
+              ) : (
+                <ChevronUpIcon size={18} aria-hidden />
+              )}
               <span className="creature-row-name">{displayName}</span>
             </>
           }
@@ -58,7 +63,11 @@ export function CreatureRowCard({
                 options={monsters.map((m) => ({ value: String(m.id), label: m.name }))}
                 placeholder="Choose a monster…"
               />
-              <TextField label="Display Name" value={row.name} onChange={(e) => onChange({ name: e.target.value })} />
+              <TextField
+                label="Display Name"
+                value={row.name}
+                onChange={(e) => onChange({ name: e.target.value })}
+              />
             </div>
 
             <div className="creature-row-stats">
@@ -74,7 +83,12 @@ export function CreatureRowCard({
                 value={row.hpMax}
                 onChange={(e) => onChange({ hpMax: e.target.value })}
               />
-              <TextField label="AC" type="number" value={row.ac} onChange={(e) => onChange({ ac: e.target.value })} />
+              <TextField
+                label="AC"
+                type="number"
+                value={row.ac}
+                onChange={(e) => onChange({ ac: e.target.value })}
+              />
 
               <div className="creature-row-status-field">
                 <span className="form-label">Status</span>
@@ -86,11 +100,15 @@ export function CreatureRowCard({
                   options={STATUS_OPTIONS.map((status) => ({
                     value: status,
                     ariaLabel: status,
-                    label: <span className={`creature-row-status-chip creature-row-status-${status}`}>{status}</span>,
+                    label: (
+                      <span className={`creature-row-status-chip creature-row-status-${status}`}>
+                        {status}
+                      </span>
+                    ),
                   }))}
                   onValueChange={(values) => {
-                    const status = STATUS_OPTIONS.find((option) => option === values[0])
-                    if (status) onChange({ status })
+                    const status = STATUS_OPTIONS.find((option) => option === values[0]);
+                    if (status) onChange({ status });
                   }}
                 />
               </div>
@@ -106,13 +124,15 @@ export function CreatureRowCard({
 
         <span className="creature-row-summary-stat">
           <ShieldIcon size={14} aria-hidden />
-          {row.ac || '—'}
+          {row.ac || "—"}
         </span>
         <span className="creature-row-summary-stat">{hpSummary}</span>
-        <span className={`creature-row-status-chip creature-row-status-${row.status}`}>{row.status}</span>
+        <span className={`creature-row-status-chip creature-row-status-${row.status}`}>
+          {row.status}
+        </span>
         {row.conditions.length > 0 && (
           <span className="creature-row-condition-count">
-            {row.conditions.length} condition{row.conditions.length === 1 ? '' : 's'}
+            {row.conditions.length} condition{row.conditions.length === 1 ? "" : "s"}
           </span>
         )}
 
@@ -125,5 +145,5 @@ export function CreatureRowCard({
         </IconButton>
       </div>
     </div>
-  )
+  );
 }

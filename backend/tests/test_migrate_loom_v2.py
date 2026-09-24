@@ -9,10 +9,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import sqlite3
-import tempfile
 from pathlib import Path
-
-import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT_PATH = ROOT / "backend" / "migrations" / "migrate_loom_v2.py"
@@ -100,9 +97,12 @@ def _conn_rows(db_path: Path, sql: str) -> list[dict]:
 
 def _conn_table_exists(db_path: Path, table: str) -> bool:
     conn = sqlite3.connect(str(db_path))
-    exists = conn.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,)
-    ).fetchone() is not None
+    exists = (
+        conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,)
+        ).fetchone()
+        is not None
+    )
     conn.close()
     return exists
 
@@ -121,9 +121,18 @@ class TestSimpleChain:
 
         # Thread with 3 nodes: anchor(planned) → update → anchor(planned)
         conn.execute("INSERT INTO loom_threads (id, name, color) VALUES (1, 'Quest', 'thread-1')")
-        conn.execute("INSERT INTO loom_nodes (id, kind, title, status, x, y) VALUES (1, 'anchor', 'Start Quest', 'planned', 0, 0)")
-        conn.execute("INSERT INTO loom_nodes (id, kind, title, x, y) VALUES (2, 'update', 'Met the NPC', 10, 0)")
-        conn.execute("INSERT INTO loom_nodes (id, kind, title, status, x, y) VALUES (3, 'anchor', 'Quest Done', 'planned', 20, 0)")
+        conn.execute(
+            "INSERT INTO loom_nodes (id, kind, title, status, x, y) "
+            "VALUES (1, 'anchor', 'Start Quest', 'planned', 0, 0)"
+        )
+        conn.execute(
+            "INSERT INTO loom_nodes (id, kind, title, x, y) "
+            "VALUES (2, 'update', 'Met the NPC', 10, 0)"
+        )
+        conn.execute(
+            "INSERT INTO loom_nodes (id, kind, title, status, x, y) "
+            "VALUES (3, 'anchor', 'Quest Done', 'planned', 20, 0)"
+        )
         conn.execute("INSERT INTO loom_node_threads (node_id, thread_id) VALUES (1, 1)")
         conn.execute("INSERT INTO loom_node_threads (node_id, thread_id) VALUES (2, 1)")
         conn.execute("INSERT INTO loom_node_threads (node_id, thread_id) VALUES (3, 1)")
@@ -165,7 +174,7 @@ class TestSimpleChain:
         # Verify positions are assigned
         memberships = _conn_rows(
             db_path,
-            "SELECT node_id, position FROM loom_node_threads WHERE thread_id=1 ORDER BY position"
+            "SELECT node_id, position FROM loom_node_threads WHERE thread_id=1 ORDER BY position",
         )
         positions = [m["position"] for m in memberships]
         assert positions == sorted(positions)  # ascending
@@ -184,12 +193,15 @@ class TestBranchyThread:
 
         # Thread: node1 → node2, node1 → node3, node2 → node4, node3 → node4 (diamond)
         conn.execute("INSERT INTO loom_threads (id, name, color) VALUES (1, 'Diamond', 'thread-1')")
-        for i, (kind, title, status) in enumerate([
-            ("anchor", "Start", "planned"),
-            ("update", "Left path", None),
-            ("update", "Right path", None),
-            ("anchor", "End", "planned"),
-        ], 1):
+        for i, (kind, title, status) in enumerate(
+            [
+                ("anchor", "Start", "planned"),
+                ("update", "Left path", None),
+                ("update", "Right path", None),
+                ("anchor", "End", "planned"),
+            ],
+            1,
+        ):
             conn.execute(
                 "INSERT INTO loom_nodes (id, kind, title, status, x, y) VALUES (?, ?, ?, ?, ?, ?)",
                 (i, kind, title, status, i * 10, 0),
@@ -218,8 +230,14 @@ class TestEdgeConversions:
         conn = sqlite3.connect(str(db_path))
 
         conn.execute("INSERT INTO loom_threads (id, name, color) VALUES (1, 'T', 'thread-1')")
-        conn.execute("INSERT INTO loom_nodes (id, kind, title, status, x, y) VALUES (1, 'anchor', 'Abandoned idea', 'abandoned', 0, 0)")
-        conn.execute("INSERT INTO loom_nodes (id, kind, title, x, y) VALUES (2, 'update', 'Did stuff', 10, 0)")
+        conn.execute(
+            "INSERT INTO loom_nodes (id, kind, title, status, x, y) "
+            "VALUES (1, 'anchor', 'Abandoned idea', 'abandoned', 0, 0)"
+        )
+        conn.execute(
+            "INSERT INTO loom_nodes (id, kind, title, x, y) "
+            "VALUES (2, 'update', 'Did stuff', 10, 0)"
+        )
         conn.execute("INSERT INTO loom_node_threads (node_id, thread_id) VALUES (1, 1)")
         conn.execute("INSERT INTO loom_node_threads (node_id, thread_id) VALUES (2, 1)")
         conn.commit()
@@ -232,7 +250,9 @@ class TestEdgeConversions:
         assert report["abandoned_banked"][0]["node_id"] == 1
 
         # Banked beat should have no membership
-        nodes = _conn_rows(db_path, "SELECT id, kind, banked_from_thread_id FROM loom_nodes WHERE id=1")
+        nodes = _conn_rows(
+            db_path, "SELECT id, kind, banked_from_thread_id FROM loom_nodes WHERE id=1"
+        )
         assert nodes[0]["kind"] == "beat"
         assert nodes[0]["banked_from_thread_id"] is not None
 
@@ -245,8 +265,12 @@ class TestEdgeConversions:
 
         conn.execute("INSERT INTO loom_threads (id, name, color) VALUES (1, 'A', 'thread-1')")
         conn.execute("INSERT INTO loom_threads (id, name, color) VALUES (2, 'B', 'thread-2')")
-        conn.execute("INSERT INTO loom_nodes (id, kind, title, x, y) VALUES (1, 'update', 'On A', 0, 0)")
-        conn.execute("INSERT INTO loom_nodes (id, kind, title, x, y) VALUES (2, 'update', 'On B', 10, 0)")
+        conn.execute(
+            "INSERT INTO loom_nodes (id, kind, title, x, y) VALUES (1, 'update', 'On A', 0, 0)"
+        )
+        conn.execute(
+            "INSERT INTO loom_nodes (id, kind, title, x, y) VALUES (2, 'update', 'On B', 10, 0)"
+        )
         conn.execute("INSERT INTO loom_node_threads (node_id, thread_id) VALUES (1, 1)")
         conn.execute("INSERT INTO loom_node_threads (node_id, thread_id) VALUES (2, 2)")
         conn.execute("INSERT INTO loom_edges (source_id, target_id) VALUES (1, 2)")  # cross-thread
@@ -267,7 +291,9 @@ class TestEdgeConversions:
         conn = sqlite3.connect(str(db_path))
 
         conn.execute("INSERT INTO loom_threads (id, name, color) VALUES (1, 'T', 'thread-1')")
-        conn.execute("INSERT INTO loom_nodes (id, kind, title, x, y) VALUES (1, 'update', 'Orphan', 0, 0)")
+        conn.execute(
+            "INSERT INTO loom_nodes (id, kind, title, x, y) VALUES (1, 'update', 'Orphan', 0, 0)"
+        )
         # No membership for node 1
         conn.commit()
         conn.close()
@@ -285,7 +311,10 @@ class TestEdgeConversions:
         conn.execute("INSERT INTO loom_threads (id, name, color) VALUES (1, 'A', 'thread-1')")
         conn.execute("INSERT INTO loom_threads (id, name, color) VALUES (2, 'B', 'thread-2')")
         # A planned anchor (will become beat) on both threads
-        conn.execute("INSERT INTO loom_nodes (id, kind, title, status, x, y) VALUES (1, 'anchor', 'Shared beat', 'planned', 0, 0)")
+        conn.execute(
+            "INSERT INTO loom_nodes (id, kind, title, status, x, y) "
+            "VALUES (1, 'anchor', 'Shared beat', 'planned', 0, 0)"
+        )
         conn.execute("INSERT INTO loom_node_threads (node_id, thread_id) VALUES (1, 1)")
         conn.execute("INSERT INTO loom_node_threads (node_id, thread_id) VALUES (1, 2)")
         conn.commit()
@@ -310,7 +339,10 @@ class TestIdempotentDryRunBackup:
         db_path = _make_old_db(tmp_path)
         conn = sqlite3.connect(str(db_path))
         conn.execute("INSERT INTO loom_threads (id, name, color) VALUES (1, 'T', 'thread-1')")
-        conn.execute("INSERT INTO loom_nodes (id, kind, title, status, x, y) VALUES (1, 'anchor', 'X', 'planned', 0, 0)")
+        conn.execute(
+            "INSERT INTO loom_nodes (id, kind, title, status, x, y) "
+            "VALUES (1, 'anchor', 'X', 'planned', 0, 0)"
+        )
         conn.execute("INSERT INTO loom_node_threads (node_id, thread_id) VALUES (1, 1)")
         conn.commit()
         conn.close()
@@ -325,7 +357,10 @@ class TestIdempotentDryRunBackup:
         db_path = _make_old_db(tmp_path)
         conn = sqlite3.connect(str(db_path))
         conn.execute("INSERT INTO loom_threads (id, name, color) VALUES (1, 'T', 'thread-1')")
-        conn.execute("INSERT INTO loom_nodes (id, kind, title, status, x, y) VALUES (1, 'anchor', 'X', 'planned', 0, 0)")
+        conn.execute(
+            "INSERT INTO loom_nodes (id, kind, title, status, x, y) "
+            "VALUES (1, 'anchor', 'X', 'planned', 0, 0)"
+        )
         conn.execute("INSERT INTO loom_node_threads (node_id, thread_id) VALUES (1, 1)")
         conn.commit()
         conn.close()
@@ -360,20 +395,25 @@ class TestIdempotentDryRunBackup:
 
 
 class TestReachesPlannedAndUpdate:
-    """Reached anchors become sessions with provenance; planned become beats; updates become sessions."""
+    """Convert reached anchors, planned anchors, and updates to v2 node kinds."""
 
     def test_reached_anchor_becomes_session(self, tmp_path):
         db_path = _make_old_db(tmp_path)
         conn = sqlite3.connect(str(db_path))
         conn.execute("INSERT INTO loom_threads (id, name, color) VALUES (1, 'T', 'thread-1')")
-        conn.execute("INSERT INTO loom_nodes (id, kind, title, status, x, y) VALUES (1, 'anchor', 'Victory', 'reached', 0, 0)")
+        conn.execute(
+            "INSERT INTO loom_nodes (id, kind, title, status, x, y) "
+            "VALUES (1, 'anchor', 'Victory', 'reached', 0, 0)"
+        )
         conn.execute("INSERT INTO loom_node_threads (node_id, thread_id) VALUES (1, 1)")
         conn.commit()
         conn.close()
 
         migrate_mod.migrate(db_path, tmp_path / "report.json", dry_run=False)
 
-        nodes = _conn_rows(db_path, "SELECT kind, fulfilled_planned_title FROM loom_nodes WHERE id=1")
+        nodes = _conn_rows(
+            db_path, "SELECT kind, fulfilled_planned_title FROM loom_nodes WHERE id=1"
+        )
         assert nodes[0]["kind"] == "session"
         assert nodes[0]["fulfilled_planned_title"] == "Victory"
 
@@ -381,7 +421,10 @@ class TestReachesPlannedAndUpdate:
         db_path = _make_old_db(tmp_path)
         conn = sqlite3.connect(str(db_path))
         conn.execute("INSERT INTO loom_threads (id, name, color) VALUES (1, 'T', 'thread-1')")
-        conn.execute("INSERT INTO loom_nodes (id, kind, title, status, x, y) VALUES (1, 'anchor', 'Todo', 'planned', 0, 0)")
+        conn.execute(
+            "INSERT INTO loom_nodes (id, kind, title, status, x, y) "
+            "VALUES (1, 'anchor', 'Todo', 'planned', 0, 0)"
+        )
         conn.execute("INSERT INTO loom_node_threads (node_id, thread_id) VALUES (1, 1)")
         conn.commit()
         conn.close()
@@ -395,7 +438,10 @@ class TestReachesPlannedAndUpdate:
         db_path = _make_old_db(tmp_path)
         conn = sqlite3.connect(str(db_path))
         conn.execute("INSERT INTO loom_threads (id, name, color) VALUES (1, 'T', 'thread-1')")
-        conn.execute("INSERT INTO loom_nodes (id, kind, title, session_tag, x, y) VALUES (1, 'update', 'Session event', 'Session 1', 5, 10)")
+        conn.execute(
+            "INSERT INTO loom_nodes (id, kind, title, session_tag, x, y) "
+            "VALUES (1, 'update', 'Session event', 'Session 1', 5, 10)"
+        )
         conn.execute("INSERT INTO loom_node_threads (node_id, thread_id) VALUES (1, 1)")
         conn.commit()
         conn.close()
@@ -414,8 +460,12 @@ class TestSynthesizeStartEnd:
     def test_synthesized_start_end(self, tmp_path):
         db_path = _make_old_db(tmp_path)
         conn = sqlite3.connect(str(db_path))
-        conn.execute("INSERT INTO loom_threads (id, name, color) VALUES (1, 'My Quest', 'thread-1')")
-        conn.execute("INSERT INTO loom_nodes (id, kind, title, x, y) VALUES (1, 'update', 'Event', 0, 0)")
+        conn.execute(
+            "INSERT INTO loom_threads (id, name, color) VALUES (1, 'My Quest', 'thread-1')"
+        )
+        conn.execute(
+            "INSERT INTO loom_nodes (id, kind, title, x, y) VALUES (1, 'update', 'Event', 0, 0)"
+        )
         conn.execute("INSERT INTO loom_node_threads (node_id, thread_id) VALUES (1, 1)")
         conn.commit()
         conn.close()
@@ -473,8 +523,13 @@ class TestMalformedFixture:
                 FOREIGN KEY (thread_id) REFERENCES loom_threads(id) ON DELETE CASCADE
             );
         """)
-        conn.execute("INSERT INTO loom_threads (id, name, color) VALUES (1, 'Solo Thread', 'thread-2')")
-        conn.execute("INSERT INTO loom_nodes (id, kind, title, x, y) VALUES (1, 'update', 'Lone event', 0, 0)")
+        conn.execute(
+            "INSERT INTO loom_threads (id, name, color) VALUES (1, 'Solo Thread', 'thread-2')"
+        )
+        conn.execute(
+            "INSERT INTO loom_nodes (id, kind, title, x, y) "
+            "VALUES (1, 'update', 'Lone event', 0, 0)"
+        )
         conn.execute("INSERT INTO loom_node_threads (node_id, thread_id) VALUES (1, 1)")
         conn.commit()
         conn.close()

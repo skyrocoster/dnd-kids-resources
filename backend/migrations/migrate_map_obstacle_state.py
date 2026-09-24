@@ -9,13 +9,12 @@ Usage:
     python -m backend.migrations.migrate_map_obstacle_state --db database.db [--seeds data/seeds]
 """
 
-import sqlite3
-import json
 import argparse
+import json
+import sqlite3
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
-
+from typing import Any, Dict
 
 # Authored default obstacle state per fixture type
 DEFAULT_FIXTURE_STATE = {
@@ -175,7 +174,7 @@ def migrate_seed_files(seeds_dir: str) -> None:
             print(f"  [ERROR] Failed to migrate seed_map_layouts.json: {e}")
             sys.exit(1)
     else:
-        print(f"  [INFO] seed_map_layouts.json not found; skipping")
+        print("  [INFO] seed_map_layouts.json not found; skipping")
 
     # Clear map_session_state.json
     session_file = seeds_dir / "seed_map_session_state.json"
@@ -183,18 +182,16 @@ def migrate_seed_files(seeds_dir: str) -> None:
         try:
             with open(session_file, "w", encoding="utf-8") as f:
                 json.dump([], f, ensure_ascii=False)
-            print(f"  [OK] Cleared seed_map_session_state.json")
+            print("  [OK] Cleared seed_map_session_state.json")
         except Exception as e:
             print(f"  [ERROR] Failed to clear seed_map_session_state.json: {e}")
             sys.exit(1)
     else:
-        print(f"  [INFO] seed_map_session_state.json not found; skipping")
+        print("  [INFO] seed_map_session_state.json not found; skipping")
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Migrate map obstacle state to structured format"
-    )
+    parser = argparse.ArgumentParser(description="Migrate map obstacle state to structured format")
     parser.add_argument(
         "--db",
         required=True,

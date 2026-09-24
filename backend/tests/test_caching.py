@@ -1,18 +1,16 @@
-from concurrent.futures import ThreadPoolExecutor
 import sqlite3
+from concurrent.futures import ThreadPoolExecutor
 from threading import Event, Lock
 from time import sleep
 
 from fastapi.testclient import TestClient
 
-from backend.app.caching import cached_read, invalidate_cache
 import backend.app.db as db_module
+from backend.app.caching import cached_read, invalidate_cache
 from backend.app.main import create_app
 
 
-def test_repeated_get_hits_cache_and_successful_write_invalidates_it(
-    monkeypatch, test_client
-):
+def test_repeated_get_hits_cache_and_successful_write_invalidates_it(monkeypatch, test_client):
     original_get_conn = db_module.get_conn
     connection_count = 0
 
@@ -56,9 +54,7 @@ def test_cache_isolated_by_injected_database_path(test_client, tmp_path):
         json={"name": "Default database", "value_gp": 2, "category": "tool"},
     )
     assert created.status_code == 201
-    assert [item["name"] for item in test_client.get("/api/items").json()] == [
-        "Default database"
-    ]
+    assert [item["name"] for item in test_client.get("/api/items").json()] == ["Default database"]
 
     override_path = tmp_path / "override.db"
     with sqlite3.connect(override_path) as conn:
@@ -83,9 +79,7 @@ def test_cache_isolated_by_injected_database_path(test_client, tmp_path):
     assert [item["name"] for item in override_response.json()] == ["Override database"]
 
     # The same GET path and arguments still return the default app's distinct DB data.
-    assert [item["name"] for item in test_client.get("/api/items").json()] == [
-        "Default database"
-    ]
+    assert [item["name"] for item in test_client.get("/api/items").json()] == ["Default database"]
 
 
 def test_concurrent_identical_reads_share_one_loader(monkeypatch, tmp_path):
@@ -114,9 +108,7 @@ def test_concurrent_identical_reads_share_one_loader(monkeypatch, tmp_path):
 
     try:
         with ThreadPoolExecutor(max_workers=2) as executor:
-            first = executor.submit(
-                cached_read, "test-single-flight", ("shared-key",), loader
-            )
+            first = executor.submit(cached_read, "test-single-flight", ("shared-key",), loader)
             assert loader_started.wait(timeout=2)
             second = executor.submit(second_caller)
             assert second_call_started.wait(timeout=2)

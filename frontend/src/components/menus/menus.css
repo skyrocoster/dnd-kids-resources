@@ -37,7 +37,7 @@
   background: var(--md-surface-2);
 }
 
-.ds-menubar[data-orientation='vertical'] {
+.ds-menubar[data-orientation="vertical"] {
   flex-direction: column;
   align-items: stretch;
 }
@@ -64,7 +64,9 @@
   color: var(--md-on-surface);
   box-shadow: var(--elevation-shadow);
   transform-origin: var(--transform-origin);
-  transition: opacity var(--motion-fast), transform var(--motion-fast);
+  transition:
+    opacity var(--motion-fast),
+    transform var(--motion-fast);
 }
 
 .ds-menu-popup[data-starting-style],

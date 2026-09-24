@@ -1,5 +1,4 @@
 import backend.app.db as db_module
-
 from backend.tests.conftest import db_failure_conn
 
 
@@ -9,9 +8,9 @@ def test_get_revealed_cells_empty_for_missing_and_fresh_dungeons(test_client):
     assert missing.status_code == 200
     assert missing.json() == {"cells": []}
 
-    dungeon_id = test_client.post(
-        "/api/dungeons", json={"title": "Fog test", "data": {}}
-    ).json()["id"]
+    dungeon_id = test_client.post("/api/dungeons", json={"title": "Fog test", "data": {}}).json()[
+        "id"
+    ]
     fresh = test_client.get(f"/api/dungeons/{dungeon_id}/revealed-cells")
     assert fresh.status_code == 200
     assert fresh.json() == {"cells": []}
@@ -58,9 +57,9 @@ def test_put_to_nonexistent_dungeon_returns_404(test_client):
 
 
 def test_put_db_failure(monkeypatch, test_client):
-    dungeon_id = test_client.post(
-        "/api/dungeons", json={"title": "Fog fail", "data": {}}
-    ).json()["id"]
+    dungeon_id = test_client.post("/api/dungeons", json={"title": "Fog fail", "data": {}}).json()[
+        "id"
+    ]
     monkeypatch.setattr(db_module, "get_conn", db_failure_conn)
     response = test_client.put(
         f"/api/dungeons/{dungeon_id}/revealed-cells", json={"cells": [{"x": 0, "y": 0}]}

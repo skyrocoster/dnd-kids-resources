@@ -1,5 +1,4 @@
 import backend.app.db as db_module
-
 from backend.tests.conftest import db_failure_conn
 
 
@@ -19,7 +18,9 @@ def test_save_get_and_upsert_dungeon_session_state(test_client):
     dungeon_id = test_client.post(
         "/api/dungeons", json={"title": "Session state test", "data": {}}
     ).json()["id"]
-    put_response = test_client.put(f"/api/dungeons/{dungeon_id}/session-state", json={"data": state})
+    put_response = test_client.put(
+        f"/api/dungeons/{dungeon_id}/session-state", json={"data": state}
+    )
     assert put_response.status_code == 200
     assert put_response.json()["data"] == state
 
@@ -28,7 +29,9 @@ def test_save_get_and_upsert_dungeon_session_state(test_client):
     assert get_response.json()["data"] == state
 
     second = {"doors": {"1": {"open": True}}}
-    put_response = test_client.put(f"/api/dungeons/{dungeon_id}/session-state", json={"data": second})
+    put_response = test_client.put(
+        f"/api/dungeons/{dungeon_id}/session-state", json={"data": second}
+    )
     assert put_response.status_code == 200
     assert test_client.get(f"/api/dungeons/{dungeon_id}/session-state").json()["data"] == second
 
@@ -71,7 +74,9 @@ def test_save_dungeon_session_state_prunes_invalid_and_dc_leaves(test_client):
     dungeon_id = test_client.post(
         "/api/dungeons", json={"title": "Session state prune test", "data": {}}
     ).json()["id"]
-    put_response = test_client.put(f"/api/dungeons/{dungeon_id}/session-state", json={"data": state})
+    put_response = test_client.put(
+        f"/api/dungeons/{dungeon_id}/session-state", json={"data": state}
+    )
     assert put_response.status_code == 200
     assert put_response.json()["data"] == {
         "doors": {"1": {"open": False}},
@@ -136,7 +141,7 @@ def test_save_session_state_db_failure(monkeypatch, test_client):
 
 
 def test_reset_dungeon_session_state(test_client):
-    """DELETE removes an existing row (204, then GET 404); resetting with no row is also a 204 no-op"""
+    """DELETE removes an existing row; resetting with no row is a no-op."""
     dungeon_id = test_client.post(
         "/api/dungeons", json={"title": "Session state reset test", "data": {}}
     ).json()["id"]

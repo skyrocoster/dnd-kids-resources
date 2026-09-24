@@ -1,8 +1,8 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import * as api from '../../api/client'
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import * as api from "../../api/client";
 import type {
   Spell,
   Weapon,
@@ -13,7 +13,7 @@ import type {
   LootBundle,
   Encounter,
   Dungeon,
-} from '../../api/types'
+} from "../../api/types";
 
 /* ------------------------------------------------------------------ */
 /*  Fixture data                                                      */
@@ -21,103 +21,103 @@ import type {
 
 const spellA: Spell = {
   id: 1,
-  name: 'Cure Wounds',
+  name: "Cure Wounds",
   level: 1,
-  school: 'Evocation',
-  categories: ['Other'],
-  description: 'A creature regains 1d8+3 hit points.',
+  school: "Evocation",
+  categories: ["Other"],
+  description: "A creature regains 1d8+3 hit points.",
   alternate_description: null,
   quick_rules: null,
-  casting_times: ['1 action'],
-  range: 'Touch',
-  duration: 'Instantaneous',
-  components: ['V', 'S'],
+  casting_times: ["1 action"],
+  range: "Touch",
+  duration: "Instantaneous",
+  components: ["V", "S"],
   materials: null,
   concentration: false,
   ritual: false,
-  higher_levels: { text: '', damage_by_slot: {} },
+  higher_levels: { text: "", damage_by_slot: {} },
   damage: [],
   healing: { amount: null, temp_hp: false, max_hp: false },
   attacks: [],
   area_of_effect: { shape: null, size: null },
-}
+};
 
 const spellB: Spell = {
   id: 2,
-  name: 'Fireball',
+  name: "Fireball",
   level: 3,
-  school: 'Evocation',
-  categories: ['Other'],
-  description: 'A bright streak flashes.',
+  school: "Evocation",
+  categories: ["Other"],
+  description: "A bright streak flashes.",
   alternate_description: null,
-  quick_rules: 'Action: creatures in the area make a Dexterity save or take fire damage.',
-  casting_times: ['1 action'],
-  range: '150 feet',
-  duration: 'Instantaneous',
-  components: ['V', 'S', 'M'],
-  materials: 'A tiny ball of bat guano and sulfur.',
+  quick_rules: "Action: creatures in the area make a Dexterity save or take fire damage.",
+  casting_times: ["1 action"],
+  range: "150 feet",
+  duration: "Instantaneous",
+  components: ["V", "S", "M"],
+  materials: "A tiny ball of bat guano and sulfur.",
   concentration: false,
   ritual: false,
-  higher_levels: { text: '', damage_by_slot: {} },
+  higher_levels: { text: "", damage_by_slot: {} },
   damage: [],
   healing: { amount: null, temp_hp: false, max_hp: false },
   attacks: [],
   area_of_effect: { shape: null, size: null },
-}
+};
 
 const weaponA: Weapon = {
   id: 1,
-  name: 'Longsword',
-  base_weapon: 'Longsword',
-  rarity: 'Common',
-  weapon_category: 'Martial',
+  name: "Longsword",
+  base_weapon: "Longsword",
+  rarity: "Common",
+  weapon_category: "Martial",
   weight: 3,
   req_attune: null,
   property: [],
   focus: [],
   attack: [],
   entries: [],
-}
+};
 
 const weaponB: Weapon = {
   id: 2,
-  name: 'Dagger',
-  base_weapon: 'Dagger',
-  rarity: 'Common',
-  weapon_category: 'Simple',
+  name: "Dagger",
+  base_weapon: "Dagger",
+  rarity: "Common",
+  weapon_category: "Simple",
   weight: 1,
   req_attune: null,
   property: [],
   focus: [],
   attack: [],
   entries: [],
-}
+};
 
 const playerA: Player = {
   id: 1,
-  name: 'Aelindra',
-  class_: 'Wizard',
+  name: "Aelindra",
+  class_: "Wizard",
   level: 5,
-}
+};
 
 const playerB: Player = {
   id: 2,
-  name: 'Brom',
-  class_: 'Fighter',
+  name: "Brom",
+  class_: "Fighter",
   level: 3,
-}
+};
 
 const monsterA: Monster = {
   id: 1,
-  name: 'Goblin',
+  name: "Goblin",
   aliases: [],
-  sizes: ['small'],
+  sizes: ["small"],
   family: null,
   alignment: null,
   creature_type: null,
   ac: { value: 15, note: null, alternatives: [] },
-  hp: { average: 7, formula: '2d6' },
-  speed: [{ mode: 'walk', feet: 30, note: null, hover: false }],
+  hp: { average: 7, formula: "2d6" },
+  speed: [{ mode: "walk", feet: 30, note: null, hover: false }],
   abilities: { str: 8, dex: 14, con: 10, int: 10, wis: 8, cha: 8 },
   saving_throws: {},
   skills: {},
@@ -141,23 +141,23 @@ const monsterA: Monster = {
     legendary_actions_per_round: null,
     mythic_actions: [],
   },
-  cr: '1/4',
+  cr: "1/4",
   cr_sort: 0.25,
   cr_note: null,
   experience_points: null,
-}
+};
 
 const monsterB: Monster = {
   id: 2,
-  name: 'Orc',
+  name: "Orc",
   aliases: [],
-  sizes: ['medium'],
+  sizes: ["medium"],
   family: null,
   alignment: null,
   creature_type: null,
   ac: { value: 13, note: null, alternatives: [] },
-  hp: { average: 15, formula: '2d8+6' },
-  speed: [{ mode: 'walk', feet: 30, note: null, hover: false }],
+  hp: { average: 15, formula: "2d8+6" },
+  speed: [{ mode: "walk", feet: 30, note: null, hover: false }],
   abilities: { str: 16, dex: 12, con: 16, int: 7, wis: 11, cha: 10 },
   saving_throws: {},
   skills: {},
@@ -181,552 +181,606 @@ const monsterB: Monster = {
     legendary_actions_per_round: null,
     mythic_actions: [],
   },
-  cr: '1/2',
+  cr: "1/2",
   cr_sort: 0.5,
   cr_note: null,
   experience_points: null,
-}
+};
 
 const npcA: NPC = {
   id: 1,
-  name: 'Eldra',
-  race: 'Elf',
-  gender: 'Female',
-  background: 'Sage',
+  name: "Eldra",
+  race: "Elf",
+  gender: "Female",
+  background: "Sage",
   abilities: { str: 10, dex: 14, con: 12, int: 16, wis: 13, cha: 11 },
-  appearance: { summary: 'Tall with silver hair.' },
+  appearance: { summary: "Tall with silver hair." },
   ac: { value: 12, note: null, alternatives: [] },
   hp: { average: 22, formula: null },
-  speed: [{ mode: 'walk', feet: 30, note: null, hover: false }],
-  notes: 'A helpful wizard.',
-}
+  speed: [{ mode: "walk", feet: 30, note: null, hover: false }],
+  notes: "A helpful wizard.",
+};
 
 const npcB: NPC = {
   id: 2,
-  name: 'Grett',
-  race: 'Human',
-  gender: 'Male',
-  background: 'Soldier',
+  name: "Grett",
+  race: "Human",
+  gender: "Male",
+  background: "Soldier",
   abilities: { str: 16, dex: 12, con: 14, int: 10, wis: 11, cha: 12 },
-  appearance: { summary: 'Stocky build.' },
+  appearance: { summary: "Stocky build." },
   ac: { value: 16, note: null, alternatives: [] },
   hp: { average: 45, formula: null },
-  speed: [{ mode: 'walk', feet: 30, note: null, hover: false }],
-  notes: 'Retired guard.',
-}
+  speed: [{ mode: "walk", feet: 30, note: null, hover: false }],
+  notes: "Retired guard.",
+};
 
 const itemA: Item = {
   id: 1,
-  name: 'Healing Potion',
+  name: "Healing Potion",
   value_gp: 50,
-  category: 'Potion',
-  description: 'Restores 2d4+2 hit points.',
-}
+  category: "Potion",
+  description: "Restores 2d4+2 hit points.",
+};
 
 const itemB: Item = {
   id: 2,
-  name: 'Rope',
+  name: "Rope",
   value_gp: 1,
-  category: 'Adventuring Gear',
-  description: '50 feet of hempen rope.',
-}
+  category: "Adventuring Gear",
+  description: "50 feet of hempen rope.",
+};
 
 const lootA: LootBundle = {
   id: 1,
-  name: 'Goblin Stash',
+  name: "Goblin Stash",
   gold: 25,
   contents: [],
-}
+};
 
 const lootB: LootBundle = {
   id: 2,
-  name: 'Dragon Hoard',
+  name: "Dragon Hoard",
   gold: 500,
   contents: [],
-}
+};
 
 const encounterA: Encounter = {
   id: 1,
-  title: 'Goblin Ambush',
+  title: "Goblin Ambush",
   creatures: [
     {
       creature_id: 1,
-      source_kind: 'monster',
-      original_name: 'Goblin',
-      name: 'Goblin',
+      source_kind: "monster",
+      original_name: "Goblin",
+      name: "Goblin",
       hp_current: 7,
       hp_max: 7,
       ac: 15,
-      status: 'alive',
+      status: "alive",
       conditions: [],
     },
   ],
-}
+};
 
 const encounterB: Encounter = {
   id: 2,
-  title: 'Orc Warband',
+  title: "Orc Warband",
   creatures: [],
-}
+};
 
 const dungeonA: Dungeon = {
   id: 1,
-  title: 'Cave of Wonders',
+  title: "Cave of Wonders",
   data: {},
-}
+};
 
 const dungeonB: Dungeon = {
   id: 2,
-  title: 'Shadow Fortress',
+  title: "Shadow Fortress",
   data: {},
-}
+};
 
 /* ------------------------------------------------------------------ */
 /*  Catalog rail adoption                                             */
 /* ------------------------------------------------------------------ */
 
-describe('catalog browser rail adoption', () => {
+describe("catalog browser rail adoption", () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
-    window.localStorage.removeItem('dnd-kids-browser-rail')
-  })
+    vi.restoreAllMocks();
+    window.localStorage.removeItem("dnd-kids-browser-rail");
+  });
 
   const cases = [
     {
-      label: 'spell list',
-      setup: () => vi.spyOn(api, 'listSpells').mockResolvedValue([spellA]),
+      label: "spell list",
+      setup: () => vi.spyOn(api, "listSpells").mockResolvedValue([spellA]),
       renderPage: async () => {
-        const { SpellBrowserPage } = await import('../../features/spells/SpellBrowserPage')
-        return render(<SpellBrowserPage />)
+        const { SpellBrowserPage } = await import("../../features/spells/SpellBrowserPage");
+        return render(<SpellBrowserPage />);
       },
     },
     {
-      label: 'weapon list',
-      setup: () => vi.spyOn(api, 'listWeapons').mockResolvedValue([weaponA]),
+      label: "weapon list",
+      setup: () => vi.spyOn(api, "listWeapons").mockResolvedValue([weaponA]),
       renderPage: async () => {
-        const { WeaponBrowserPage } = await import('../../features/weapons/WeaponBrowserPage')
-        return render(<WeaponBrowserPage />)
+        const { WeaponBrowserPage } = await import("../../features/weapons/WeaponBrowserPage");
+        return render(<WeaponBrowserPage />);
       },
     },
     {
-      label: 'player list',
+      label: "player list",
       setup: () => {
-        vi.spyOn(api, 'listPlayers').mockResolvedValue([playerA])
-        vi.spyOn(api, 'getPlayerSpells').mockResolvedValue([])
-        vi.spyOn(api, 'getPlayerWeapons').mockResolvedValue([])
-        vi.spyOn(api, 'listSpells').mockResolvedValue([])
-        vi.spyOn(api, 'listWeapons').mockResolvedValue([])
+        vi.spyOn(api, "listPlayers").mockResolvedValue([playerA]);
+        vi.spyOn(api, "getPlayerSpells").mockResolvedValue([]);
+        vi.spyOn(api, "getPlayerWeapons").mockResolvedValue([]);
+        vi.spyOn(api, "listSpells").mockResolvedValue([]);
+        vi.spyOn(api, "listWeapons").mockResolvedValue([]);
       },
       renderPage: async () => {
-        const { PlayerBrowserPage } = await import('../../features/players/PlayerBrowserPage')
-        return render(<PlayerBrowserPage />)
+        const { PlayerBrowserPage } = await import("../../features/players/PlayerBrowserPage");
+        return render(<PlayerBrowserPage />);
       },
     },
     {
-      label: 'monster list',
-      setup: () => vi.spyOn(api, 'listMonsters').mockResolvedValue([monsterA]),
+      label: "monster list",
+      setup: () => vi.spyOn(api, "listMonsters").mockResolvedValue([monsterA]),
       renderPage: async () => {
-        const { MonsterBrowserPage } = await import('../../features/monsters/MonsterBrowserPage')
-        return render(<MemoryRouter><MonsterBrowserPage /></MemoryRouter>)
+        const { MonsterBrowserPage } = await import("../../features/monsters/MonsterBrowserPage");
+        return render(
+          <MemoryRouter>
+            <MonsterBrowserPage />
+          </MemoryRouter>,
+        );
       },
     },
     {
-      label: 'npc list',
-      setup: () => vi.spyOn(api, 'listNPCs').mockResolvedValue([npcA]),
+      label: "npc list",
+      setup: () => vi.spyOn(api, "listNPCs").mockResolvedValue([npcA]),
       renderPage: async () => {
-        const { NPCBrowserPage } = await import('../../features/npcs/NPCBrowserPage')
-        return render(<NPCBrowserPage />)
+        const { NPCBrowserPage } = await import("../../features/npcs/NPCBrowserPage");
+        return render(<NPCBrowserPage />);
       },
     },
     {
-      label: 'item list',
-      setup: () => vi.spyOn(api, 'listItems').mockResolvedValue([itemA]),
+      label: "item list",
+      setup: () => vi.spyOn(api, "listItems").mockResolvedValue([itemA]),
       renderPage: async () => {
-        const { ItemBrowserPage } = await import('../../features/items/ItemBrowserPage')
-        return render(<ItemBrowserPage />)
+        const { ItemBrowserPage } = await import("../../features/items/ItemBrowserPage");
+        return render(<ItemBrowserPage />);
       },
     },
     {
-      label: 'loot bundle list',
-      setup: () => vi.spyOn(api, 'listLootBundles').mockResolvedValue([lootA]),
+      label: "loot bundle list",
+      setup: () => vi.spyOn(api, "listLootBundles").mockResolvedValue([lootA]),
       renderPage: async () => {
-        const { LootBundleBrowserPage } = await import('../../features/loot/LootBundleBrowserPage')
-        return render(<LootBundleBrowserPage />)
+        const { LootBundleBrowserPage } = await import("../../features/loot/LootBundleBrowserPage");
+        return render(<LootBundleBrowserPage />);
       },
     },
     {
-      label: 'encounter list',
+      label: "encounter list",
       setup: () => {
-        vi.spyOn(api, 'listEncounters').mockResolvedValue([encounterA])
-        vi.spyOn(api, 'listMonsters').mockResolvedValue([])
+        vi.spyOn(api, "listEncounters").mockResolvedValue([encounterA]);
+        vi.spyOn(api, "listMonsters").mockResolvedValue([]);
       },
       renderPage: async () => {
-        const { EncounterBrowserPage } = await import('../../features/encounters/EncounterBrowserPage')
-        return render(<MemoryRouter><EncounterBrowserPage /></MemoryRouter>)
+        const { EncounterBrowserPage } =
+          await import("../../features/encounters/EncounterBrowserPage");
+        return render(
+          <MemoryRouter>
+            <EncounterBrowserPage />
+          </MemoryRouter>,
+        );
       },
     },
     {
-      label: 'dungeon list',
-      setup: () => vi.spyOn(api, 'listDungeons').mockResolvedValue([dungeonA]),
+      label: "dungeon list",
+      setup: () => vi.spyOn(api, "listDungeons").mockResolvedValue([dungeonA]),
       renderPage: async () => {
-        const { DungeonBrowserPage } = await import('../../features/dungeons/DungeonBrowserPage')
-        return render(<MemoryRouter><DungeonBrowserPage /></MemoryRouter>)
+        const { DungeonBrowserPage } = await import("../../features/dungeons/DungeonBrowserPage");
+        return render(
+          <MemoryRouter>
+            <DungeonBrowserPage />
+          </MemoryRouter>,
+        );
       },
     },
-  ]
+  ];
 
-  it.each(cases)('places create and selected edit/delete actions on the $label browser', async (catalog) => {
-    catalog.setup()
-    const view = await catalog.renderPage()
+  it.each(cases)(
+    "places create and selected edit/delete actions on the $label browser",
+    async (catalog) => {
+      catalog.setup();
+      const view = await catalog.renderPage();
 
-    expect(await screen.findByRole('button', { name: /^(Add|New|Create)/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: 'Delete' }).length).toBeGreaterThan(0)
+      expect(await screen.findByRole("button", { name: /^(Add|New|Create)/ })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
+      expect(screen.getAllByRole("button", { name: "Delete" }).length).toBeGreaterThan(0);
 
-    view.unmount()
-  })
+      view.unmount();
+    },
+  );
 
-  it.each(cases)('exposes the shared collapse control on the $label browser', async (catalog) => {
-    catalog.setup()
-    const view = await catalog.renderPage()
+  it.each(cases)("exposes the shared collapse control on the $label browser", async (catalog) => {
+    catalog.setup();
+    const view = await catalog.renderPage();
 
-    expect(await screen.findByRole('button', { name: `Collapse ${catalog.label}` })).toBeInTheDocument()
+    expect(
+      await screen.findByRole("button", { name: `Collapse ${catalog.label}` }),
+    ).toBeInTheDocument();
 
-    view.unmount()
-  })
-})
+    view.unmount();
+  });
+});
 /* ------------------------------------------------------------------ */
 /*  Standard browsers — Spells, Weapons, Players                      */
 /* ------------------------------------------------------------------ */
 
-describe('VW0 standard browsers', () => {
+describe("VW0 standard browsers", () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
-  })
+    vi.restoreAllMocks();
+  });
 
-  it('SpellBrowser: lists sorted spells, first selected, detail updates on click', async () => {
-    vi.spyOn(api, 'listSpells').mockResolvedValue([spellB, spellA])
-    const user = userEvent.setup()
+  it("SpellBrowser: lists sorted spells, first selected, detail updates on click", async () => {
+    vi.spyOn(api, "listSpells").mockResolvedValue([spellB, spellA]);
+    const user = userEvent.setup();
 
-    const { SpellBrowserPage } = await import('../../features/spells/SpellBrowserPage')
-    render(<SpellBrowserPage />)
+    const { SpellBrowserPage } = await import("../../features/spells/SpellBrowserPage");
+    render(<SpellBrowserPage />);
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /Cure Wounds/ })).toBeInTheDocument())
-    expect(screen.getAllByText(/1st Level/)).not.toHaveLength(0)
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: /Cure Wounds/ })).toBeInTheDocument(),
+    );
+    expect(screen.getAllByText(/1st Level/)).not.toHaveLength(0);
 
-    await user.click(screen.getByText('Fireball'))
-    expect(screen.getByRole('heading', { name: /Fireball/ })).toBeInTheDocument()
-    expect(screen.getByText('150 feet')).toBeInTheDocument()
-  })
+    await user.click(screen.getByText("Fireball"));
+    expect(screen.getByRole("heading", { name: /Fireball/ })).toBeInTheDocument();
+    expect(screen.getByText("150 feet")).toBeInTheDocument();
+  });
 
-  it('SpellBrowser: opens editor on New Spell click', async () => {
-    vi.spyOn(api, 'listSpells').mockResolvedValue([spellA])
-    const user = userEvent.setup()
+  it("SpellBrowser: opens editor on New Spell click", async () => {
+    vi.spyOn(api, "listSpells").mockResolvedValue([spellA]);
+    const user = userEvent.setup();
 
-    const { SpellBrowserPage } = await import('../../features/spells/SpellBrowserPage')
-    render(<SpellBrowserPage />)
+    const { SpellBrowserPage } = await import("../../features/spells/SpellBrowserPage");
+    render(<SpellBrowserPage />);
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /Cure Wounds/ })).toBeInTheDocument())
-    await user.click(screen.getByRole('button', { name: 'New Spell' }))
-    expect(screen.getByRole('dialog')).toBeInTheDocument()
-  })
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: /Cure Wounds/ })).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("button", { name: "New Spell" }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
 
-  it('SpellBrowser: shows error on API failure', async () => {
-    vi.spyOn(api, 'listSpells').mockRejectedValue(new Error('network down'))
+  it("SpellBrowser: shows error on API failure", async () => {
+    vi.spyOn(api, "listSpells").mockRejectedValue(new Error("network down"));
 
-    const { SpellBrowserPage } = await import('../../features/spells/SpellBrowserPage')
-    render(<SpellBrowserPage />)
+    const { SpellBrowserPage } = await import("../../features/spells/SpellBrowserPage");
+    render(<SpellBrowserPage />);
 
-    await waitFor(() => expect(screen.getByText(/network down/)).toBeInTheDocument())
-  })
+    await waitFor(() => expect(screen.getByText(/network down/)).toBeInTheDocument());
+  });
 
-  it('SpellBrowser: shows no-selection prompt when no items', async () => {
-    vi.spyOn(api, 'listSpells').mockResolvedValue([])
+  it("SpellBrowser: shows no-selection prompt when no items", async () => {
+    vi.spyOn(api, "listSpells").mockResolvedValue([]);
 
-    const { SpellBrowserPage } = await import('../../features/spells/SpellBrowserPage')
-    render(<SpellBrowserPage />)
+    const { SpellBrowserPage } = await import("../../features/spells/SpellBrowserPage");
+    render(<SpellBrowserPage />);
 
-    await waitFor(() => expect(screen.getByText(/No spells found/)).toBeInTheDocument())
-  })
+    await waitFor(() => expect(screen.getByText(/No spells found/)).toBeInTheDocument());
+  });
 
-  it('WeaponBrowser: lists weapons sorted, first selected, detail updates on click', async () => {
-    vi.spyOn(api, 'listWeapons').mockResolvedValue([weaponB, weaponA])
-    const user = userEvent.setup()
+  it("WeaponBrowser: lists weapons sorted, first selected, detail updates on click", async () => {
+    vi.spyOn(api, "listWeapons").mockResolvedValue([weaponB, weaponA]);
+    const user = userEvent.setup();
 
-    const { WeaponBrowserPage } = await import('../../features/weapons/WeaponBrowserPage')
-    render(<WeaponBrowserPage />)
+    const { WeaponBrowserPage } = await import("../../features/weapons/WeaponBrowserPage");
+    render(<WeaponBrowserPage />);
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /Dagger/ })).toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: /Dagger/ })).toBeInTheDocument(),
+    );
 
-    await user.click(screen.getByText('Longsword'))
-    expect(screen.getByRole('heading', { name: /Longsword/ })).toBeInTheDocument()
-  })
+    await user.click(screen.getByText("Longsword"));
+    expect(screen.getByRole("heading", { name: /Longsword/ })).toBeInTheDocument();
+  });
 
-  it('WeaponBrowser: opens editor on New Weapon click', async () => {
-    vi.spyOn(api, 'listWeapons').mockResolvedValue([weaponA])
-    const user = userEvent.setup()
+  it("WeaponBrowser: opens editor on New Weapon click", async () => {
+    vi.spyOn(api, "listWeapons").mockResolvedValue([weaponA]);
+    const user = userEvent.setup();
 
-    const { WeaponBrowserPage } = await import('../../features/weapons/WeaponBrowserPage')
-    render(<WeaponBrowserPage />)
+    const { WeaponBrowserPage } = await import("../../features/weapons/WeaponBrowserPage");
+    render(<WeaponBrowserPage />);
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /Longsword/ })).toBeInTheDocument())
-    await user.click(screen.getByRole('button', { name: 'New Weapon' }))
-    expect(screen.getByRole('dialog')).toBeInTheDocument()
-  })
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: /Longsword/ })).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("button", { name: "New Weapon" }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
 
-  it('WeaponBrowser: shows error on API failure', async () => {
-    vi.spyOn(api, 'listWeapons').mockRejectedValue(new Error('network down'))
+  it("WeaponBrowser: shows error on API failure", async () => {
+    vi.spyOn(api, "listWeapons").mockRejectedValue(new Error("network down"));
 
-    const { WeaponBrowserPage } = await import('../../features/weapons/WeaponBrowserPage')
-    render(<WeaponBrowserPage />)
+    const { WeaponBrowserPage } = await import("../../features/weapons/WeaponBrowserPage");
+    render(<WeaponBrowserPage />);
 
-    await waitFor(() => expect(screen.getByText(/network down/)).toBeInTheDocument())
-  })
+    await waitFor(() => expect(screen.getByText(/network down/)).toBeInTheDocument());
+  });
 
-  it('PlayerBrowser: lists players sorted, first selected, detail updates on click', async () => {
-    vi.spyOn(api, 'listPlayers').mockResolvedValue([playerB, playerA])
-    vi.spyOn(api, 'listSpells').mockResolvedValue([])
-    vi.spyOn(api, 'listWeapons').mockResolvedValue([])
-    const user = userEvent.setup()
+  it("PlayerBrowser: lists players sorted, first selected, detail updates on click", async () => {
+    vi.spyOn(api, "listPlayers").mockResolvedValue([playerB, playerA]);
+    vi.spyOn(api, "listSpells").mockResolvedValue([]);
+    vi.spyOn(api, "listWeapons").mockResolvedValue([]);
+    const user = userEvent.setup();
 
-    const { PlayerBrowserPage } = await import('../../features/players/PlayerBrowserPage')
-    render(<PlayerBrowserPage />)
+    const { PlayerBrowserPage } = await import("../../features/players/PlayerBrowserPage");
+    render(<PlayerBrowserPage />);
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /Aelindra/ })).toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: /Aelindra/ })).toBeInTheDocument(),
+    );
 
-    await user.click(screen.getByText('Brom'))
-    expect(screen.getByRole('heading', { name: /Brom/ })).toBeInTheDocument()
-  })
+    await user.click(screen.getByText("Brom"));
+    expect(screen.getByRole("heading", { name: /Brom/ })).toBeInTheDocument();
+  });
 
-  it('PlayerBrowser: opens editor on New Player click', async () => {
-    vi.spyOn(api, 'listPlayers').mockResolvedValue([playerA])
-    vi.spyOn(api, 'listSpells').mockResolvedValue([])
-    vi.spyOn(api, 'listWeapons').mockResolvedValue([])
-    const user = userEvent.setup()
+  it("PlayerBrowser: opens editor on New Player click", async () => {
+    vi.spyOn(api, "listPlayers").mockResolvedValue([playerA]);
+    vi.spyOn(api, "listSpells").mockResolvedValue([]);
+    vi.spyOn(api, "listWeapons").mockResolvedValue([]);
+    const user = userEvent.setup();
 
-    const { PlayerBrowserPage } = await import('../../features/players/PlayerBrowserPage')
-    render(<PlayerBrowserPage />)
+    const { PlayerBrowserPage } = await import("../../features/players/PlayerBrowserPage");
+    render(<PlayerBrowserPage />);
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /Aelindra/ })).toBeInTheDocument())
-    await user.click(screen.getByRole('button', { name: 'New Player' }))
-    expect(screen.getByRole('dialog')).toBeInTheDocument()
-  })
-})
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: /Aelindra/ })).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("button", { name: "New Player" }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+});
 
 /* ------------------------------------------------------------------ */
 /*  Role-rich browsers — Monsters, NPCs, Items, Loot                  */
 /* ------------------------------------------------------------------ */
 
-describe('VW0 role-rich browsers', () => {
+describe("VW0 role-rich browsers", () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
-  })
+    vi.restoreAllMocks();
+  });
 
-  it('MonsterBrowser: lists sorted monsters, first selected, detail shows stat block', async () => {
-    vi.spyOn(api, 'listMonsters').mockResolvedValue([monsterB, monsterA])
+  it("MonsterBrowser: lists sorted monsters, first selected, detail shows stat block", async () => {
+    vi.spyOn(api, "listMonsters").mockResolvedValue([monsterB, monsterA]);
 
-    const { MonsterBrowserPage } = await import('../../features/monsters/MonsterBrowserPage')
+    const { MonsterBrowserPage } = await import("../../features/monsters/MonsterBrowserPage");
     render(
       <MemoryRouter>
         <MonsterBrowserPage />
       </MemoryRouter>,
-    )
+    );
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /Goblin/ })).toBeInTheDocument())
-    expect(screen.getAllByText(/CR 1\/4/).length).toBeGreaterThan(0)
-  })
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: /Goblin/ })).toBeInTheDocument(),
+    );
+    expect(screen.getAllByText(/CR 1\/4/).length).toBeGreaterThan(0);
+  });
 
-  it('MonsterBrowser: navigates to edit route on Edit click', async () => {
-    vi.spyOn(api, 'listMonsters').mockResolvedValue([monsterA])
+  it("MonsterBrowser: navigates to edit route on Edit click", async () => {
+    vi.spyOn(api, "listMonsters").mockResolvedValue([monsterA]);
 
-    const { MonsterBrowserPage } = await import('../../features/monsters/MonsterBrowserPage')
+    const { MonsterBrowserPage } = await import("../../features/monsters/MonsterBrowserPage");
     render(
-      <MemoryRouter initialEntries={['/monsters']}>
+      <MemoryRouter initialEntries={["/monsters"]}>
         <Routes>
           <Route path="/monsters" element={<MonsterBrowserPage />} />
           <Route path="/monsters/:id/edit" element={<p>Edit page</p>} />
         </Routes>
       </MemoryRouter>,
-    )
+    );
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /Goblin/ })).toBeInTheDocument())
-    await userEvent.setup().click(screen.getByRole('button', { name: /Edit/ }))
-    expect(screen.getByText('Edit page')).toBeInTheDocument()
-  })
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: /Goblin/ })).toBeInTheDocument(),
+    );
+    await userEvent.setup().click(screen.getByRole("button", { name: /Edit/ }));
+    expect(screen.getByText("Edit page")).toBeInTheDocument();
+  });
 
-  it('NPCBrowser: lists NPCs sorted, first selected, detail shows NPCStatCard', async () => {
-    vi.spyOn(api, 'listNPCs').mockResolvedValue([npcB, npcA])
+  it("NPCBrowser: lists NPCs sorted, first selected, detail shows NPCStatCard", async () => {
+    vi.spyOn(api, "listNPCs").mockResolvedValue([npcB, npcA]);
 
-    const { NPCBrowserPage } = await import('../../features/npcs/NPCBrowserPage')
-    render(<NPCBrowserPage />)
+    const { NPCBrowserPage } = await import("../../features/npcs/NPCBrowserPage");
+    render(<NPCBrowserPage />);
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /Eldra/ })).toBeInTheDocument())
-    expect(screen.getAllByText(/Elf/).length).toBeGreaterThan(0)
-  })
+    await waitFor(() => expect(screen.getByRole("heading", { name: /Eldra/ })).toBeInTheDocument());
+    expect(screen.getAllByText(/Elf/).length).toBeGreaterThan(0);
+  });
 
-  it('NPCBrowser: opens editor on New NPC click', async () => {
-    vi.spyOn(api, 'listNPCs').mockResolvedValue([npcA])
-    const user = userEvent.setup()
+  it("NPCBrowser: opens editor on New NPC click", async () => {
+    vi.spyOn(api, "listNPCs").mockResolvedValue([npcA]);
+    const user = userEvent.setup();
 
-    const { NPCBrowserPage } = await import('../../features/npcs/NPCBrowserPage')
-    render(<NPCBrowserPage />)
+    const { NPCBrowserPage } = await import("../../features/npcs/NPCBrowserPage");
+    render(<NPCBrowserPage />);
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /Eldra/ })).toBeInTheDocument())
-    await user.click(screen.getByRole('button', { name: 'New NPC' }))
-    expect(screen.getByRole('dialog')).toBeInTheDocument()
-  })
+    await waitFor(() => expect(screen.getByRole("heading", { name: /Eldra/ })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "New NPC" }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
 
-  it('ItemBrowser: lists items sorted, first selected, detail shows Card with category', async () => {
-    vi.spyOn(api, 'listItems').mockResolvedValue([itemB, itemA])
-    const user = userEvent.setup()
+  it("ItemBrowser: lists items sorted, first selected, detail shows Card with category", async () => {
+    vi.spyOn(api, "listItems").mockResolvedValue([itemB, itemA]);
+    const user = userEvent.setup();
 
-    const { ItemBrowserPage } = await import('../../features/items/ItemBrowserPage')
-    render(<ItemBrowserPage />)
+    const { ItemBrowserPage } = await import("../../features/items/ItemBrowserPage");
+    render(<ItemBrowserPage />);
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /Healing Potion/ })).toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: /Healing Potion/ })).toBeInTheDocument(),
+    );
 
-    await user.click(screen.getByText('Rope'))
-    expect(screen.getByRole('heading', { name: /Rope/ })).toBeInTheDocument()
-  })
+    await user.click(screen.getByText("Rope"));
+    expect(screen.getByRole("heading", { name: /Rope/ })).toBeInTheDocument();
+  });
 
-  it('ItemBrowser: shows rich empty state when no items', async () => {
-    vi.spyOn(api, 'listItems').mockResolvedValue([])
+  it("ItemBrowser: shows rich empty state when no items", async () => {
+    vi.spyOn(api, "listItems").mockResolvedValue([]);
 
-    const { ItemBrowserPage } = await import('../../features/items/ItemBrowserPage')
-    render(<ItemBrowserPage />)
+    const { ItemBrowserPage } = await import("../../features/items/ItemBrowserPage");
+    render(<ItemBrowserPage />);
 
-    await waitFor(() => expect(screen.getByText(/Start your item catalog/)).toBeInTheDocument())
-  })
+    await waitFor(() => expect(screen.getByText(/Start your item catalog/)).toBeInTheDocument());
+  });
 
-  it('LootBundleBrowser: lists bundles, first selected, detail shows gold and contents', async () => {
-    vi.spyOn(api, 'listLootBundles').mockResolvedValue([lootB, lootA])
-    const user = userEvent.setup()
+  it("LootBundleBrowser: lists bundles, first selected, detail shows gold and contents", async () => {
+    vi.spyOn(api, "listLootBundles").mockResolvedValue([lootB, lootA]);
+    const user = userEvent.setup();
 
-    const { LootBundleBrowserPage } = await import('../../features/loot/LootBundleBrowserPage')
-    render(<LootBundleBrowserPage />)
+    const { LootBundleBrowserPage } = await import("../../features/loot/LootBundleBrowserPage");
+    render(<LootBundleBrowserPage />);
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /Dragon Hoard/ })).toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: /Dragon Hoard/ })).toBeInTheDocument(),
+    );
 
-    await user.click(screen.getByText('Goblin Stash'))
-    expect(screen.getByRole('heading', { name: /Goblin Stash/ })).toBeInTheDocument()
-  })
+    await user.click(screen.getByText("Goblin Stash"));
+    expect(screen.getByRole("heading", { name: /Goblin Stash/ })).toBeInTheDocument();
+  });
 
-  it('LootBundleBrowser: shows rich empty state when no bundles', async () => {
-    vi.spyOn(api, 'listLootBundles').mockResolvedValue([])
+  it("LootBundleBrowser: shows rich empty state when no bundles", async () => {
+    vi.spyOn(api, "listLootBundles").mockResolvedValue([]);
 
-    const { LootBundleBrowserPage } = await import('../../features/loot/LootBundleBrowserPage')
-    render(<LootBundleBrowserPage />)
+    const { LootBundleBrowserPage } = await import("../../features/loot/LootBundleBrowserPage");
+    render(<LootBundleBrowserPage />);
 
-    await waitFor(() => expect(screen.getByText(/Build the first reward/)).toBeInTheDocument())
-  })
-})
+    await waitFor(() => expect(screen.getByText(/Build the first reward/)).toBeInTheDocument());
+  });
+});
 
 /* ------------------------------------------------------------------ */
 /*  Action browsers — Encounters, Dungeons                            */
 /* ------------------------------------------------------------------ */
 
-describe('VW0 action browsers', () => {
+describe("VW0 action browsers", () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
-  })
+    vi.restoreAllMocks();
+  });
 
-  it('EncounterBrowser: lists encounters, first selected, detail shows creature list', async () => {
-    vi.spyOn(api, 'listEncounters').mockResolvedValue([encounterB, encounterA])
-    vi.spyOn(api, 'listMonsters').mockResolvedValue([])
-    const user = userEvent.setup()
+  it("EncounterBrowser: lists encounters, first selected, detail shows creature list", async () => {
+    vi.spyOn(api, "listEncounters").mockResolvedValue([encounterB, encounterA]);
+    vi.spyOn(api, "listMonsters").mockResolvedValue([]);
+    const user = userEvent.setup();
 
-    const { EncounterBrowserPage } = await import('../../features/encounters/EncounterBrowserPage')
+    const { EncounterBrowserPage } = await import("../../features/encounters/EncounterBrowserPage");
     render(
       <MemoryRouter>
         <EncounterBrowserPage />
       </MemoryRouter>,
-    )
+    );
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /Goblin Ambush/ })).toBeInTheDocument())
-    expect(screen.getByText('Goblin')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: /Goblin Ambush/ })).toBeInTheDocument(),
+    );
+    expect(screen.getByText("Goblin")).toBeInTheDocument();
 
-    await user.click(screen.getByText('Orc Warband'))
-    await waitFor(() => expect(screen.getByRole('heading', { name: /Orc Warband/ })).toBeInTheDocument())
-    expect(screen.getByText('No creatures in this encounter.')).toBeInTheDocument()
-  })
+    await user.click(screen.getByText("Orc Warband"));
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: /Orc Warband/ })).toBeInTheDocument(),
+    );
+    expect(screen.getByText("No creatures in this encounter.")).toBeInTheDocument();
+  });
 
-  it('EncounterBrowser: Run button navigates to runner route', async () => {
-    vi.spyOn(api, 'listEncounters').mockResolvedValue([encounterA])
-    vi.spyOn(api, 'listMonsters').mockResolvedValue([])
+  it("EncounterBrowser: Run button navigates to runner route", async () => {
+    vi.spyOn(api, "listEncounters").mockResolvedValue([encounterA]);
+    vi.spyOn(api, "listMonsters").mockResolvedValue([]);
 
-    const { EncounterBrowserPage } = await import('../../features/encounters/EncounterBrowserPage')
+    const { EncounterBrowserPage } = await import("../../features/encounters/EncounterBrowserPage");
     render(
-      <MemoryRouter initialEntries={['/encounters']}>
+      <MemoryRouter initialEntries={["/encounters"]}>
         <Routes>
           <Route path="/encounters" element={<EncounterBrowserPage />} />
           <Route path="/encounters/:id/run" element={<p>Runner page</p>} />
         </Routes>
       </MemoryRouter>,
-    )
+    );
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /Goblin Ambush/ })).toBeInTheDocument())
-    await userEvent.setup().click(screen.getByRole('button', { name: /Run/ }))
-    expect(screen.getByText('Runner page')).toBeInTheDocument()
-  })
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: /Goblin Ambush/ })).toBeInTheDocument(),
+    );
+    await userEvent.setup().click(screen.getByRole("button", { name: /Run/ }));
+    expect(screen.getByText("Runner page")).toBeInTheDocument();
+  });
 
-  it('DungeonBrowser: lists dungeons, first selected, detail shows room count', async () => {
-    vi.spyOn(api, 'listDungeons').mockResolvedValue([dungeonB, dungeonA])
+  it("DungeonBrowser: lists dungeons, first selected, detail shows room count", async () => {
+    vi.spyOn(api, "listDungeons").mockResolvedValue([dungeonB, dungeonA]);
 
-    const { DungeonBrowserPage } = await import('../../features/dungeons/DungeonBrowserPage')
+    const { DungeonBrowserPage } = await import("../../features/dungeons/DungeonBrowserPage");
     render(
       <MemoryRouter>
         <DungeonBrowserPage />
       </MemoryRouter>,
-    )
+    );
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /Cave of Wonders/ })).toBeInTheDocument())
-  })
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: /Cave of Wonders/ })).toBeInTheDocument(),
+    );
+  });
 
-  it('DungeonBrowser: create button navigates to editor route', async () => {
-    vi.spyOn(api, 'listDungeons').mockResolvedValue([])
-    vi.spyOn(api, 'createDungeon').mockResolvedValue({ id: 99, title: 'Untitled Dungeon', data: {} })
+  it("DungeonBrowser: create button navigates to editor route", async () => {
+    vi.spyOn(api, "listDungeons").mockResolvedValue([]);
+    vi.spyOn(api, "createDungeon").mockResolvedValue({
+      id: 99,
+      title: "Untitled Dungeon",
+      data: {},
+    });
 
-    const { DungeonBrowserPage } = await import('../../features/dungeons/DungeonBrowserPage')
+    const { DungeonBrowserPage } = await import("../../features/dungeons/DungeonBrowserPage");
     render(
-      <MemoryRouter initialEntries={['/dungeons']}>
+      <MemoryRouter initialEntries={["/dungeons"]}>
         <Routes>
           <Route path="/dungeons" element={<DungeonBrowserPage />} />
           <Route path="/dungeons/:id/edit" element={<p>Edit dungeon</p>} />
         </Routes>
       </MemoryRouter>,
-    )
+    );
 
-    await waitFor(() => expect(screen.getByRole('button', { name: /New Dungeon/ })).toBeInTheDocument())
-    await userEvent.setup().click(screen.getByRole('button', { name: /New Dungeon/ }))
-    await waitFor(() => expect(screen.getByText('Edit dungeon')).toBeInTheDocument())
-  })
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /New Dungeon/ })).toBeInTheDocument(),
+    );
+    await userEvent.setup().click(screen.getByRole("button", { name: /New Dungeon/ }));
+    await waitFor(() => expect(screen.getByText("Edit dungeon")).toBeInTheDocument());
+  });
 
-  it('DungeonBrowser: Enter button navigates to dungeon route', async () => {
-    vi.spyOn(api, 'listDungeons').mockResolvedValue([dungeonA])
+  it("DungeonBrowser: Enter button navigates to dungeon route", async () => {
+    vi.spyOn(api, "listDungeons").mockResolvedValue([dungeonA]);
 
-    const { DungeonBrowserPage } = await import('../../features/dungeons/DungeonBrowserPage')
+    const { DungeonBrowserPage } = await import("../../features/dungeons/DungeonBrowserPage");
     render(
-      <MemoryRouter initialEntries={['/dungeons']}>
+      <MemoryRouter initialEntries={["/dungeons"]}>
         <Routes>
           <Route path="/dungeons" element={<DungeonBrowserPage />} />
           <Route path="/dungeons/:id" element={<p>Dungeon viewer</p>} />
         </Routes>
       </MemoryRouter>,
-    )
+    );
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /Cave of Wonders/ })).toBeInTheDocument())
-    await userEvent.setup().click(screen.getByRole('button', { name: /Enter/ }))
-    expect(screen.getByText('Dungeon viewer')).toBeInTheDocument()
-  })
-})
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: /Cave of Wonders/ })).toBeInTheDocument(),
+    );
+    await userEvent.setup().click(screen.getByRole("button", { name: /Enter/ }));
+    expect(screen.getByText("Dungeon viewer")).toBeInTheDocument();
+  });
+});
 
 /* ------------------------------------------------------------------ */
 /*  BrowserLayout unit — the new shared component                     */
 /* ------------------------------------------------------------------ */
 
-describe('BrowserLayout', () => {
-  it('renders title, actions, list, and detail in correct regions', async () => {
-    const { BrowserLayout } = await import('../BrowserLayout')
+describe("BrowserLayout", () => {
+  it("renders title, actions, list, and detail in correct regions", async () => {
+    const { BrowserLayout } = await import("../BrowserLayout");
 
     render(
       <BrowserLayout
@@ -735,16 +789,16 @@ describe('BrowserLayout', () => {
         list={<p>List content</p>}
         detail={<p>Detail content</p>}
       />,
-    )
+    );
 
-    expect(screen.getByRole('heading', { name: 'Test Browser' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'New Item' })).toBeInTheDocument()
-    expect(screen.getByText('List content')).toBeInTheDocument()
-    expect(screen.getByText('Detail content')).toBeInTheDocument()
-  })
+    expect(screen.getByRole("heading", { name: "Test Browser" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New Item" })).toBeInTheDocument();
+    expect(screen.getByText("List content")).toBeInTheDocument();
+    expect(screen.getByText("Detail content")).toBeInTheDocument();
+  });
 
   it('renders error with role="alert" when error prop is provided', async () => {
-    const { BrowserLayout } = await import('../BrowserLayout')
+    const { BrowserLayout } = await import("../BrowserLayout");
 
     render(
       <BrowserLayout
@@ -753,28 +807,21 @@ describe('BrowserLayout', () => {
         list={<p>List</p>}
         detail={<p>Detail</p>}
       />,
-    )
+    );
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Something broke')
-  })
+    expect(screen.getByRole("alert")).toHaveTextContent("Something broke");
+  });
 
-  it('does not render error region when error is null', async () => {
-    const { BrowserLayout } = await import('../BrowserLayout')
+  it("does not render error region when error is null", async () => {
+    const { BrowserLayout } = await import("../BrowserLayout");
 
-    render(
-      <BrowserLayout
-        title="Test"
-        error={null}
-        list={<p>List</p>}
-        detail={<p>Detail</p>}
-      />,
-    )
+    render(<BrowserLayout title="Test" error={null} list={<p>List</p>} detail={<p>Detail</p>} />);
 
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-  })
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
 
-  it('renders editor and dialog when provided', async () => {
-    const { BrowserLayout } = await import('../BrowserLayout')
+  it("renders editor and dialog when provided", async () => {
+    const { BrowserLayout } = await import("../BrowserLayout");
 
     render(
       <BrowserLayout
@@ -784,14 +831,14 @@ describe('BrowserLayout', () => {
         editor={<div data-testid="editor">Editor modal</div>}
         dialog={<div data-testid="dialog">Confirm dialog</div>}
       />,
-    )
+    );
 
-    expect(screen.getByTestId('editor')).toBeInTheDocument()
-    expect(screen.getByTestId('dialog')).toBeInTheDocument()
-  })
+    expect(screen.getByTestId("editor")).toBeInTheDocument();
+    expect(screen.getByTestId("dialog")).toBeInTheDocument();
+  });
 
-  it('passes the shared list-collapse control through to SplitPane', async () => {
-    const { BrowserLayout } = await import('../BrowserLayout')
+  it("passes the shared list-collapse control through to SplitPane", async () => {
+    const { BrowserLayout } = await import("../BrowserLayout");
 
     render(
       <BrowserLayout
@@ -801,9 +848,8 @@ describe('BrowserLayout', () => {
         list={<p>List</p>}
         detail={<p>Detail</p>}
       />,
-    )
+    );
 
-    expect(screen.getByRole('button', { name: 'Collapse test list' })).toBeInTheDocument()
-  })
-})
-
+    expect(screen.getByRole("button", { name: "Collapse test list" })).toBeInTheDocument();
+  });
+});

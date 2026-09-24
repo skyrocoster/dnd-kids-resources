@@ -1,5 +1,6 @@
-from fastapi import Response
 import json
+
+from fastapi import Response
 
 from ..api_errors import ApiError, ApiRouter, error_responses
 from ..caching import cached_get
@@ -24,7 +25,12 @@ def get_dungeon_session_state(dungeon_id: int) -> dict:
         cursor.execute("SELECT data FROM map_session_state WHERE dungeon_id = ?", (dungeon_id,))
         row = cursor.fetchone()
         if not row:
-            raise ApiError(404, SessionStateError(code="session_state_not_found", message="Session state not found"))
+            raise ApiError(
+                404,
+                SessionStateError(
+                    code="session_state_not_found", message="Session state not found"
+                ),
+            )
         return {"data": parse_json_value(row["data"])}
 
 
@@ -90,7 +96,9 @@ def save_dungeon_session_state(dungeon_id: int, blob: MapSessionStateBlob) -> di
         cursor = conn.cursor()
         cursor.execute("SELECT 1 FROM dungeons WHERE id = ?", (dungeon_id,))
         if not cursor.fetchone():
-            raise ApiError(404, SessionStateError(code="dungeon_not_found", message="Dungeon not found"))
+            raise ApiError(
+                404, SessionStateError(code="dungeon_not_found", message="Dungeon not found")
+            )
         try:
             if normalized:
                 cursor.execute(
@@ -105,13 +113,18 @@ def save_dungeon_session_state(dungeon_id: int, blob: MapSessionStateBlob) -> di
             conn.rollback()
             raise ApiError(
                 400,
-                SessionStateError(code="failed_to_save_session_state", message=f"Failed to save session state: {str(e)}"),
+                SessionStateError(
+                    code="failed_to_save_session_state",
+                    message=f"Failed to save session state: {str(e)}",
+                ),
             )
 
     return {"data": normalized}
 
 
-@router.delete("/dungeons/{dungeon_id}/session-state", status_code=204, operation_id="resetDungeonSessionState")
+@router.delete(
+    "/dungeons/{dungeon_id}/session-state", status_code=204, operation_id="resetDungeonSessionState"
+)
 def reset_dungeon_session_state(dungeon_id: int) -> Response:
     """Reset a dungeon's toggle state to its authored defaults (removes the saved row, if any)"""
     with get_db() as conn:

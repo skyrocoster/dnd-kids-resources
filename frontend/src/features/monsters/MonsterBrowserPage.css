@@ -6,7 +6,11 @@
   overflow-y: auto;
   height: 100%;
   background:
-    radial-gradient(circle at top right, color-mix(in srgb, var(--md-tertiary) 8%, transparent), transparent 30%),
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--md-tertiary) 8%, transparent),
+      transparent 30%
+    ),
     var(--md-surface-2);
 }
 

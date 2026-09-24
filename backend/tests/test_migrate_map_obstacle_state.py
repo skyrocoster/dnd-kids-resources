@@ -2,22 +2,20 @@
 
 import json
 import sqlite3
-import tempfile
-from pathlib import Path
-from typing import Any, Dict
-
-import pytest
 
 # Import the migration module
 import sys
+import tempfile
+from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from backend.migrations.migrate_map_obstacle_state import (
-    reset_fixture_obstacles,
-    reset_layout_obstacles,
     migrate_database,
     migrate_seed_files,
-    DEFAULT_FIXTURE_STATE,
+    reset_fixture_obstacles,
+    reset_layout_obstacles,
 )
 
 
@@ -231,9 +229,7 @@ class TestResetLayoutObstacles:
         """Test that layout reset preserves rooms, floors, and features."""
         layout = {
             "meta": {"cellSizeFt": 5, "padding": {"top": 2, "right": 2, "bottom": 2, "left": 2}},
-            "rooms": [
-                {"room_id": 1, "title": "Throne Room", "origin": [0, 0], "cells": [[0, 0]]}
-            ],
+            "rooms": [{"room_id": 1, "title": "Throne Room", "origin": [0, 0], "cells": [[0, 0]]}],
             "floors": [{"z": 0, "title": "Ground Floor"}],
             "features": [{"feature_id": 1, "type": "statue"}],
             "doors": [{"door_id": 1, "cell": [0, 0], "side": "north", "breakDc": 20}],

@@ -1,7 +1,4 @@
-import pytest
-
 import backend.app.db as db_module
-
 from backend.tests.conftest import db_failure_conn
 
 

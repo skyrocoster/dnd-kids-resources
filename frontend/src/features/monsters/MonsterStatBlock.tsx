@@ -1,5 +1,5 @@
-import type { Feature, Monster } from '../../api/types'
-import { DiceText } from '../../components/DiceText'
+import type { Feature, Monster } from "../../api/types";
+import { DiceText } from "../../components/DiceText";
 import {
   describeFeature,
   formatAc,
@@ -13,21 +13,21 @@ import {
   getAbilityScores,
   formatModifier,
   identityLine,
-} from './monsterModel'
-import './MonsterStatBlock.css'
+} from "./monsterModel";
+import "./MonsterStatBlock.css";
 
 interface MonsterStatBlockProps {
-  monster: Monster
-  showIdentity?: boolean
-  showStrip?: boolean
+  monster: Monster;
+  showIdentity?: boolean;
+  showStrip?: boolean;
 }
 
 function RegionHeading({ children }: { children: string }) {
-  return <h4 className="monster-stat-block-region-heading">{children}</h4>
+  return <h4 className="monster-stat-block-region-heading">{children}</h4>;
 }
 
 function SectionHeading({ children }: { children: string }) {
-  return <h5 className="monster-stat-block-section-heading">{children}</h5>
+  return <h5 className="monster-stat-block-section-heading">{children}</h5>;
 }
 
 function FeatureBlock({ feature }: { feature: Feature }) {
@@ -35,25 +35,38 @@ function FeatureBlock({ feature }: { feature: Feature }) {
     <p className="monster-stat-block-feature">
       <DiceText text={describeFeature(feature)} />
     </p>
-  )
+  );
 }
 
-export function MonsterStatBlock({ monster, showIdentity = true, showStrip = true }: MonsterStatBlockProps) {
-  const abilityScores = getAbilityScores(monster)
-  const saves = formatSavingThrows(monster)
-  const skills = formatSkills(monster)
-  const identity = identityLine(monster)
-  const ac = formatAc(monster)
-  const hp = formatHp(monster)
-  const speed = formatSpeed(monster)
-  const senses = formatSenses(monster)
-  const resist = formatDamageList(monster.damage_resistances)
-  const immune = formatDamageList(monster.damage_immunities)
-  const vulnerable = formatDamageList(monster.damage_vulnerabilities)
-  const condImmune = monster.condition_immunities.length ? monster.condition_immunities.join(', ') : null
-  const cr = formatCr(monster)
-  const hasActions = monster.features.actions.length > 0 || monster.features.bonus_actions.length > 0 || monster.features.reactions.length > 0 || monster.features.legendary_actions.length > 0 || monster.features.mythic_actions.length > 0 || monster.features.spellcasting.length > 0
-  const hasLore = monster.features.traits.length > 0 || monster.languages.length > 0 || monster.audio_path
+export function MonsterStatBlock({
+  monster,
+  showIdentity = true,
+  showStrip = true,
+}: MonsterStatBlockProps) {
+  const abilityScores = getAbilityScores(monster);
+  const saves = formatSavingThrows(monster);
+  const skills = formatSkills(monster);
+  const identity = identityLine(monster);
+  const ac = formatAc(monster);
+  const hp = formatHp(monster);
+  const speed = formatSpeed(monster);
+  const senses = formatSenses(monster);
+  const resist = formatDamageList(monster.damage_resistances);
+  const immune = formatDamageList(monster.damage_immunities);
+  const vulnerable = formatDamageList(monster.damage_vulnerabilities);
+  const condImmune = monster.condition_immunities.length
+    ? monster.condition_immunities.join(", ")
+    : null;
+  const cr = formatCr(monster);
+  const hasActions =
+    monster.features.actions.length > 0 ||
+    monster.features.bonus_actions.length > 0 ||
+    monster.features.reactions.length > 0 ||
+    monster.features.legendary_actions.length > 0 ||
+    monster.features.mythic_actions.length > 0 ||
+    monster.features.spellcasting.length > 0;
+  const hasLore =
+    monster.features.traits.length > 0 || monster.languages.length > 0 || monster.audio_path;
 
   return (
     <article className="monster-stat-block" data-variant="monster" data-testid="monster-stat-block">
@@ -133,12 +146,18 @@ export function MonsterStatBlock({ monster, showIdentity = true, showStrip = tru
           <section className="monster-stat-block-region" data-region="abilities">
             <RegionHeading>Abilities</RegionHeading>
             {abilityScores.length > 0 && (
-              <div className="monster-stat-block-abilities" role="group" aria-label="Ability scores">
+              <div
+                className="monster-stat-block-abilities"
+                role="group"
+                aria-label="Ability scores"
+              >
                 {abilityScores.map((ability) => (
                   <div className="monster-stat-block-ability" key={ability.key}>
                     <span className="monster-stat-block-ability-key">{ability.key}</span>
                     <span className="monster-stat-block-ability-score">{ability.score}</span>
-                    <span className="monster-stat-block-ability-mod">{formatModifier(ability.modifier)}</span>
+                    <span className="monster-stat-block-ability-mod">
+                      {formatModifier(ability.modifier)}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -146,13 +165,13 @@ export function MonsterStatBlock({ monster, showIdentity = true, showStrip = tru
             {saves.length > 0 && (
               <p className="monster-stat-block-saves-skills">
                 <span className="monster-stat-block-section-label">Saving Throws </span>
-                {saves.map((entry) => `${entry.label} ${entry.value}`).join(', ')}
+                {saves.map((entry) => `${entry.label} ${entry.value}`).join(", ")}
               </p>
             )}
             {skills.length > 0 && (
               <p className="monster-stat-block-saves-skills">
                 <span className="monster-stat-block-section-label">Skills </span>
-                {skills.map((entry) => `${entry.label} ${entry.value}`).join(', ')}
+                {skills.map((entry) => `${entry.label} ${entry.value}`).join(", ")}
               </p>
             )}
           </section>
@@ -167,35 +186,69 @@ export function MonsterStatBlock({ monster, showIdentity = true, showStrip = tru
             {monster.features.spellcasting.map((block, i) => (
               <div key={i} className="monster-stat-block-spellcasting">
                 <SectionHeading>{block.name}</SectionHeading>
-                {block.description && <p><DiceText text={block.description} /></p>}
+                {block.description && (
+                  <p>
+                    <DiceText text={block.description} />
+                  </p>
+                )}
                 {block.groups.map((group, gi) => (
                   <p key={gi}>
                     <span className="monster-stat-block-spell-label">{group.label}: </span>
-                    {group.spells.map((s) => s.name).join(', ')}
+                    {group.spells.map((s) => s.name).join(", ")}
                   </p>
                 ))}
-                {block.footer && <p><DiceText text={block.footer} /></p>}
+                {block.footer && (
+                  <p>
+                    <DiceText text={block.footer} />
+                  </p>
+                )}
               </div>
             ))}
-            {monster.features.actions.length > 0 && <SectionHeading>Attacks & Actions</SectionHeading>}
-            {monster.features.reaction_intro && <p><DiceText text={monster.features.reaction_intro} /></p>}
-            {monster.features.actions.map((action, i) => <FeatureBlock key={`action-${i}`} feature={action} />)}
-            {monster.features.bonus_actions.length > 0 && <SectionHeading>Bonus Actions</SectionHeading>}
-            {monster.features.bonus_actions.map((action, i) => <FeatureBlock key={`bonus-${i}`} feature={action} />)}
+            {monster.features.actions.length > 0 && (
+              <SectionHeading>Attacks & Actions</SectionHeading>
+            )}
+            {monster.features.reaction_intro && (
+              <p>
+                <DiceText text={monster.features.reaction_intro} />
+              </p>
+            )}
+            {monster.features.actions.map((action, i) => (
+              <FeatureBlock key={`action-${i}`} feature={action} />
+            ))}
+            {monster.features.bonus_actions.length > 0 && (
+              <SectionHeading>Bonus Actions</SectionHeading>
+            )}
+            {monster.features.bonus_actions.map((action, i) => (
+              <FeatureBlock key={`bonus-${i}`} feature={action} />
+            ))}
             {monster.features.reactions.length > 0 && <SectionHeading>Reactions</SectionHeading>}
-            {monster.features.reactions.map((action, i) => <FeatureBlock key={`reaction-${i}`} feature={action} />)}
-            {(monster.features.legendary_actions.length > 0 || monster.features.legendary_intro || monster.features.legendary_actions_per_round != null) && (
+            {monster.features.reactions.map((action, i) => (
+              <FeatureBlock key={`reaction-${i}`} feature={action} />
+            ))}
+            {(monster.features.legendary_actions.length > 0 ||
+              monster.features.legendary_intro ||
+              monster.features.legendary_actions_per_round != null) && (
               <SectionHeading>Legendary Actions</SectionHeading>
             )}
-            {monster.features.legendary_intro && <p><DiceText text={monster.features.legendary_intro} /></p>}
+            {monster.features.legendary_intro && (
+              <p>
+                <DiceText text={monster.features.legendary_intro} />
+              </p>
+            )}
             {monster.features.legendary_actions_per_round != null && (
               <p className="monster-stat-block-legendary-note">
                 Legendary actions per round: {monster.features.legendary_actions_per_round}
               </p>
             )}
-            {monster.features.legendary_actions.map((action, i) => <FeatureBlock key={`legendary-${i}`} feature={action} />)}
-            {monster.features.mythic_actions.length > 0 && <SectionHeading>Mythic Actions</SectionHeading>}
-            {monster.features.mythic_actions.map((action, i) => <FeatureBlock key={`mythic-${i}`} feature={action} />)}
+            {monster.features.legendary_actions.map((action, i) => (
+              <FeatureBlock key={`legendary-${i}`} feature={action} />
+            ))}
+            {monster.features.mythic_actions.length > 0 && (
+              <SectionHeading>Mythic Actions</SectionHeading>
+            )}
+            {monster.features.mythic_actions.map((action, i) => (
+              <FeatureBlock key={`mythic-${i}`} feature={action} />
+            ))}
           </section>
         </>
       )}
@@ -205,11 +258,13 @@ export function MonsterStatBlock({ monster, showIdentity = true, showStrip = tru
           <div className="monster-stat-block-rule" aria-hidden />
           <section className="monster-stat-block-region" data-region="lore">
             <RegionHeading>Lore</RegionHeading>
-            {monster.features.traits.map((trait, i) => <FeatureBlock key={`trait-${i}`} feature={trait} />)}
+            {monster.features.traits.map((trait, i) => (
+              <FeatureBlock key={`trait-${i}`} feature={trait} />
+            ))}
             {monster.languages.length > 0 && (
               <p className="monster-stat-block-def-row">
                 <span className="monster-stat-block-def-label">Languages</span>
-                <span className="monster-stat-block-def-value">{monster.languages.join(', ')}</span>
+                <span className="monster-stat-block-def-value">{monster.languages.join(", ")}</span>
               </p>
             )}
             {monster.audio_path && (
@@ -219,5 +274,5 @@ export function MonsterStatBlock({ monster, showIdentity = true, showStrip = tru
         </>
       )}
     </article>
-  )
+  );
 }

@@ -53,7 +53,7 @@
   block-size: 6px;
   border-inline-end: 1.5px solid currentColor;
   border-block-end: 1.5px solid currentColor;
-  content: '';
+  content: "";
   transform: translateY(-1px) rotate(45deg);
 }
 

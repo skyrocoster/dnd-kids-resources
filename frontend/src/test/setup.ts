@@ -1,10 +1,10 @@
-import '@testing-library/jest-dom/vitest'
-import { cleanup } from '@testing-library/react'
-import { afterEach } from 'vitest'
+import "@testing-library/jest-dom/vitest";
+import { cleanup } from "@testing-library/react";
+import { afterEach } from "vitest";
 
 afterEach(() => {
-  cleanup()
-})
+  cleanup();
+});
 
 // Shared jsdom geometry shims for components that observe or measure layout.
 class ResizeObserverStub {
@@ -12,15 +12,15 @@ class ResizeObserverStub {
   unobserve() {}
   disconnect() {}
 }
-globalThis.ResizeObserver ??= ResizeObserverStub as unknown as typeof ResizeObserver
+globalThis.ResizeObserver ??= ResizeObserverStub as unknown as typeof ResizeObserver;
 
 class DOMMatrixReadOnlyStub {
   constructor(_transform?: string) {}
 }
-;(globalThis as unknown as { DOMMatrixReadOnly: typeof DOMMatrixReadOnlyStub }).DOMMatrixReadOnly ??=
-  DOMMatrixReadOnlyStub
+(globalThis as unknown as { DOMMatrixReadOnly: typeof DOMMatrixReadOnlyStub }).DOMMatrixReadOnly ??=
+  DOMMatrixReadOnlyStub;
 
 Object.defineProperties(HTMLElement.prototype, {
   offsetWidth: { configurable: true, get: () => 1000 },
   offsetHeight: { configurable: true, get: () => 800 },
-})
+});

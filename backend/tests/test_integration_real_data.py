@@ -50,7 +50,13 @@ LIST_ENDPOINTS = [
 ]
 
 # Collections that support ?limit=&offset= pagination and back a browser page.
-PAGINATED_COLLECTIONS = ["/api/spells", "/api/monsters", "/api/weapons", "/api/items", "/api/loot-bundles"]
+PAGINATED_COLLECTIONS = [
+    "/api/spells",
+    "/api/monsters",
+    "/api/weapons",
+    "/api/items",
+    "/api/loot-bundles",
+]
 
 # Collections with GET /{id} detail routes.
 DETAIL_COLLECTIONS = [
@@ -67,9 +73,18 @@ DETAIL_COLLECTIONS = [
 
 _SPELL_FIELDS = set(Spell.model_fields)
 _LEGACY_SPELL_FIELDS = {
-    "spell_name", "icon", "spell_text", "spell_alt_text", "casting_time",
-    "heal", "attack_type", "damage_at_higher_levels", "heal_at_spell_slots",
-    "action", "classes", "subclasses",
+    "spell_name",
+    "icon",
+    "spell_text",
+    "spell_alt_text",
+    "casting_time",
+    "heal",
+    "attack_type",
+    "damage_at_higher_levels",
+    "heal_at_spell_slots",
+    "action",
+    "classes",
+    "subclasses",
 }
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -100,16 +115,14 @@ def _assert_canonical_spell(spell: dict) -> None:
     assert not _LEGACY_SPELL_FIELDS.intersection(spell)
     Spell.model_validate(spell)
 
+
 def _assert_canonical_weapon(weapon: dict) -> None:
     assert set(weapon) == _WEAPON_FIELDS
     Weapon.model_validate(weapon)
 
+
 def _saving_throws(spell: dict) -> set[str]:
-    return {
-        save
-        for attack in spell.get("attacks", [])
-        for save in attack.get("saving_throws", [])
-    }
+    return {save for attack in spell.get("attacks", []) for save in attack.get("saving_throws", [])}
 
 
 def _describes_spell_attack(spell: dict) -> bool:
@@ -168,7 +181,11 @@ def test_seeded_spell_quick_rules_match_direct_structured_facts():
                 failures.append(f"{spell['name']}: missing spell attack bonus wording")
 
         damage = spell.get("damage", [])
-        if len(damage) == 1 and damage[0].get("formula") and (len(saves) == 1 or describes_spell_attack):
+        if (
+            len(damage) == 1
+            and damage[0].get("formula")
+            and (len(saves) == 1 or describes_spell_attack)
+        ):
             formula = damage[0]["formula"]
             if formula not in quick_rules:
                 failures.append(f"{spell['name']}: missing damage formula {formula}")
@@ -406,7 +423,8 @@ def test_real_monster_sqlite_projection_preserves_ids_indexes_and_json(real_db_p
     try:
         row = conn.execute(
             """
-            SELECT COUNT(*) AS total, COUNT(DISTINCT id) AS ids, MIN(id) AS min_id, MAX(id) AS max_id,
+            SELECT COUNT(*) AS total, COUNT(DISTINCT id) AS ids,
+                   MIN(id) AS min_id, MAX(id) AS max_id,
                    SUM(CASE WHEN cr_sort IS NOT NULL THEN 1 ELSE 0 END) AS sortable_crs
             FROM monsters
             """
@@ -423,7 +441,9 @@ def test_real_monster_sqlite_projection_preserves_ids_indexes_and_json(real_db_p
         assert "idx_monsters_cr" in indexes
         assert "idx_monsters_cr_sort" in indexes
 
-        wolf = conn.execute("SELECT id, ac, features, cr, cr_sort FROM monsters WHERE name = 'Wolf'").fetchone()
+        wolf = conn.execute(
+            "SELECT id, ac, features, cr, cr_sort FROM monsters WHERE name = 'Wolf'"
+        ).fetchone()
         assert wolf["id"] == 2600
         assert json.loads(wolf["ac"]) == {"value": 13, "note": "natural armour", "alternatives": []}
         features = json.loads(wolf["features"])
@@ -533,7 +553,7 @@ def test_detail_endpoints_serialize(real_client, base):
 
 
 def test_loom_tapestry_serializes_demo_fixture(real_client):
-    """The one-shot tapestry read serializes the frozen demo tapestry (6 threads / 8 sessions / 45 nodes, no edges).
+    """Serialize the frozen demo tapestry with 6 threads, 8 sessions, and 45 nodes.
 
     /api/loom/tapestry returns a dict, not a list, so it cannot join LIST_ENDPOINTS;
     it also has no GET-by-id detail route, so it cannot join DETAIL_COLLECTIONS.
@@ -563,7 +583,10 @@ def test_every_player_nested_endpoints_serialize(real_client):
     spellbook = real_client.get("/api/players/spellbook")
     assert spellbook.status_code == 200
     characters = spellbook.json()
-    assert [(character["id"], character["name"]) for character in characters] == [(2, "Lark"), (1, "Pip")]
+    assert [(character["id"], character["name"]) for character in characters] == [
+        (2, "Lark"),
+        (1, "Pip"),
+    ]
     assert all("weapons" not in character for character in characters)
     assert all("unassigned" not in character for character in characters)
     for character in characters:
@@ -640,6 +663,7 @@ def test_seeded_spell_reverse_player_list_serializes(real_client):
         return
 
     pytest.fail("No seeded player spell assignments to exercise reverse spell-player endpoint")
+
 
 def test_players_expose_class(real_client):
     """Real players must surface their class (regression: was silently dropped)."""

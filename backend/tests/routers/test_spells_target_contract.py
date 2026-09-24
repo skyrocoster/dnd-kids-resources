@@ -3,16 +3,15 @@
 import pytest
 
 from backend.app.schemas import (
+    PlayerSpellbookCharacter,
+    Spell,
     SpellAreaOfEffect,
     SpellAttack,
+    SpellCreate,
     SpellDamage,
     SpellHealing,
     SpellHigherLevels,
-    Spell,
-    SpellCreate,
-    PlayerSpellbookCharacter,
 )
-
 
 # ---------------------------------------------------------------------------
 # Canonical seed sample — mirrors the first record from seed_spells.json
@@ -32,8 +31,15 @@ _SAMPLE_CANONICAL = {
     "higher_levels": {
         "text": "When you cast this spell using a spell slot of 2nd level or higher...",
         "damage_by_slot": {
-            "1": "1d6", "2": "2d6", "3": "3d6", "4": "4d6",
-            "5": "5d6", "6": "6d6", "7": "7d6", "8": "8d6", "9": "9d6",
+            "1": "1d6",
+            "2": "2d6",
+            "3": "3d6",
+            "4": "4d6",
+            "5": "5d6",
+            "6": "6d6",
+            "7": "7d6",
+            "8": "8d6",
+            "9": "9d6",
         },
     },
     "casting_times": ["1 reaction"],
@@ -93,9 +99,12 @@ class TestNestedModelConstruction:
         hl = SpellHigherLevels()
         assert hl.text is None
         assert hl.damage_by_slot == {}
-        assert SpellHigherLevels(
-            text="Do more.", damage_by_slot={"1": "1d6", "2": "2d6"}
-        ).damage_by_slot["2"] == "2d6"
+        assert (
+            SpellHigherLevels(
+                text="Do more.", damage_by_slot={"1": "1d6", "2": "2d6"}
+            ).damage_by_slot["2"]
+            == "2d6"
+        )
 
     def test_attack_model(self):
         a = SpellAttack()
@@ -153,7 +162,9 @@ class TestSpellConstruction:
         assert spell.categories == ["Other"]
 
     def test_categories_normalize_dedupe_and_reject(self):
-        spell = SpellCreate(**{**_SAMPLE_CREATE, "categories": ["Other", "Damage", "Damage", "Heal"]})
+        spell = SpellCreate(
+            **{**_SAMPLE_CREATE, "categories": ["Other", "Damage", "Damage", "Heal"]}
+        )
         assert spell.categories == ["Damage", "Heal", "Other"]
         assert SpellCreate(**{**_SAMPLE_CREATE, "categories": []}).categories == ["Other"]
         with pytest.raises(Exception):

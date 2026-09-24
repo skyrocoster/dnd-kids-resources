@@ -1,71 +1,73 @@
-import { useId, useState } from 'react'
-import type { FormEvent } from 'react'
-import { createLoomNode, updateLoomNode } from '../../api/client'
-import type { LoomNode, LoomNodeInput, LoomNodeKind } from '../../api/types'
-import { Button } from '../../components/Button'
-import { Dialog } from '../../components/Dialog'
-import { SelectField } from '../../components/form/SelectField'
-import { TextField } from '../../components/form/TextField'
-import './LoomEditor.css'
+import { useId, useState } from "react";
+import type { FormEvent } from "react";
+import { createLoomNode, updateLoomNode } from "../../api/client";
+import type { LoomNode, LoomNodeInput, LoomNodeKind } from "../../api/types";
+import { Button } from "../../components/Button";
+import { Dialog } from "../../components/Dialog";
+import { SelectField } from "../../components/form/SelectField";
+import { TextField } from "../../components/form/TextField";
+import "./LoomEditor.css";
 
 interface LoomNodeEditorProps {
-  node?: LoomNode
-  initialKind?: LoomNodeKind
-  onClose: () => void
-  onSaved: (node: LoomNode) => void
+  node?: LoomNode;
+  initialKind?: LoomNodeKind;
+  onClose: () => void;
+  onSaved: (node: LoomNode) => void;
 }
 
 const KIND_OPTIONS = [
-  { value: 'session', label: 'Session' },
-  { value: 'beat', label: 'Story Beat' },
-]
+  { value: "session", label: "Session" },
+  { value: "beat", label: "Story Beat" },
+];
 
 function kindLabel(kind: LoomNodeKind): string {
   switch (kind) {
-    case 'start':
-      return 'Start'
-    case 'end':
-      return 'End'
-    case 'beat':
-      return 'Beat'
-    case 'session':
-      return 'Session'
+    case "start":
+      return "Start";
+    case "end":
+      return "End";
+    case "beat":
+      return "Beat";
+    case "session":
+      return "Session";
   }
 }
 
 export function LoomNodeEditor({ node, initialKind, onClose, onSaved }: LoomNodeEditorProps) {
-  const formId = useId()
-  const [kind, setKind] = useState<LoomNodeKind>(node?.kind ?? initialKind ?? 'session')
-  const [title, setTitle] = useState(node?.title ?? '')
-  const [body, setBody] = useState(node?.body ?? '')
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const formId = useId();
+  const [kind, setKind] = useState<LoomNodeKind>(node?.kind ?? initialKind ?? "session");
+  const [title, setTitle] = useState(node?.title ?? "");
+  const [body, setBody] = useState(node?.body ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const creatableKind = (kind === 'beat' || kind === 'session') ? kind : 'session'
-  const title_ = node ? `Edit ${kindLabel(node.kind)}: ${node.title}` : `Add New ${kindLabel(creatableKind)}`
+  const creatableKind = kind === "beat" || kind === "session" ? kind : "session";
+  const title_ = node
+    ? `Edit ${kindLabel(node.kind)}: ${node.title}`
+    : `Add New ${kindLabel(creatableKind)}`;
 
   const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault()
-    setSaving(true)
-    setError(null)
+    event.preventDefault();
+    setSaving(true);
+    setError(null);
     const payload: LoomNodeInput = {
       kind: creatableKind,
       title,
       body: body || null,
-    }
+    };
     try {
-      const saved = node ? await updateLoomNode(node.id, payload) : await createLoomNode(payload)
-      onSaved(saved)
+      const saved = node ? await updateLoomNode(node.id, payload) : await createLoomNode(payload);
+      onSaved(saved);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save the node.')
-      setSaving(false)
+      setError(err instanceof Error ? err.message : "Failed to save the node.");
+      setSaving(false);
     }
-  }
+  };
 
   // In the new model, kind is immutable on PUT except for the one
   // fulfil-undo transition (session→beat). For PB0, we keep kind editable
   // on create and locked on edit (matching the old UX contract).
-  const isEditing = !!node
+  const isEditing = !!node;
 
   return (
     <Dialog
@@ -80,7 +82,7 @@ export function LoomNodeEditor({ node, initialKind, onClose, onSaved }: LoomNode
             Cancel
           </Button>
           <Button type="submit" form={formId} loading={saving}>
-            {node ? 'Save Changes' : 'Create Node'}
+            {node ? "Save Changes" : "Create Node"}
           </Button>
         </>
       }
@@ -98,9 +100,14 @@ export function LoomNodeEditor({ node, initialKind, onClose, onSaved }: LoomNode
           disabled={isEditing}
           onChange={(e) => setKind(e.target.value as LoomNodeKind)}
         />
-        <TextField label="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+        <TextField
+          label="Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+        />
         <TextField label="Body" multiline value={body} onChange={(e) => setBody(e.target.value)} />
       </form>
     </Dialog>
-  )
+  );
 }

@@ -25,15 +25,15 @@
   color: var(--md-on-surface-variant);
 }
 
-.maplab-editor-save-status[data-status='saving'] {
+.maplab-editor-save-status[data-status="saving"] {
   color: var(--md-on-surface-variant);
 }
 
-.maplab-editor-save-status[data-status='saved'] {
+.maplab-editor-save-status[data-status="saved"] {
   color: var(--md-tertiary);
 }
 
-.maplab-editor-save-status[data-status='error'] {
+.maplab-editor-save-status[data-status="error"] {
   color: var(--md-error);
 }
 
@@ -145,18 +145,18 @@
   opacity: 0.42;
 }
 
-.maplab-room-brush-cell[data-brush-state='create'],
-.maplab-room-brush-cell[data-brush-state='paint'] {
+.maplab-room-brush-cell[data-brush-state="create"],
+.maplab-room-brush-cell[data-brush-state="paint"] {
   fill: var(--md-primary-container);
   stroke: var(--md-primary);
 }
 
-.maplab-room-brush-cell[data-brush-state='erase'] {
+.maplab-room-brush-cell[data-brush-state="erase"] {
   fill: var(--md-error-container);
   stroke: var(--md-error);
 }
 
-.maplab-room-brush-cell[data-brush-state='blocked'] {
+.maplab-room-brush-cell[data-brush-state="blocked"] {
   fill: var(--md-error-container);
   stroke: var(--md-error);
   stroke-dasharray: 5 4;
@@ -337,9 +337,9 @@
   flex-direction: column;
 }
 
-.maplab-room-content-checkbox-row {
-  display: inline-flex;
-  align-items: center;
+.maplab-room-content-checkbox-list .form-field-checkbox {
+  min-height: 0;
+  margin: 0;
   gap: var(--space-2);
   font-size: var(--type-body-sm-size);
   color: var(--md-on-surface);
@@ -398,7 +398,7 @@
   color: var(--md-on-surface);
 }
 
-.maplab-field-row input[type='checkbox'] {
+.maplab-field-row input[type="checkbox"] {
   min-width: var(--control-height);
   min-height: var(--control-height);
 }
@@ -443,8 +443,8 @@
   font: inherit;
 }
 
-.maplab-field-row input[type='text'],
-.maplab-field-row input[type='number'],
+.maplab-field-row input[type="text"],
+.maplab-field-row input[type="number"],
 .maplab-field-row select {
   min-height: var(--control-height-compact);
   padding: var(--space-1) var(--space-2);

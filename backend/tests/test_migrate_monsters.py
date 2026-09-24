@@ -140,9 +140,18 @@ def test_canonical_migrated_seed_matches_m1_corpus_contract():
     assert sum(len(monster["features"]["spellcasting"]) for monster in monsters) == 712
     assert sum(1 for monster in monsters if monster["features"]["reaction_intro"]) == 15
     assert sum(1 for monster in monsters if monster["features"]["legendary_intro"]) == 3
-    assert sum(1 for monster in monsters if monster["features"]["legendary_actions_per_round"] is not None) == 255
+    assert (
+        sum(
+            1
+            for monster in monsters
+            if monster["features"]["legendary_actions_per_round"] is not None
+        )
+        == 255
+    )
 
-    action_attacks = sum(1 for monster in monsters for feature in monster["features"]["actions"] if feature["attack"])
+    action_attacks = sum(
+        1 for monster in monsters for feature in monster["features"]["actions"] if feature["attack"]
+    )
     attack_damage = sum(
         len(feature["attack"]["damage"])
         for monster in monsters
@@ -172,13 +181,19 @@ def test_migrates_wolf_fixture_with_sparse_maps_text_cleanup_and_audio():
             {"name": "Keen Senses"},
             {
                 "name": "Keen Hearing and Smell",
-                "notes": ["The wolf has advantage on Wisdom ({@skill Perception}) checks that rely on hearing or smell."],
+                "notes": [
+                    "The wolf has advantage on Wisdom ({@skill Perception}) checks "
+                    "that rely on hearing or smell."
+                ],
             },
         ],
         action=[
             {
                 "name": "Bite",
-                "notes": ["If the target is a creature, it must succeed on a DC11 Strength saving throw or be knocked prone."],
+                "notes": [
+                    "If the target is a creature, it must succeed on a DC11 Strength "
+                    "saving throw or be knocked prone."
+                ],
                 "attack": {
                     "type": "melee",
                     "mod": 4,
@@ -206,12 +221,17 @@ def test_migrates_wolf_fixture_with_sparse_maps_text_cleanup_and_audio():
     assert migrated["skills"] == {"perception": 3, "stealth": 4}
     assert migrated["passive_perception"] == 13
     assert migrated["audio_path"] == "wolf.mp3"
-    assert migrated["features"]["traits"][0] == {"name": "Keen Senses", "description": None, "attack": None}
+    assert migrated["features"]["traits"][0] == {
+        "name": "Keen Senses",
+        "description": None,
+        "attack": None,
+    }
     assert migrated["features"]["traits"][1]["description"] == (
         "The wolf has advantage on Wisdom (Perception) checks that rely on hearing or smell."
     )
     assert migrated["features"]["actions"][0]["description"] == (
-        "If the target is a creature, it must succeed on a DC 11 Strength saving throw or be knocked prone."
+        "If the target is a creature, it must succeed on a DC 11 Strength "
+        "saving throw or be knocked prone."
     )
     assert migrated["features"]["actions"][0]["attack"] == {
         "kind": "melee_weapon",
@@ -255,7 +275,8 @@ def test_migrates_mage_fixture_with_alternative_ac_and_spell_labels():
                 "name": "Spellcasting",
                 "type": "spellcasting",
                 "headerEntries": [
-                    "The mage is a 9th-level spellcaster. Its spellcasting ability is Intelligence (spell save DC14, {@hit 6} to hit with spell attacks)."
+                    "The mage is a 9th-level spellcaster. Its spellcasting ability is "
+                    "Intelligence (spell save DC14, {@hit 6} to hit with spell attacks)."
                 ],
                 "spells": {
                     "0": {"spells": ["Fire Bolt", {"entry": "Light", "hidden": True}]},
@@ -270,7 +291,11 @@ def test_migrates_mage_fixture_with_alternative_ac_and_spell_labels():
 
     migrated = migrate_one(mage)
 
-    assert migrated["ac"] == {"value": 12, "note": None, "alternatives": [{"value": 15, "note": "with Mage armour"}]}
+    assert migrated["ac"] == {
+        "value": 12,
+        "note": None,
+        "alternatives": [{"value": 15, "note": "with Mage armour"}],
+    }
     assert migrated["saving_throws"] == {"int": 6, "wis": 4}
     assert migrated["skills"] == {"arcana": 6, "history": 6}
     assert migrated["features"]["actions"][0]["attack"]["kind"] == "ranged_weapon"
@@ -280,7 +305,10 @@ def test_migrates_mage_fixture_with_alternative_ac_and_spell_labels():
         "The mage is a 9th-level spellcaster. Its spellcasting ability is Intelligence "
         "(spell save DC 14, +6 to hit with spell attacks)."
     )
-    assert [group["label"] for group in spellcasting["groups"]] == ["Cantrips (at will)", "1st level (4 slots)"]
+    assert [group["label"] for group in spellcasting["groups"]] == [
+        "Cantrips (at will)",
+        "1st level (4 slots)",
+    ]
     assert spellcasting["groups"][0]["hidden"] is True
     assert spellcasting["groups"][0]["spells"][1] == {"name": "Light", "hidden": True}
     assert migrated["cr"] == "6"
@@ -314,11 +342,18 @@ def test_migrates_adult_red_dragon_fixture_with_defenses_and_legendary_actions()
             {
                 "name": "Fire Breath {@recharge 5}",
                 "notes": [
-                    "The dragon exhales fire in a 60-foot cone. Each creature in that area must make a DC21 Dexterity saving throw, taking 18d6 fire damage on a failed save."
+                    "The dragon exhales fire in a 60-foot cone. Each creature in that "
+                    "area must make a DC21 Dexterity saving throw, taking 18d6 fire "
+                    "damage on a failed save."
                 ],
             },
         ],
-        legendary=[{"name": "Detect", "entries": ["The dragon makes a Wisdom ({@skill Perception}) check."]}],
+        legendary=[
+            {
+                "name": "Detect",
+                "entries": ["The dragon makes a Wisdom ({@skill Perception}) check."],
+            }
+        ],
         cr=17,
     )
 
@@ -331,7 +366,9 @@ def test_migrates_adult_red_dragon_fixture_with_defenses_and_legendary_actions()
         {"mode": "climb", "feet": 40, "note": None, "hover": False},
         {"mode": "fly", "feet": 80, "note": None, "hover": False},
     ]
-    assert migrated["damage_immunities"] == [{"damage_type": "fire", "note": None, "conditional": False}]
+    assert migrated["damage_immunities"] == [
+        {"damage_type": "fire", "note": None, "conditional": False}
+    ]
     bite_damage = migrated["features"]["actions"][0]["attack"]["damage"]
     assert bite_damage == [
         {"formula": "2d10", "bonus": 8, "damage_types": ["piercing"]},
@@ -340,7 +377,11 @@ def test_migrates_adult_red_dragon_fixture_with_defenses_and_legendary_actions()
     assert migrated["features"]["actions"][1]["name"] == "Fire Breath (Recharge 5-6)"
     assert migrated["features"]["actions"][1]["description"].startswith("The dragon exhales fire")
     assert migrated["features"]["legendary_actions"] == [
-        {"name": "Detect", "description": "The dragon makes a Wisdom (Perception) check.", "attack": None}
+        {
+            "name": "Detect",
+            "description": "The dragon makes a Wisdom (Perception) check.",
+            "attack": None,
+        }
     ]
     assert migrated["features"]["legendary_actions_per_round"] == 3
 
@@ -357,7 +398,12 @@ def test_migrates_alternate_form_movement_and_conditional_defenses():
             },
         },
         resist=[
-            {"damage_type": "bludgeoning", "type": "resist", "note": "from non-magical attacks", "condition": True},
+            {
+                "damage_type": "bludgeoning",
+                "type": "resist",
+                "note": "from non-magical attacks",
+                "condition": True,
+            },
             {"type": "conditionImmune", "immune_type": "petrified"},
             {"type": "damageImmune", "damage_type": "poison"},
         ],
@@ -374,7 +420,9 @@ def test_migrates_alternate_form_movement_and_conditional_defenses():
     assert migrated["damage_resistances"] == [
         {"damage_type": "bludgeoning", "note": "from non-magical attacks", "conditional": True}
     ]
-    assert migrated["damage_immunities"] == [{"damage_type": "poison", "note": None, "conditional": False}]
+    assert migrated["damage_immunities"] == [
+        {"damage_type": "poison", "note": None, "conditional": False}
+    ]
     assert migrated["condition_immunities"] == ["petrified"]
     assert migrated["damage_vulnerabilities"] == [
         {"damage_type": "radiant", "note": "while cursed", "conditional": True},
@@ -383,7 +431,9 @@ def test_migrates_alternate_form_movement_and_conditional_defenses():
 
 
 def test_migrates_cr_context_explicit_xp_unknown_cr_and_determinism():
-    lair = base_monster(id=10, name="Lair", cr={"cr": "11", "lair": "12", "xp": 7200}, cr_details={"xp": 7200})
+    lair = base_monster(
+        id=10, name="Lair", cr={"cr": "11", "lair": "12", "xp": 7200}, cr_details={"xp": 7200}
+    )
     unknown = base_monster(id=11, name="Unknown CR", cr="Unknown")
 
     first = migrate_monsters.migrate([copy.deepcopy(lair), copy.deepcopy(unknown)])
@@ -399,20 +449,32 @@ def test_migrates_cr_context_explicit_xp_unknown_cr_and_determinism():
 
 
 def test_invalid_tag_audio_and_conflicting_xp_fail_with_monster_context():
-    bad_tag = base_monster(id=20, name="Bad Tag", action=[{"name": "Zap", "notes": ["{@unknown nope}"]}])
+    bad_tag = base_monster(
+        id=20, name="Bad Tag", action=[{"name": "Zap", "notes": ["{@unknown nope}"]}]
+    )
     bad_audio = base_monster(id=21, name="Bad Audio", soundClip={"path": "../bad.mp3"})
     bad_xp = base_monster(id=22, name="Bad XP", cr={"cr": "1", "xp": 200}, cr_details={"xp": 100})
 
-    with pytest.raises(migrate_monsters.MigrationError, match=r"monster 20 'Bad Tag'.*action\[0\].notes\[0\].*unknown markup"):
+    with pytest.raises(
+        migrate_monsters.MigrationError,
+        match=r"monster 20 'Bad Tag'.*action\[0\].notes\[0\].*unknown markup",
+    ):
         migrate_one(bad_tag)
-    with pytest.raises(migrate_monsters.MigrationError, match="monster 21 'Bad Audio'.*soundClip.path.*unsafe audio path"):
+    with pytest.raises(
+        migrate_monsters.MigrationError,
+        match="monster 21 'Bad Audio'.*soundClip.path.*unsafe audio path",
+    ):
         migrate_one(bad_audio)
-    with pytest.raises(migrate_monsters.MigrationError, match="monster 22 'Bad XP'.*cr_details.xp.*conflicts"):
+    with pytest.raises(
+        migrate_monsters.MigrationError, match="monster 22 'Bad XP'.*cr_details.xp.*conflicts"
+    ):
         migrate_one(bad_xp)
 
 
 def test_invalid_cr_fraction_denominator_fails():
     monster = base_monster(id=23, name="Bad CR", cr="1/0")
 
-    with pytest.raises(migrate_monsters.MigrationError, match="monster 23 'Bad CR'.*cr.*invalid CR fraction"):
+    with pytest.raises(
+        migrate_monsters.MigrationError, match="monster 23 'Bad CR'.*cr.*invalid CR fraction"
+    ):
         migrate_one(monster)

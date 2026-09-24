@@ -1,23 +1,34 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import './LoomCanvas.css'
-import './LoomEditor.css'
-import { useLoomTapestry } from './useLoomTapestry'
-import { bankedBeats, threadOrdered } from './loomGraph'
-import { beatReorderTarget } from './beatReorder'
-import { LoomSwimlanes } from './LoomSwimlanes'
-import { LoomRail } from './LoomRail'
-import { LoomNodeEditor } from './LoomNodeEditor'
-import { LoomThreadManager } from './LoomThreadManager'
-import { LoomBeatReorderDialog } from './LoomBeatReorderDialog'
-import { LoomErrorBanner } from './LoomErrorBanner'
-import { LoomSessionLogDialog } from './LoomSessionLogDialog'
-import { StatePanel } from '../../components/StatePanel'
-import { Button } from '../../components/Button'
-import { ConfirmDialog } from '../../components/ConfirmDialog'
-import { PageHeader } from '../../components/PageHeader'
-import { IconButton } from '../../components/IconButton'
-import { MapPinIcon, PlusIcon, WaypointsIcon, FocusIcon, MenuIcon, CloseIcon } from '../../components/icons'
-import { scrollToFellDivider, getFellDividerElement, getLoomGridElement } from './currentPositionScroll'
+import { useCallback, useEffect, useMemo, useState } from "react";
+import "./LoomCanvas.css";
+import "./LoomEditor.css";
+import { useLoomTapestry } from "./useLoomTapestry";
+import { bankedBeats, threadOrdered } from "./loomGraph";
+import { beatReorderTarget } from "./beatReorder";
+import { LoomSwimlanes } from "./LoomSwimlanes";
+import { LoomRail } from "./LoomRail";
+import { LoomNodeEditor } from "./LoomNodeEditor";
+import { LoomThreadManager } from "./LoomThreadManager";
+import { LoomBeatReorderDialog } from "./LoomBeatReorderDialog";
+import { LoomErrorBanner } from "./LoomErrorBanner";
+import { LoomSessionLogDialog } from "./LoomSessionLogDialog";
+import { StatePanel } from "../../components/StatePanel";
+import { Button } from "../../components/Button";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { PageHeader } from "../../components/PageHeader";
+import { IconButton } from "../../components/IconButton";
+import {
+  MapPinIcon,
+  PlusIcon,
+  WaypointsIcon,
+  FocusIcon,
+  MenuIcon,
+  CloseIcon,
+} from "../../components/icons";
+import {
+  scrollToFellDivider,
+  getFellDividerElement,
+  getLoomGridElement,
+} from "./currentPositionScroll";
 import {
   bankLoomNode,
   createLoomThread,
@@ -27,241 +38,263 @@ import {
   moveLoomThreadItem,
   reorderLoomThreadItem,
   updateLoomNode,
-} from '../../api/client'
-import type { LoomNode as LoomNodeType, LoomNodeKind } from '../../api/types'
+} from "../../api/client";
+import type { LoomNode as LoomNodeType, LoomNodeKind } from "../../api/types";
 
 function errorMessage(err: unknown, fallback: string): string {
-  return err instanceof Error ? err.message : fallback
+  return err instanceof Error ? err.message : fallback;
 }
 
 export function LoomPage() {
-  const { tapestry, reload } = useLoomTapestry()
+  const { tapestry, reload } = useLoomTapestry();
 
-  const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null)
-  const [selectedThreadId, setSelectedThreadId] = useState<number | null>(null)
-  const [reorderThreadId, setReorderThreadId] = useState<number | null>(null)
+  const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null);
+  const [selectedThreadId, setSelectedThreadId] = useState<number | null>(null);
+  const [reorderThreadId, setReorderThreadId] = useState<number | null>(null);
   const [nodeEditor, setNodeEditor] = useState<{
-    node?: LoomNodeType
-    initialKind?: LoomNodeKind
-    insertThreadId?: number
-    insertPosition?: number
-  } | null>(null)
-  const [threadManagerOpen, setThreadManagerOpen] = useState(false)
-  const [pendingDeleteNode, setPendingDeleteNode] = useState<LoomNodeType | null>(null)
-  const [deletingNode, setDeletingNode] = useState(false)
-  const [bannerError, setBannerError] = useState<string | null>(null)
-  const [sessionLogOpen, setSessionLogOpen] = useState(false)
-  const [dividerVisible, setDividerVisible] = useState(true)
-  const [placingNodeId, setPlacingNodeId] = useState<number | null>(null)
-  const [drawerOpen, setDrawerOpen] = useState(false)
+    node?: LoomNodeType;
+    initialKind?: LoomNodeKind;
+    insertThreadId?: number;
+    insertPosition?: number;
+  } | null>(null);
+  const [threadManagerOpen, setThreadManagerOpen] = useState(false);
+  const [pendingDeleteNode, setPendingDeleteNode] = useState<LoomNodeType | null>(null);
+  const [deletingNode, setDeletingNode] = useState(false);
+  const [bannerError, setBannerError] = useState<string | null>(null);
+  const [sessionLogOpen, setSessionLogOpen] = useState(false);
+  const [dividerVisible, setDividerVisible] = useState(true);
+  const [placingNodeId, setPlacingNodeId] = useState<number | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
-    if (placingNodeId == null) return
+    if (placingNodeId == null) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setPlacingNodeId(null)
+      if (e.key === "Escape") {
+        setPlacingNodeId(null);
       }
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [placingNodeId])
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [placingNodeId]);
 
   useEffect(() => {
-    if (!drawerOpen || placingNodeId != null) return
+    if (!drawerOpen || placingNodeId != null) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setDrawerOpen(false)
+      if (e.key === "Escape") {
+        setDrawerOpen(false);
       }
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [drawerOpen, placingNodeId])
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [drawerOpen, placingNodeId]);
 
-  const banked = useMemo(() => (tapestry.status === 'success' ? bankedBeats(tapestry.data) : []), [tapestry])
-  const threads = useMemo(() => (tapestry.status === 'success' ? tapestry.data.threads : []), [tapestry])
+  const banked = useMemo(
+    () => (tapestry.status === "success" ? bankedBeats(tapestry.data) : []),
+    [tapestry],
+  );
+  const threads = useMemo(
+    () => (tapestry.status === "success" ? tapestry.data.threads : []),
+    [tapestry],
+  );
 
   const selectedNode =
-    selectedNodeId != null && tapestry.status === 'success'
-      ? tapestry.data.nodes.find((n) => n.id === selectedNodeId) ?? null
-      : null
+    selectedNodeId != null && tapestry.status === "success"
+      ? (tapestry.data.nodes.find((n) => n.id === selectedNodeId) ?? null)
+      : null;
 
   const handleNodeClick = useCallback((nodeId: number) => {
-    setSelectedNodeId((prev) => prev === nodeId ? prev : nodeId)
-    setSelectedThreadId(null)
-  }, [])
+    setSelectedNodeId((prev) => (prev === nodeId ? prev : nodeId));
+    setSelectedThreadId(null);
+  }, []);
 
   const handlePaneClick = useCallback(() => {
-    setSelectedNodeId(null)
-    setSelectedThreadId(null)
-  }, [])
+    setSelectedNodeId(null);
+    setSelectedThreadId(null);
+  }, []);
 
   const handleSelectThread = useCallback((threadId: number) => {
-    setSelectedThreadId(threadId)
-    setSelectedNodeId(null)
-  }, [])
+    setSelectedThreadId(threadId);
+    setSelectedNodeId(null);
+  }, []);
 
   const handleEditThread = useCallback((_threadId: number) => {
-    setThreadManagerOpen(true)
-  }, [])
+    setThreadManagerOpen(true);
+  }, []);
 
   const handleSelectVaultNode = (node: LoomNodeType) => {
-    setSelectedNodeId(node.id)
-  }
+    setSelectedNodeId(node.id);
+  };
 
   const handleNodeSaved = async (savedNode?: LoomNodeType) => {
-    const editor = nodeEditor
-    setNodeEditor(null)
+    const editor = nodeEditor;
+    setNodeEditor(null);
     if (editor?.insertThreadId != null && editor.insertPosition != null && savedNode) {
       try {
         await insertLoomThreadItem(editor.insertThreadId, {
           node_id: savedNode.id,
           position: editor.insertPosition,
-        })
+        });
       } catch (err) {
-        setBannerError(errorMessage(err, 'Failed to insert node into thread.'))
+        setBannerError(errorMessage(err, "Failed to insert node into thread."));
       }
     }
-    reload()
-  }
+    reload();
+  };
 
   const runLifecycleCommand = async (command: () => Promise<unknown>, fallback: string) => {
     try {
-      await command()
-      reload()
+      await command();
+      reload();
     } catch (err) {
-      setBannerError(errorMessage(err, fallback))
+      setBannerError(errorMessage(err, fallback));
     }
-  }
+  };
 
-  const handleFulfilNode = (node: LoomNodeType) => void runLifecycleCommand(() => fulfilLoomNode(node.id), 'Failed to fulfil the beat.')
-  const handleBankNode = (node: LoomNodeType) => void runLifecycleCommand(() => bankLoomNode(node.id), 'Failed to bank the beat.')
-  const handleCardEditNode = useCallback((node: LoomNodeType) => setNodeEditor({ node }), [])
-  const handleCardDeleteNode = useCallback((node: LoomNodeType) => setPendingDeleteNode(node), [])
+  const handleFulfilNode = (node: LoomNodeType) =>
+    void runLifecycleCommand(() => fulfilLoomNode(node.id), "Failed to fulfil the beat.");
+  const handleBankNode = (node: LoomNodeType) =>
+    void runLifecycleCommand(() => bankLoomNode(node.id), "Failed to bank the beat.");
+  const handleCardEditNode = useCallback((node: LoomNodeType) => setNodeEditor({ node }), []);
+  const handleCardDeleteNode = useCallback((node: LoomNodeType) => setPendingDeleteNode(node), []);
   const handleBankNodeById = (nodeId: number) => {
-    if (tapestry.status !== 'success') return
-    const node = tapestry.data.nodes.find((n) => n.id === nodeId)
-    if (!node) return
-    handleBankNode(node)
-  }
+    if (tapestry.status !== "success") return;
+    const node = tapestry.data.nodes.find((n) => n.id === nodeId);
+    if (!node) return;
+    handleBankNode(node);
+  };
 
   const handleRestoreNode = (node: LoomNodeType, threadId: number) => {
-    if (tapestry.status !== 'success') return
-    const thread = tapestry.data.threads.find((t) => t.id === threadId)
-    if (!thread) return
-    const ordered = threadOrdered(thread, tapestry.data.nodes)
-    const bodyNodes = ordered.filter((n) => n.kind !== 'start' && n.kind !== 'end')
-    const position = bodyNodes.length > 0
-      ? Math.max(...bodyNodes.map((n) => n.position)) + 10
-      : 10
+    if (tapestry.status !== "success") return;
+    const thread = tapestry.data.threads.find((t) => t.id === threadId);
+    if (!thread) return;
+    const ordered = threadOrdered(thread, tapestry.data.nodes);
+    const bodyNodes = ordered.filter((n) => n.kind !== "start" && n.kind !== "end");
+    const position = bodyNodes.length > 0 ? Math.max(...bodyNodes.map((n) => n.position)) + 10 : 10;
     void runLifecycleCommand(
       () => insertLoomThreadItem(threadId, { node_id: node.id, position }),
-      'Failed to restore the beat.',
-    )
-  }
+      "Failed to restore the beat.",
+    );
+  };
 
   const handleGapClick = useCallback((threadId: number, position: number) => {
-    setNodeEditor({ initialKind: 'beat', insertThreadId: threadId, insertPosition: position })
-  }, [])
+    setNodeEditor({ initialKind: "beat", insertThreadId: threadId, insertPosition: position });
+  }, []);
 
-  const handleGapRestore = useCallback(
-    (nodeId: number, threadId: number, position: number) => {
-      setPlacingNodeId(null)
-      void runLifecycleCommand(
-        () => insertLoomThreadItem(threadId, { node_id: nodeId, position }),
-        'Failed to restore the beat.',
-      )
-    },
-    [],
-  )
+  const handleGapRestore = useCallback((nodeId: number, threadId: number, position: number) => {
+    setPlacingNodeId(null);
+    void runLifecycleCommand(
+      () => insertLoomThreadItem(threadId, { node_id: nodeId, position }),
+      "Failed to restore the beat.",
+    );
+  }, []);
 
   const handleActivateBankedNode = useCallback((node: LoomNodeType) => {
-    setPlacingNodeId(node.id)
-    setSelectedNodeId(node.id)
-    setSelectedThreadId(null)
-  }, [])
+    setPlacingNodeId(node.id);
+    setSelectedNodeId(node.id);
+    setSelectedThreadId(null);
+  }, []);
 
   const handleReorder = useCallback(
     (threadId: number, _nodeId: number, fromBodyIndex: number, toBodyIndex: number) => {
-      if (tapestry.status !== 'success') return
-      const thread = tapestry.data.threads.find((item) => item.id === threadId)
-      if (!thread) return
-      const allNodes = tapestry.data.nodes
-      const ordered = threadOrdered(thread, allNodes)
-      const bodyNodes = ordered.filter((n) => n.kind !== 'start' && n.kind !== 'end')
-      const beats = bodyNodes.filter((n) => n.kind === 'beat')
+      if (tapestry.status !== "success") return;
+      const thread = tapestry.data.threads.find((item) => item.id === threadId);
+      if (!thread) return;
+      const allNodes = tapestry.data.nodes;
+      const ordered = threadOrdered(thread, allNodes);
+      const bodyNodes = ordered.filter((n) => n.kind !== "start" && n.kind !== "end");
+      const beats = bodyNodes.filter((n) => n.kind === "beat");
       const beatItems = beats.map((n) => ({
         nodeId: n.id,
         position: n.position,
-      }))
-      const fromBeatIndex = bodyNodes.slice(0, fromBodyIndex).filter((n) => n.kind === 'beat').length
-      const rawToBeatIndex = bodyNodes.slice(0, toBodyIndex).filter((n) => n.kind === 'beat').length
-      const toBeatIndex = rawToBeatIndex > fromBeatIndex ? rawToBeatIndex - 1 : rawToBeatIndex
-      const target = beatReorderTarget(beatItems, fromBeatIndex, toBeatIndex)
-      if (!target) return
+      }));
+      const fromBeatIndex = bodyNodes
+        .slice(0, fromBodyIndex)
+        .filter((n) => n.kind === "beat").length;
+      const rawToBeatIndex = bodyNodes
+        .slice(0, toBodyIndex)
+        .filter((n) => n.kind === "beat").length;
+      const toBeatIndex = rawToBeatIndex > fromBeatIndex ? rawToBeatIndex - 1 : rawToBeatIndex;
+      const target = beatReorderTarget(beatItems, fromBeatIndex, toBeatIndex);
+      if (!target) return;
       void runLifecycleCommand(
         () => reorderLoomThreadItem(threadId, target.nodeId, { position: target.position }),
-        'Failed to reorder the beat.',
-      )
+        "Failed to reorder the beat.",
+      );
     },
     [tapestry],
-  )
+  );
 
   const handleCrossLaneDrop = useCallback(
-    (nodeId: number, sourceThreadId: number, targetThreadId: number, position: number, _nodeKind: 'beat' | 'session') => {
-      if (tapestry.status !== 'success') return
-      const node = tapestry.data.nodes.find((n) => n.id === nodeId)
-      if (!node) return
+    (
+      nodeId: number,
+      sourceThreadId: number,
+      targetThreadId: number,
+      position: number,
+      _nodeKind: "beat" | "session",
+    ) => {
+      if (tapestry.status !== "success") return;
+      const node = tapestry.data.nodes.find((n) => n.id === nodeId);
+      if (!node) return;
       void runLifecycleCommand(
-        () => moveLoomThreadItem(sourceThreadId, nodeId, { target_thread_id: targetThreadId, position }),
-        'Failed to move the node.',
-      )
+        () =>
+          moveLoomThreadItem(sourceThreadId, nodeId, {
+            target_thread_id: targetThreadId,
+            position,
+          }),
+        "Failed to move the node.",
+      );
     },
     [tapestry],
-  )
+  );
 
   const handleReplaceNode = (node: LoomNodeType) => {
-    if (node.thread_id == null) return
+    if (node.thread_id == null) return;
     void runLifecycleCommand(async () => {
-      await bankLoomNode(node.id)
-      setSelectedNodeId(null)
-      setNodeEditor({ initialKind: 'beat', insertPosition: node.position })
-    }, 'Failed to replace the beat.')
-  }
+      await bankLoomNode(node.id);
+      setSelectedNodeId(null);
+      setNodeEditor({ initialKind: "beat", insertPosition: node.position });
+    }, "Failed to replace the beat.");
+  };
 
   const handleSpawnThread = (node: LoomNodeType) =>
     void runLifecycleCommand(
       () => createLoomThread({ name: `${node.title} Thread`, origin_node_id: node.id }),
-      'Failed to spawn a thread from the session.',
-    )
+      "Failed to spawn a thread from the session.",
+    );
 
   const handleUndoFulfil = (node: LoomNodeType) =>
     void runLifecycleCommand(
-      () => updateLoomNode(node.id, { kind: 'beat', title: node.fulfilled_planned_title ?? node.title, body: node.body ?? undefined }),
-      'Failed to undo fulfilment.',
-    )
+      () =>
+        updateLoomNode(node.id, {
+          kind: "beat",
+          title: node.fulfilled_planned_title ?? node.title,
+          body: node.body ?? undefined,
+        }),
+      "Failed to undo fulfilment.",
+    );
 
   const handleJumpToCurrent = () => {
-    const grid = getLoomGridElement()
-    const divider = getFellDividerElement()
+    const grid = getLoomGridElement();
+    const divider = getFellDividerElement();
     if (grid && divider) {
-      scrollToFellDivider(grid, divider)
+      scrollToFellDivider(grid, divider);
     }
-  }
+  };
 
   const handleConfirmDeleteNode = async () => {
-    if (!pendingDeleteNode) return
-    setDeletingNode(true)
+    if (!pendingDeleteNode) return;
+    setDeletingNode(true);
     try {
-      await deleteLoomNode(pendingDeleteNode.id)
-      setPendingDeleteNode(null)
-      setSelectedNodeId(null)
-      reload()
+      await deleteLoomNode(pendingDeleteNode.id);
+      setPendingDeleteNode(null);
+      setSelectedNodeId(null);
+      reload();
     } catch (err) {
-      setBannerError(errorMessage(err, 'Failed to delete the node.'))
+      setBannerError(errorMessage(err, "Failed to delete the node."));
     } finally {
-      setDeletingNode(false)
+      setDeletingNode(false);
     }
-  }
+  };
 
   const commandBar = (
     <div className="loom-command-bar">
@@ -269,10 +302,7 @@ export function LoomPage() {
         <PlusIcon aria-hidden="true" size={16} />
         <span>Advance Campaign</span>
       </Button>
-      <Button
-        variant="secondary"
-        onClick={() => setNodeEditor({ initialKind: 'beat' })}
-      >
+      <Button variant="secondary" onClick={() => setNodeEditor({ initialKind: "beat" })}>
         <MapPinIcon aria-hidden="true" size={16} />
         <span>Add Beat</span>
       </Button>
@@ -281,35 +311,38 @@ export function LoomPage() {
         <span>Manage Threads</span>
       </Button>
       {!dividerVisible && (
-        <IconButton
-          label="Jump to current"
-          onClick={handleJumpToCurrent}
-        >
+        <IconButton label="Jump to current" onClick={handleJumpToCurrent}>
           <FocusIcon size={24} aria-hidden="true" />
         </IconButton>
       )}
       <span className="loom-inspector-toggle">
-        <IconButton label="Inspector" onClick={() => setDrawerOpen((v) => !v)} aria-expanded={drawerOpen}>
+        <IconButton
+          label="Inspector"
+          onClick={() => setDrawerOpen((v) => !v)}
+          aria-expanded={drawerOpen}
+        >
           <MenuIcon size={24} aria-hidden="true" />
         </IconButton>
       </span>
     </div>
-  )
+  );
 
-  const pageHeader = (
-    <PageHeader title="The Loom" actions={commandBar} />
-  )
+  const pageHeader = <PageHeader title="The Loom" actions={commandBar} />;
 
-  if (tapestry.status === 'loading' || tapestry.status === 'idle') {
+  if (tapestry.status === "loading" || tapestry.status === "idle") {
     return (
       <div className="loom-route">
         {pageHeader}
-        <StatePanel status="loading" title="Loading the tapestry" message="Fetching threads and nodes…" />
+        <StatePanel
+          status="loading"
+          title="Loading the tapestry"
+          message="Fetching threads and nodes…"
+        />
       </div>
-    )
+    );
   }
 
-  if (tapestry.status === 'error') {
+  if (tapestry.status === "error") {
     return (
       <div className="loom-route">
         {pageHeader}
@@ -317,10 +350,14 @@ export function LoomPage() {
           status="error"
           title="The Loom couldn't load"
           message={tapestry.error}
-          action={<Button type="button" onClick={reload}>Retry</Button>}
+          action={
+            <Button type="button" onClick={reload}>
+              Retry
+            </Button>
+          }
         />
       </div>
-    )
+    );
   }
 
   if (tapestry.data.nodes.length === 0 && tapestry.data.threads.length === 0) {
@@ -334,10 +371,14 @@ export function LoomPage() {
           action={<Button onClick={() => setThreadManagerOpen(true)}>Create Thread</Button>}
         />
         {threadManagerOpen && (
-          <LoomThreadManager threads={[]} onClose={() => setThreadManagerOpen(false)} onChanged={reload} />
+          <LoomThreadManager
+            threads={[]}
+            onClose={() => setThreadManagerOpen(false)}
+            onChanged={reload}
+          />
         )}
       </div>
-    )
+    );
   }
 
   return (
@@ -345,10 +386,12 @@ export function LoomPage() {
       {pageHeader}
       <div className="loom-page" onClick={handlePaneClick}>
         <div className="loom-canvas-column">
-          {bannerError && <LoomErrorBanner message={bannerError} onDismiss={() => setBannerError(null)} />}
+          {bannerError && (
+            <LoomErrorBanner message={bannerError} onDismiss={() => setBannerError(null)} />
+          )}
           <LoomSwimlanes
             threads={threads}
-            nodes={tapestry.status === 'success' ? tapestry.data.nodes : []}
+            nodes={tapestry.status === "success" ? tapestry.data.nodes : []}
             sessions={tapestry.data.sessions}
             selectedNodeId={selectedNodeId}
             onSelectNode={handleNodeClick}
@@ -366,7 +409,7 @@ export function LoomPage() {
           />
         </div>
         <div
-          className={`loom-inspector-drawer${drawerOpen ? ' loom-inspector-drawer--open' : ''}`}
+          className={`loom-inspector-drawer${drawerOpen ? " loom-inspector-drawer--open" : ""}`}
           onClick={() => drawerOpen && setDrawerOpen(false)}
         >
           <div className="loom-inspector-drawer-panel" onClick={(e) => e.stopPropagation()}>
@@ -384,12 +427,12 @@ export function LoomPage() {
               onSelectThread={handleSelectThread}
               onEditThread={handleEditThread}
               onEdit={() => {
-                if (!selectedNode) return
-                setNodeEditor({ node: selectedNode })
+                if (!selectedNode) return;
+                setNodeEditor({ node: selectedNode });
               }}
               onDeleteNode={() => {
-                if (!selectedNode) return
-                setPendingDeleteNode(selectedNode)
+                if (!selectedNode) return;
+                setPendingDeleteNode(selectedNode);
               }}
               onFulfilNode={handleFulfilNode}
               onBankNode={handleBankNode}
@@ -420,30 +463,39 @@ export function LoomPage() {
       )}
 
       {threadManagerOpen && (
-        <LoomThreadManager threads={threads} onClose={() => setThreadManagerOpen(false)} onChanged={reload} />
+        <LoomThreadManager
+          threads={threads}
+          onClose={() => setThreadManagerOpen(false)}
+          onChanged={reload}
+        />
       )}
 
-      {sessionLogOpen && tapestry.status === 'success' && (
+      {sessionLogOpen && tapestry.status === "success" && (
         <LoomSessionLogDialog
           tapestry={tapestry.data}
           onClose={() => setSessionLogOpen(false)}
-          onLogged={() => { setSessionLogOpen(false); reload() }}
+          onLogged={() => {
+            setSessionLogOpen(false);
+            reload();
+          }}
           onError={(msg) => setBannerError(msg)}
         />
       )}
 
-      {reorderThreadId != null && tapestry.status === 'success' && (() => {
-        const thread = tapestry.data.threads.find((item) => item.id === reorderThreadId)
-        return thread ? (
-          <LoomBeatReorderDialog
-            thread={thread}
-            nodes={tapestry.data.nodes}
-            onReordered={reload}
-            onError={(msg) => setBannerError(msg)}
-            onClose={() => setReorderThreadId(null)}
-          />
-        ) : null
-      })()}
+      {reorderThreadId != null &&
+        tapestry.status === "success" &&
+        (() => {
+          const thread = tapestry.data.threads.find((item) => item.id === reorderThreadId);
+          return thread ? (
+            <LoomBeatReorderDialog
+              thread={thread}
+              nodes={tapestry.data.nodes}
+              onReordered={reload}
+              onError={(msg) => setBannerError(msg)}
+              onClose={() => setReorderThreadId(null)}
+            />
+          ) : null;
+        })()}
 
       {pendingDeleteNode && (
         <ConfirmDialog
@@ -454,5 +506,5 @@ export function LoomPage() {
         />
       )}
     </div>
-  )
+  );
 }

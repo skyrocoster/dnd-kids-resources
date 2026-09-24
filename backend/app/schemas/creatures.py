@@ -7,15 +7,15 @@ from typing import Any, Dict, List, Optional
 from pydantic import Field, field_validator
 
 from .common import (
+    WINDOWS_RESERVED_AUDIO_STEMS,
     AbilityName,
     AbilityScoreValue,
-    AudioFileName,
     AttackKind,
+    AudioFileName,
     CreatureSize,
     MovementMode,
     NonEmptyString,
     StrictModel,
-    WINDOWS_RESERVED_AUDIO_STEMS,
 )
 
 

@@ -1,20 +1,20 @@
-import type { Player } from '../../api/types'
-import { formatMovementSpeeds } from '../npcs/npcModel'
-import { hasCombatStats, hasStatblock, playerToMonsterView } from './playerModel'
-import { MonsterStatBlock } from '../monsters/MonsterStatBlock'
-import { Disclosure } from '../../components/Disclosure'
-import './PlayerCombatSummary.css'
+import type { Player } from "../../api/types";
+import { formatMovementSpeeds } from "../npcs/npcModel";
+import { hasCombatStats, hasStatblock, playerToMonsterView } from "./playerModel";
+import { MonsterStatBlock } from "../monsters/MonsterStatBlock";
+import { Disclosure } from "../../components/Disclosure";
+import "./PlayerCombatSummary.css";
 
 interface PlayerCombatSummaryProps {
-  player: Player
+  player: Player;
 }
 
 export function PlayerCombatSummary({ player }: PlayerCombatSummaryProps) {
-  const speed = formatMovementSpeeds(player.speed)
-  const showStatStrip = hasCombatStats(player)
-  const showMonsterBlock = hasStatblock(player)
+  const speed = formatMovementSpeeds(player.speed);
+  const showStatStrip = hasCombatStats(player);
+  const showMonsterBlock = hasStatblock(player);
 
-  if (!showStatStrip && !showMonsterBlock) return null
+  if (!showStatStrip && !showMonsterBlock) return null;
 
   return (
     <div>
@@ -48,14 +48,18 @@ export function PlayerCombatSummary({ player }: PlayerCombatSummaryProps) {
       )}
 
       {showMonsterBlock && (
-        <Disclosure className="player-combat-summary-disclosure" summary="Full Profile" defaultOpen={false}>
-            <MonsterStatBlock
-              monster={playerToMonsterView(player)}
-              showIdentity={false}
-              showStrip={false}
-            />
+        <Disclosure
+          className="player-combat-summary-disclosure"
+          summary="Full Profile"
+          defaultOpen={false}
+        >
+          <MonsterStatBlock
+            monster={playerToMonsterView(player)}
+            showIdentity={false}
+            showStrip={false}
+          />
         </Disclosure>
       )}
     </div>
-  )
+  );
 }

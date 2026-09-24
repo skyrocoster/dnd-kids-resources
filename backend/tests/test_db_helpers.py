@@ -5,20 +5,19 @@ These are the functions every router leans on, including the canonical
 pure functions, so they're tested directly rather than through an endpoint.
 """
 
+import sqlite3
 from pathlib import Path
 
-import sqlite3
-
 import pytest
-import backend.app.db as _db_mod
 
+import backend.app.db as _db_mod
 from backend.app.db import (
     _get_db_path,
     dict_from_row,
     get_conn,
     get_db,
-    parse_json_value,
     parse_json_list,
+    parse_json_value,
     parse_spell_row,
 )
 

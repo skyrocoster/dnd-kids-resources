@@ -1,14 +1,23 @@
-import { PropMarker } from './PropMarker'
-import { absoluteCells, doorWallSegment, doorSwingGeometry, nonDoorWallSegments, roomLabelAnchor, type MapDoor, type MapFeature, type MapProp, type MapRoom } from '../../../model/maplabModel'
+import { PropMarker } from "./PropMarker";
+import {
+  absoluteCells,
+  doorWallSegment,
+  doorSwingGeometry,
+  nonDoorWallSegments,
+  roomLabelAnchor,
+  type MapDoor,
+  type MapFeature,
+  type MapProp,
+  type MapRoom,
+} from "../../../model/maplabModel";
 
 interface GhostFloorLayerProps {
-  rooms: MapRoom[]
-  doors: MapDoor[]
-  props: MapProp[]
-  features?: MapFeature[]
-  cellSize: number
+  rooms: MapRoom[];
+  doors: MapDoor[];
+  props: MapProp[];
+  features?: MapFeature[];
+  cellSize: number;
 }
-
 
 /** Presentational layer for ghosted (non-interactive) lower-floor objects when the editor displays
  * the floor below the active one for alignment reference. Read-only glyphs only — no `role`,
@@ -30,7 +39,7 @@ export function GhostFloorLayer({ rooms, doors, props, features, cellSize }: Gho
             />
           ))}
           {nonDoorWallSegments(room, doors).map((edge) => {
-            const segment = doorWallSegment(edge, cellSize)
+            const segment = doorWallSegment(edge, cellSize);
             return (
               <line
                 key={`${edge.cell[0]}-${edge.cell[1]}-${edge.side}`}
@@ -40,34 +49,44 @@ export function GhostFloorLayer({ rooms, doors, props, features, cellSize }: Gho
                 x2={segment.x2}
                 y2={segment.y2}
               />
-            )
+            );
           })}
           {(() => {
-            const anchor = roomLabelAnchor(room, cellSize)
+            const anchor = roomLabelAnchor(room, cellSize);
             return (
               <text className="maplab-ghost-room-title" x={anchor.x} y={anchor.y}>
                 {room.title ?? `Room ${room.room_id}`}
               </text>
-            )
+            );
           })()}
         </g>
       ))}
 
       {doors.map((door) => {
-        const swing = doorSwingGeometry(door, cellSize)
+        const swing = doorSwingGeometry(door, cellSize);
         return (
           <g key={door.door_id} className="maplab-ghost-door">
-            <line className="maplab-ghost-door-leaf" x1={swing.hinge.x} y1={swing.hinge.y} x2={swing.leafTip.x} y2={swing.leafTip.y} />
+            <line
+              className="maplab-ghost-door-leaf"
+              x1={swing.hinge.x}
+              y1={swing.hinge.y}
+              x2={swing.leafTip.x}
+              y2={swing.leafTip.y}
+            />
             <path
               className="maplab-ghost-door-swing"
               d={`M ${swing.leafTip.x} ${swing.leafTip.y} A ${swing.radius} ${swing.radius} 0 0 ${swing.sweepFlag} ${swing.farJamb.x} ${swing.farJamb.y}`}
             />
           </g>
-        )
+        );
       })}
 
       {features?.map((feature) => (
-        <g key={feature.feature_id} className="maplab-ghost-feature" data-feature-kind={feature.kind}>
+        <g
+          key={feature.feature_id}
+          className="maplab-ghost-feature"
+          data-feature-kind={feature.kind}
+        >
           {feature.cells.map(([x, y]) => (
             <rect
               key={`${x}-${y}`}
@@ -76,7 +95,9 @@ export function GhostFloorLayer({ rooms, doors, props, features, cellSize }: Gho
               y={y * cellSize}
               width={cellSize}
               height={cellSize}
-              fill={feature.kind === 'river' ? 'var(--feature-river-fill)' : 'var(--feature-trees-fill)'}
+              fill={
+                feature.kind === "river" ? "var(--feature-river-fill)" : "var(--feature-trees-fill)"
+              }
             />
           ))}
         </g>
@@ -86,5 +107,5 @@ export function GhostFloorLayer({ rooms, doors, props, features, cellSize }: Gho
         <PropMarker key={prop.prop_id} prop={prop} cellSize={cellSize} interactive={false} />
       ))}
     </g>
-  )
+  );
 }

@@ -40,7 +40,11 @@
   border-radius: 1rem;
   padding: 1.1rem 1.25rem 1.25rem;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--md-tertiary) 5%, transparent), transparent 6rem),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--md-tertiary) 5%, transparent),
+      transparent 6rem
+    ),
     var(--md-surface-1);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--md-on-tertiary) 4%, transparent);
 }
@@ -83,7 +87,7 @@
   cursor: pointer;
 }
 
-.monster-editor-delete {
+.monster-editor-actions .btn--danger {
   background: var(--md-error-container);
   color: var(--md-on-error-container);
   border: none;
@@ -95,12 +99,17 @@
   margin-right: auto;
 }
 
-.monster-editor-delete:disabled {
+.monster-editor-actions .btn--danger:hover:not(:disabled) {
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+}
+
+.monster-editor-actions .btn--danger:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.monster-editor-save {
+.monster-editor-actions .btn--primary {
   background: var(--md-tertiary);
   color: var(--md-on-tertiary);
   border: none;
@@ -111,7 +120,12 @@
   font-weight: var(--type-label-weight);
 }
 
-.monster-editor-save:disabled {
+.monster-editor-actions .btn--primary:hover:not(:disabled) {
+  background: var(--md-tertiary);
+  color: var(--md-on-tertiary);
+}
+
+.monster-editor-actions .btn--primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -133,7 +147,7 @@
     justify-content: stretch;
   }
 
-  .monster-editor-delete {
+  .monster-editor-actions .btn--danger {
     margin-right: 0;
   }
 

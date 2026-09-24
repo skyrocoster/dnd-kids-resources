@@ -1,10 +1,11 @@
-from fastapi import Query
-from typing import List
 import json
+from typing import List
+
+from fastapi import Query
 
 from ..api_errors import ApiError, ApiRouter, error_responses
 from ..caching import cached_get
-from ..db import get_db, dict_from_row, parse_json_value
+from ..db import dict_from_row, get_db, parse_json_value
 from ..schemas import NPC, NPCCreate, NPCUpdate
 from ..schemas.errors import NpcError
 
@@ -99,8 +100,7 @@ def list_npcs(
         cursor = conn.cursor()
         columns = ", ".join(NPC_COLUMNS)
         cursor.execute(
-            f"SELECT {columns} FROM npcs ORDER BY name LIMIT ? OFFSET ?",
-            (limit, offset)
+            f"SELECT {columns} FROM npcs ORDER BY name LIMIT ? OFFSET ?", (limit, offset)
         )
         rows = cursor.fetchall()
         return [_parse_npc_row(row) for row in rows]
@@ -145,7 +145,10 @@ def create_npc(npc: NPCCreate):
             npc_id = cursor.lastrowid
         except Exception as e:
             conn.rollback()
-            raise ApiError(400, NpcError(code="failed_to_create_npc", message=f"Failed to create NPC: {str(e)}"))
+            raise ApiError(
+                400,
+                NpcError(code="failed_to_create_npc", message=f"Failed to create NPC: {str(e)}"),
+            )
 
         return _select_npc(cursor, npc_id)
 
@@ -177,7 +180,10 @@ def update_npc(npc_id: int, npc: NPCUpdate):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise ApiError(400, NpcError(code="failed_to_update_npc", message=f"Failed to update NPC: {str(e)}"))
+            raise ApiError(
+                400,
+                NpcError(code="failed_to_update_npc", message=f"Failed to update NPC: {str(e)}"),
+            )
 
         return _select_npc(cursor, npc_id)
 
@@ -202,4 +208,7 @@ def delete_npc(npc_id: int):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise ApiError(400, NpcError(code="failed_to_delete_npc", message=f"Failed to delete NPC: {str(e)}"))
+            raise ApiError(
+                400,
+                NpcError(code="failed_to_delete_npc", message=f"Failed to delete NPC: {str(e)}"),
+            )

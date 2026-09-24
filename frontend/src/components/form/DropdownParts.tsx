@@ -10,7 +10,31 @@ export interface DropdownOptionDefinition {
   /** Replaces only the visual body; the owning control keeps option semantics and indicator. */
   customBody?: ReactNode;
 }
-export function DropdownItemBody({ option, indicator }: { option: DropdownOptionDefinition; indicator?: ReactNode }) {
-  return <><span className="fc-option-body">{option.customBody ?? <DropdownOptionContent leading={option.content?.leading} primary={option.content?.primary ?? option.label} secondary={option.content?.secondary} trailing={option.content?.trailing} />}</span><span className="fc-option-indicator" aria-hidden="true">{indicator ?? "✓"}</span></>;
+export function DropdownItemBody({
+  option,
+  indicator,
+}: {
+  option: DropdownOptionDefinition;
+  indicator?: ReactNode;
+}) {
+  return (
+    <>
+      <span className="fc-option-body">
+        {option.customBody ?? (
+          <DropdownOptionContent
+            leading={option.content?.leading}
+            primary={option.content?.primary ?? option.label}
+            secondary={option.content?.secondary}
+            trailing={option.content?.trailing}
+          />
+        )}
+      </span>
+      <span className="fc-option-indicator" aria-hidden="true">
+        {indicator ?? "✓"}
+      </span>
+    </>
+  );
 }
-export function DropdownMessage({ children }: { children: ReactNode }) { return <span className="fc-dropdown-message">{children}</span>; }
+export function DropdownMessage({ children }: { children: ReactNode }) {
+  return <span className="fc-dropdown-message">{children}</span>;
+}

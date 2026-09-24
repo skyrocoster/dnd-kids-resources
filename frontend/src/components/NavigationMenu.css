@@ -16,7 +16,7 @@
   list-style: none;
 }
 
-.cmt-navigation-menu[data-orientation='vertical'] .cmt-navigation-menu__list {
+.cmt-navigation-menu[data-orientation="vertical"] .cmt-navigation-menu__list {
   flex-direction: column;
   align-items: stretch;
 }
@@ -74,7 +74,9 @@
   inline-size: min(28rem, calc(100vw - var(--space-5)));
   block-size: 100%;
   padding: var(--space-2);
-  transition: opacity var(--motion-fast), transform var(--motion-fast);
+  transition:
+    opacity var(--motion-fast),
+    transform var(--motion-fast);
 }
 
 .cmt-navigation-menu__content[data-starting-style],
@@ -82,13 +84,13 @@
   opacity: 0;
 }
 
-.cmt-navigation-menu__content[data-starting-style][data-activation-direction='left'],
-.cmt-navigation-menu__content[data-ending-style][data-activation-direction='right'] {
+.cmt-navigation-menu__content[data-starting-style][data-activation-direction="left"],
+.cmt-navigation-menu__content[data-ending-style][data-activation-direction="right"] {
   transform: translateX(-10%);
 }
 
-.cmt-navigation-menu__content[data-starting-style][data-activation-direction='right'],
-.cmt-navigation-menu__content[data-ending-style][data-activation-direction='left'] {
+.cmt-navigation-menu__content[data-starting-style][data-activation-direction="right"],
+.cmt-navigation-menu__content[data-ending-style][data-activation-direction="left"] {
   transform: translateX(10%);
 }
 
@@ -145,7 +147,11 @@
   color: var(--md-on-surface);
   box-shadow: var(--elevation-shadow);
   transform-origin: var(--transform-origin);
-  transition: inline-size var(--motion-fast), block-size var(--motion-fast), opacity var(--motion-fast), transform var(--motion-fast);
+  transition:
+    inline-size var(--motion-fast),
+    block-size var(--motion-fast),
+    opacity var(--motion-fast),
+    transform var(--motion-fast);
 }
 
 .cmt-navigation-menu__popup[data-starting-style],
@@ -174,7 +180,7 @@
   display: block;
   border: 1px solid var(--md-outline);
   background: var(--md-surface-1);
-  content: '';
+  content: "";
   transform: translate(25%, 50%) rotate(45deg);
 }
 

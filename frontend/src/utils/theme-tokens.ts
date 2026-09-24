@@ -1,18 +1,18 @@
 // DP1: Token derivation logic (pure, testable)
 
 export interface TokenSet {
-  base: string
-  onBase: string
-  container: string
-  onContainer: string
+  base: string;
+  onBase: string;
+  container: string;
+  onContainer: string;
 }
 
 export interface DerivedTokens {
-  role: string
-  seedHex: string
-  hue: number
-  chroma: number
-  tokens: TokenSet
+  role: string;
+  seedHex: string;
+  hue: number;
+  chroma: number;
+  tokens: TokenSet;
 }
 
 // Note: This is a TypeScript stub. The actual MD3 math is in frontend/src/tools/generate-md3-tokens.mjs
@@ -24,5 +24,7 @@ export function deriveTokensStub(
   _role: string,
   _optionalChroma?: number | null,
 ): DerivedTokens {
-  throw new Error('deriveTokens requires material-color-utilities (Node runtime). Use frontend/src/tools/generate-md3-tokens.mjs instead.')
+  throw new Error(
+    "deriveTokens requires material-color-utilities (Node runtime). Use frontend/src/tools/generate-md3-tokens.mjs instead.",
+  );
 }

@@ -1,13 +1,13 @@
-import { useId } from 'react'
-import type { InputHTMLAttributes } from 'react'
-import './form.css'
+import { useId } from "react";
+import type { InputHTMLAttributes } from "react";
+import "./form.css";
 
-interface CheckboxFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'id' | 'type'> {
-  label: string
+interface CheckboxFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "id" | "type"> {
+  label: string;
 }
 
 export function CheckboxField({ label, ...rest }: CheckboxFieldProps) {
-  const id = useId()
+  const id = useId();
 
   return (
     <div className="form-field form-field-checkbox">
@@ -16,5 +16,5 @@ export function CheckboxField({ label, ...rest }: CheckboxFieldProps) {
         {label}
       </label>
     </div>
-  )
+  );
 }

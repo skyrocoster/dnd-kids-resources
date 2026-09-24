@@ -16,7 +16,8 @@ New schema:
   loom_edges    dropped
 
 Usage:
-    docker compose exec backend python -m backend.migrations.migrate_loom_v2 [--db-path PATH] [--report-path PATH] [--dry-run]
+    docker compose exec backend python -m backend.migrations.migrate_loom_v2
+        [--db-path PATH] [--report-path PATH] [--dry-run]
 """
 
 from __future__ import annotations
@@ -37,17 +38,20 @@ from backend.app.db import DB_PATH as DEFAULT_DB
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _detect_already_migrated(conn: sqlite3.Connection) -> bool:
     """Return True if the database already has the v2 schema."""
-    tables = {r[0] for r in conn.execute(
-        "SELECT name FROM sqlite_master WHERE type='table'"
-    ).fetchall()}
+    tables = {
+        r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+    }
     if "loom_edges" in tables:
         return False
     if "loom_nodes" not in tables:
         return True  # no loom tables at all — nothing to migrate
     node_cols = {r[1] for r in conn.execute("PRAGMA table_info(loom_nodes)").fetchall()}
-    membership_cols = {r[1] for r in conn.execute("PRAGMA table_info(loom_node_threads)").fetchall()}
+    membership_cols = {
+        r[1] for r in conn.execute("PRAGMA table_info(loom_node_threads)").fetchall()
+    }
     return "fulfilled_planned_title" in node_cols and "position" in membership_cols
 
 
@@ -61,6 +65,7 @@ def _backup_db(db_path: Path) -> Path:
 # ---------------------------------------------------------------------------
 # Topological sort for per-thread edge linearization
 # ---------------------------------------------------------------------------
+
 
 def _topo_sort_nodes(
     node_ids: set[int],
@@ -85,15 +90,8 @@ def _topo_sort_nodes(
     # exactly one source (in-degree 0) and one sink (out-degree 0).
     sources = [n for n in node_ids if in_deg[n] == 0]
     sinks = [n for n in node_ids if len(adj[n]) == 0]
-    all_degrees_ok = all(
-        in_deg[n] <= 1 and len(adj[n]) <= 1 for n in node_ids
-    )
-    is_simple_chain = (
-        all_degrees_ok
-        and len(sources) == 1
-        and len(sinks) == 1
-        and len(node_ids) > 0
-    )
+    all_degrees_ok = all(in_deg[n] <= 1 and len(adj[n]) <= 1 for n in node_ids)
+    is_simple_chain = all_degrees_ok and len(sources) == 1 and len(sinks) == 1 and len(node_ids) > 0
 
     # Kahn's algorithm with (x, y, id) tie-break
     queue: list[int] = sorted(sources, key=lambda n: (*nodes_xy.get(n, (0, 0)), n))
@@ -119,6 +117,7 @@ def _topo_sort_nodes(
 # Main migration logic
 # ---------------------------------------------------------------------------
 
+
 def _read_old_schema(conn: sqlite3.Connection) -> dict[str, Any]:
     """Read all loom data from the old schema."""
     threads = conn.execute(
@@ -126,8 +125,7 @@ def _read_old_schema(conn: sqlite3.Connection) -> dict[str, Any]:
     ).fetchall()
 
     nodes = conn.execute(
-        "SELECT id, kind, title, body, status, session_tag, x, y "
-        "FROM loom_nodes ORDER BY id"
+        "SELECT id, kind, title, body, status, session_tag, x, y FROM loom_nodes ORDER BY id"
     ).fetchall()
 
     memberships = conn.execute(
@@ -144,24 +142,23 @@ def _read_old_schema(conn: sqlite3.Connection) -> dict[str, Any]:
 
     return {
         "threads": [
-            {"id": r[0], "name": r[1], "color": r[2], "description": r[3]}
-            for r in threads
+            {"id": r[0], "name": r[1], "color": r[2], "description": r[3]} for r in threads
         ],
         "nodes": [
             {
-                "id": r[0], "kind": r[1], "title": r[2], "body": r[3],
-                "status": r[4], "session_tag": r[5], "x": r[6], "y": r[7],
+                "id": r[0],
+                "kind": r[1],
+                "title": r[2],
+                "body": r[3],
+                "status": r[4],
+                "session_tag": r[5],
+                "x": r[6],
+                "y": r[7],
             }
             for r in nodes
         ],
-        "memberships": [
-            {"id": r[0], "node_id": r[1], "thread_id": r[2]}
-            for r in memberships
-        ],
-        "edges": [
-            {"id": r[0], "source_id": r[1], "target_id": r[2]}
-            for r in edges
-        ],
+        "memberships": [{"id": r[0], "node_id": r[1], "thread_id": r[2]} for r in memberships],
+        "edges": [{"id": r[0], "source_id": r[1], "target_id": r[2]} for r in edges],
     }
 
 
@@ -203,73 +200,121 @@ def _migrate(data: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
 
         if old_kind == "update":
             # → session
-            new_nodes.append({
-                "id": node["id"], "kind": "session", "title": node["title"],
-                "body": node["body"], "session_tag": node["session_tag"],
-                "x": node["x"], "y": node["y"],
-                "fulfilled_planned_title": None, "fulfilled_at": None,
-                "banked_from_thread_id": None,
-            })
+            new_nodes.append(
+                {
+                    "id": node["id"],
+                    "kind": "session",
+                    "title": node["title"],
+                    "body": node["body"],
+                    "session_tag": node["session_tag"],
+                    "x": node["x"],
+                    "y": node["y"],
+                    "fulfilled_planned_title": None,
+                    "fulfilled_at": None,
+                    "banked_from_thread_id": None,
+                }
+            )
             node_id_remap[node["id"]] = node["id"]
-            report["kind_remap"].append({
-                "old_id": node["id"], "old_kind": "update", "new_kind": "session",
-            })
+            report["kind_remap"].append(
+                {
+                    "old_id": node["id"],
+                    "old_kind": "update",
+                    "new_kind": "session",
+                }
+            )
 
         elif old_kind == "anchor" and status == "reached":
             # → session with fulfilment provenance
-            new_nodes.append({
-                "id": node["id"], "kind": "session", "title": node["title"],
-                "body": node["body"], "session_tag": node["session_tag"],
-                "x": node["x"], "y": node["y"],
-                "fulfilled_planned_title": node["title"],
-                "fulfilled_at": None,  # updated_at not available in old read
-                "banked_from_thread_id": None,
-            })
+            new_nodes.append(
+                {
+                    "id": node["id"],
+                    "kind": "session",
+                    "title": node["title"],
+                    "body": node["body"],
+                    "session_tag": node["session_tag"],
+                    "x": node["x"],
+                    "y": node["y"],
+                    "fulfilled_planned_title": node["title"],
+                    "fulfilled_at": None,  # updated_at not available in old read
+                    "banked_from_thread_id": None,
+                }
+            )
             node_id_remap[node["id"]] = node["id"]
-            report["kind_remap"].append({
-                "old_id": node["id"], "old_kind": "anchor(reached)",
-                "new_kind": "session", "provenance": "fulfilled",
-            })
+            report["kind_remap"].append(
+                {
+                    "old_id": node["id"],
+                    "old_kind": "anchor(reached)",
+                    "new_kind": "session",
+                    "provenance": "fulfilled",
+                }
+            )
 
         elif old_kind == "anchor" and status == "planned":
             # → beat (may become banked in step 2 if orphaned)
-            new_nodes.append({
-                "id": node["id"], "kind": "beat", "title": node["title"],
-                "body": node["body"], "session_tag": node["session_tag"],
-                "x": node["x"], "y": node["y"],
-                "fulfilled_planned_title": None, "fulfilled_at": None,
-                "banked_from_thread_id": None,
-            })
+            new_nodes.append(
+                {
+                    "id": node["id"],
+                    "kind": "beat",
+                    "title": node["title"],
+                    "body": node["body"],
+                    "session_tag": node["session_tag"],
+                    "x": node["x"],
+                    "y": node["y"],
+                    "fulfilled_planned_title": None,
+                    "fulfilled_at": None,
+                    "banked_from_thread_id": None,
+                }
+            )
             node_id_remap[node["id"]] = node["id"]
-            report["kind_remap"].append({
-                "old_id": node["id"], "old_kind": "anchor(planned)",
-                "new_kind": "beat",
-            })
+            report["kind_remap"].append(
+                {
+                    "old_id": node["id"],
+                    "old_kind": "anchor(planned)",
+                    "new_kind": "beat",
+                }
+            )
 
         elif old_kind == "anchor" and status == "abandoned":
             # → beat, will be banked below
-            new_nodes.append({
-                "id": node["id"], "kind": "beat", "title": node["title"],
-                "body": node["body"], "session_tag": node["session_tag"],
-                "x": node["x"], "y": node["y"],
-                "fulfilled_planned_title": None, "fulfilled_at": None,
-                "banked_from_thread_id": None,
-            })
+            new_nodes.append(
+                {
+                    "id": node["id"],
+                    "kind": "beat",
+                    "title": node["title"],
+                    "body": node["body"],
+                    "session_tag": node["session_tag"],
+                    "x": node["x"],
+                    "y": node["y"],
+                    "fulfilled_planned_title": None,
+                    "fulfilled_at": None,
+                    "banked_from_thread_id": None,
+                }
+            )
             node_id_remap[node["id"]] = node["id"]
-            report["kind_remap"].append({
-                "old_id": node["id"], "old_kind": "anchor(abandoned)",
-                "new_kind": "beat",
-            })
+            report["kind_remap"].append(
+                {
+                    "old_id": node["id"],
+                    "old_kind": "anchor(abandoned)",
+                    "new_kind": "beat",
+                }
+            )
 
         else:
             # Already new kind or unexpected — keep as-is
-            new_nodes.append({
-                "id": node["id"], "kind": old_kind, "title": node["title"],
-                "body": node["body"], "session_tag": node["session_tag"],
-                "x": node["x"], "y": node["y"],
-                "fulfilled_planned_title": None, "fulfilled_at": None,
-                "banked_from_thread_id": None,
-            })
+            new_nodes.append(
+                {
+                    "id": node["id"],
+                    "kind": old_kind,
+                    "title": node["title"],
+                    "body": node["body"],
+                    "session_tag": node["session_tag"],
+                    "x": node["x"],
+                    "y": node["y"],
+                    "fulfilled_planned_title": None,
+                    "fulfilled_at": None,
+                    "banked_from_thread_id": None,
+                }
+            )
             node_id_remap[node["id"]] = node["id"]
 
     nodes_by_new_id: dict[int, dict[str, Any]] = {n["id"]: n for n in new_nodes}
@@ -291,11 +336,14 @@ def _migrate(data: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
                 banked_thread = min(thread_ids)
                 node["banked_from_thread_id"] = banked_thread
                 new_memberships = [m for m in new_memberships if m["node_id"] != node["id"]]
-                report["abandoned_banked"].append({
-                    "node_id": node["id"], "title": node["title"],
-                    "banked_from_thread_id": banked_thread,
-                    "dropped_thread_ids": thread_ids,
-                })
+                report["abandoned_banked"].append(
+                    {
+                        "node_id": node["id"],
+                        "title": node["title"],
+                        "banked_from_thread_id": banked_thread,
+                        "dropped_thread_ids": thread_ids,
+                    }
+                )
 
     # -- Classify edges: intra-thread vs cross-thread -------------------------
     # Build membership lookup for old node ids
@@ -321,11 +369,15 @@ def _migrate(data: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
         src, tgt = edge["source_id"], edge["target_id"]
         src_threads = member_threads.get(src, set())
         tgt_threads = member_threads.get(tgt, set())
-        report["cross_thread_edges"].append({
-            "edge_id": edge["id"], "source_id": src, "target_id": tgt,
-            "source_threads": sorted(src_threads),
-            "target_threads": sorted(tgt_threads),
-        })
+        report["cross_thread_edges"].append(
+            {
+                "edge_id": edge["id"],
+                "source_id": src,
+                "target_id": tgt,
+                "source_threads": sorted(src_threads),
+                "target_threads": sorted(tgt_threads),
+            }
+        )
 
     # -- Step 3: Synthesize Start and End per thread --------------------------
     for thread in threads:
@@ -344,40 +396,64 @@ def _migrate(data: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
         if not has_start:
             start_id = next_node_id
             next_node_id += 1
-            new_nodes.append({
-                "id": start_id, "kind": "start", "title": thread["name"],
-                "body": None, "session_tag": None, "x": 0, "y": 0,
-                "fulfilled_planned_title": None, "fulfilled_at": None,
-                "banked_from_thread_id": None,
-            })
-            new_memberships.append({
-                "id": max((m["id"] for m in new_memberships), default=0) + 1,
-                "node_id": start_id, "thread_id": tid,
-            })
+            new_nodes.append(
+                {
+                    "id": start_id,
+                    "kind": "start",
+                    "title": thread["name"],
+                    "body": None,
+                    "session_tag": None,
+                    "x": 0,
+                    "y": 0,
+                    "fulfilled_planned_title": None,
+                    "fulfilled_at": None,
+                    "banked_from_thread_id": None,
+                }
+            )
+            new_memberships.append(
+                {
+                    "id": max((m["id"] for m in new_memberships), default=0) + 1,
+                    "node_id": start_id,
+                    "thread_id": tid,
+                }
+            )
             synthesized["start"] = start_id
 
         if not has_end:
             end_id = next_node_id
             next_node_id += 1
-            new_nodes.append({
-                "id": end_id, "kind": "end",
-                "title": f"Resolve: {thread['name']}",
-                "body": None, "session_tag": None, "x": 0, "y": 0,
-                "fulfilled_planned_title": None, "fulfilled_at": None,
-                "banked_from_thread_id": None,
-            })
-            new_memberships.append({
-                "id": max((m["id"] for m in new_memberships), default=0) + 1,
-                "node_id": end_id, "thread_id": tid,
-            })
+            new_nodes.append(
+                {
+                    "id": end_id,
+                    "kind": "end",
+                    "title": f"Resolve: {thread['name']}",
+                    "body": None,
+                    "session_tag": None,
+                    "x": 0,
+                    "y": 0,
+                    "fulfilled_planned_title": None,
+                    "fulfilled_at": None,
+                    "banked_from_thread_id": None,
+                }
+            )
+            new_memberships.append(
+                {
+                    "id": max((m["id"] for m in new_memberships), default=0) + 1,
+                    "node_id": end_id,
+                    "thread_id": tid,
+                }
+            )
             synthesized["end"] = end_id
 
         if synthesized["start"] or synthesized["end"]:
-            report["synthesized"].append({
-                "thread_id": tid, "thread_name": thread["name"],
-                "start_node_id": synthesized["start"],
-                "end_node_id": synthesized["end"],
-            })
+            report["synthesized"].append(
+                {
+                    "thread_id": tid,
+                    "thread_name": thread["name"],
+                    "start_node_id": synthesized["start"],
+                    "end_node_id": synthesized["end"],
+                }
+            )
 
     # Rebuild membership lookups after synthesis
     memberships_by_thread_new: dict[int, list[dict]] = collections.defaultdict(list)
@@ -385,15 +461,11 @@ def _migrate(data: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
         memberships_by_thread_new[m["thread_id"]].append(m)
 
     # -- Step 4: Derive position from intra-thread edges ----------------------
-    nodes_xy: dict[int, tuple[float, float]] = {
-        n["id"]: (n["x"], n["y"]) for n in new_nodes
-    }
+    nodes_xy: dict[int, tuple[float, float]] = {n["id"]: (n["x"], n["y"]) for n in new_nodes}
 
     for thread in threads:
         tid = thread["id"]
-        thread_member_ids = {
-            m["node_id"] for m in memberships_by_thread_new.get(tid, [])
-        }
+        thread_member_ids = {m["node_id"] for m in memberships_by_thread_new.get(tid, [])}
         if not thread_member_ids:
             continue
 
@@ -405,8 +477,12 @@ def _migrate(data: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
         ]
 
         # Separate start/end from the sortable set
-        start_ids = {n["id"] for n in new_nodes if n["kind"] == "start" and n["id"] in thread_member_ids}
-        end_ids = {n["id"] for n in new_nodes if n["kind"] == "end" and n["id"] in thread_member_ids}
+        start_ids = {
+            n["id"] for n in new_nodes if n["kind"] == "start" and n["id"] in thread_member_ids
+        }
+        end_ids = {
+            n["id"] for n in new_nodes if n["kind"] == "end" and n["id"] in thread_member_ids
+        }
         sortable_ids = thread_member_ids - start_ids - end_ids
 
         if not sortable_ids:
@@ -418,21 +494,27 @@ def _migrate(data: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
             # Pin start at front, end at back
             order = list(start_ids) + order + list(end_ids)
 
-        report["linearized"].append({
-            "thread_id": tid,
-            "thread_name": thread["name"],
-            "automatic": is_chain,
-            "order": order,
-        })
+        report["linearized"].append(
+            {
+                "thread_id": tid,
+                "thread_name": thread["name"],
+                "automatic": is_chain,
+                "order": order,
+            }
+        )
 
     # -- Step 5: Assign positions ---------------------------------------------
     # Clear existing position assignments, then reassign
     final_memberships: list[dict] = []
     for m in new_memberships:
-        final_memberships.append({
-            "id": m["id"], "node_id": m["node_id"],
-            "thread_id": m["thread_id"], "position": 0,
-        })
+        final_memberships.append(
+            {
+                "id": m["id"],
+                "node_id": m["node_id"],
+                "thread_id": m["thread_id"],
+                "position": 0,
+            }
+        )
 
     for linearization in report["linearized"]:
         tid = linearization["thread_id"]
@@ -453,10 +535,13 @@ def _migrate(data: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
                 # had no memberships at all, bank it now
                 if node["banked_from_thread_id"] is None:
                     node["banked_from_thread_id"] = None  # truly orphaned
-            report["orphan_nodes"].append({
-                "node_id": node["id"], "kind": node["kind"],
-                "title": node["title"],
-            })
+            report["orphan_nodes"].append(
+                {
+                    "node_id": node["id"],
+                    "kind": node["kind"],
+                    "title": node["title"],
+                }
+            )
 
     # -- Step 7: Shared-beat conflict (beat with >1 membership) ---------------
     # After step 2, beats should be thread-exclusive. But if a planned anchor
@@ -474,11 +559,14 @@ def _migrate(data: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
         drop = node_memberships[1:]
         drop_thread_ids = [m["thread_id"] for m in drop]
         final_memberships = [m for m in final_memberships if m not in drop]
-        report["shared_beat_conflicts"].append({
-            "node_id": node["id"], "title": node["title"],
-            "kept_thread_id": keep["thread_id"],
-            "dropped_thread_ids": drop_thread_ids,
-        })
+        report["shared_beat_conflicts"].append(
+            {
+                "node_id": node["id"],
+                "title": node["title"],
+                "kept_thread_id": keep["thread_id"],
+                "dropped_thread_ids": drop_thread_ids,
+            }
+        )
 
     # -- Build final data -----------------------------------------------------
     new_data = {
@@ -507,7 +595,10 @@ def _migrate(data: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
 
 
 def _write_new_schema(conn: sqlite3.Connection) -> None:
-    """Recreate loom tables with the v2 schema (drop loom_edges, alter nodes/threads/memberships)."""
+    """Recreate Loom tables with the v2 schema.
+
+    Drops loom_edges and alters nodes, threads, and memberships.
+    """
     # Read any existing data before dropping
     # (caller should have called _read_old_schema first)
 
@@ -569,23 +660,33 @@ def _insert_new_data(
             "fulfilled_planned_title, fulfilled_at, banked_from_thread_id) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
-                node["id"], node["kind"], node["title"], node["body"],
-                node["session_tag"], node["x"], node["y"],
-                node["fulfilled_planned_title"], node["fulfilled_at"],
+                node["id"],
+                node["kind"],
+                node["title"],
+                node["body"],
+                node["session_tag"],
+                node["x"],
+                node["y"],
+                node["fulfilled_planned_title"],
+                node["fulfilled_at"],
                 node["banked_from_thread_id"],
             ),
         )
 
     for m in new_data["memberships"]:
         conn.execute(
-            "INSERT INTO loom_node_threads (id, node_id, thread_id, position) "
-            "VALUES (?, ?, ?, ?)",
+            "INSERT INTO loom_node_threads (id, node_id, thread_id, position) VALUES (?, ?, ?, ?)",
             (m["id"], m["node_id"], m["thread_id"], m["position"]),
         )
 
     # Recreate indexes
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_loom_node_threads_thread ON loom_node_threads(thread_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_loom_node_threads_position ON loom_node_threads(thread_id, position)")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_loom_node_threads_thread ON loom_node_threads(thread_id)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_loom_node_threads_position "
+        "ON loom_node_threads(thread_id, position)"
+    )
 
     # Clean up old tables
     conn.execute("DROP TABLE IF EXISTS loom_nodes_old_v1")
@@ -612,14 +713,18 @@ def migrate(
 
         # Read old data
         old_data = _read_old_schema(conn)
-        print(f"[OK] Read old schema: {len(old_data['threads'])} threads, "
-              f"{len(old_data['nodes'])} nodes, {len(old_data['memberships'])} memberships, "
-              f"{len(old_data['edges'])} edges")
+        print(
+            f"[OK] Read old schema: {len(old_data['threads'])} threads, "
+            f"{len(old_data['nodes'])} nodes, {len(old_data['memberships'])} memberships, "
+            f"{len(old_data['edges'])} edges"
+        )
 
         # Transform
         new_data, report = _migrate(old_data)
-        print(f"[OK] Migration computed: {report['summary']['total_nodes']} nodes, "
-              f"{report['summary']['total_memberships']} memberships")
+        print(
+            f"[OK] Migration computed: {report['summary']['total_nodes']} nodes, "
+            f"{report['summary']['total_memberships']} memberships"
+        )
 
         if dry_run:
             print("[DRY RUN] No changes written to database.")
@@ -659,6 +764,7 @@ def migrate(
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(

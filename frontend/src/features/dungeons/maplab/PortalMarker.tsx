@@ -1,38 +1,43 @@
-import { GatewayPortalIcon, PortalIcon } from '../../../components/icons'
-import { BadgeDisc } from '../../../map/BadgeDisc'
-import { boundedBadgeLayout, collapsedStatusDescriptor, collapsedStatusLabel, fixtureMarkerBadges } from '../../../map/markerBadges'
-import { fixturePresentation } from './maplabPresentation'
+import { GatewayPortalIcon, PortalIcon } from "../../../components/icons";
+import { BadgeDisc } from "../../../map/BadgeDisc";
+import {
+  boundedBadgeLayout,
+  collapsedStatusDescriptor,
+  collapsedStatusLabel,
+  fixtureMarkerBadges,
+} from "../../../map/markerBadges";
+import { fixturePresentation } from "./maplabPresentation";
 import {
   defaultFixtureState,
   effectiveFixtureState,
   type MapPortal,
   type SessionFixtureState,
-} from '../../../model/maplabModel'
-import { onSquareMarkerGeometry, MarkerHitArea, MarkerGlyph } from '../../../map/markerShape'
+} from "../../../model/maplabModel";
+import { onSquareMarkerGeometry, MarkerHitArea, MarkerGlyph } from "../../../map/markerShape";
 
-const PORTAL_IDENTITY_TOKEN = '--md-primary'
+const PORTAL_IDENTITY_TOKEN = "--md-primary";
 
 interface PortalMarkerProps {
-  portal: MapPortal
-  cellSize: number
-  selected?: boolean
+  portal: MapPortal;
+  cellSize: number;
+  selected?: boolean;
   /** Live session state — the viewer merges this over the authored state; the editor omits it
    * and gets the authored state as-is. */
-  session?: SessionFixtureState
+  session?: SessionFixtureState;
   /** Fractional-cell nudge (from `gridMarkerOffset`) when this portal shares its cell with other
    * markers (stairs/other portals/props). */
-  offset?: { dx: number; dy: number }
+  offset?: { dx: number; dy: number };
   /** True when 2+ markers share this cell — shrinks the marker to `GROUPED_MARKER_RADIUS_FRACTION`
    * so `gridMarkerOffset`'s spacing actually separates same-cell markers instead of stacking
    * full-size circles a few px apart. */
-  grouped?: boolean
-  simplified?: boolean
-  onMouseEnter?: () => void
-  onMouseLeave?: () => void
-  onFocus?: () => void
-  onBlur?: () => void
-  onClick?: () => void
-  onContextMenu?: () => void
+  grouped?: boolean;
+  simplified?: boolean;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
+  onClick?: () => void;
+  onContextMenu?: () => void;
 }
 
 /** Portal marker — stable portal identity color on the ring/icon; one collapsed status
@@ -52,17 +57,30 @@ export function PortalMarker({
   onClick,
   onContextMenu,
 }: PortalMarkerProps) {
-  const { cx, cy, radius, iconSize } = onSquareMarkerGeometry(portal.cell, cellSize, { offset, grouped })
+  const { cx, cy, radius, iconSize } = onSquareMarkerGeometry(portal.cell, cellSize, {
+    offset,
+    grouped,
+  });
 
-  const effective = effectiveFixtureState(portal.state ?? defaultFixtureState(), session)
-  const presentation = fixturePresentation(effective)
-  const isGateway = portal.to?.dungeon_id !== undefined
-  const Icon = isGateway ? GatewayPortalIcon : PortalIcon
-  const badges = fixtureMarkerBadges(portal, session)
-  const badge = collapsedStatusDescriptor(badges)
-  const badgePosition = badge ? boundedBadgeLayout(portal.cell[0] * cellSize, portal.cell[1] * cellSize, cellSize, cx, cy, radius, 8) : null
-  const dasharray = presentation.state === 'concealed' ? '4 3' : undefined
-  const label = `${portal.title ?? `Portal ${portal.portal_id}`} — ${collapsedStatusLabel(badges, presentation.label)}`
+  const effective = effectiveFixtureState(portal.state ?? defaultFixtureState(), session);
+  const presentation = fixturePresentation(effective);
+  const isGateway = portal.to?.dungeon_id !== undefined;
+  const Icon = isGateway ? GatewayPortalIcon : PortalIcon;
+  const badges = fixtureMarkerBadges(portal, session);
+  const badge = collapsedStatusDescriptor(badges);
+  const badgePosition = badge
+    ? boundedBadgeLayout(
+        portal.cell[0] * cellSize,
+        portal.cell[1] * cellSize,
+        cellSize,
+        cx,
+        cy,
+        radius,
+        8,
+      )
+    : null;
+  const dasharray = presentation.state === "concealed" ? "4 3" : undefined;
+  const label = `${portal.title ?? `Portal ${portal.portal_id}`} — ${collapsedStatusLabel(badges, presentation.label)}`;
 
   return (
     <MarkerHitArea
@@ -109,5 +127,5 @@ export function PortalMarker({
         />
       ) : null}
     </MarkerHitArea>
-  )
+  );
 }

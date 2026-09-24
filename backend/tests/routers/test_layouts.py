@@ -1,6 +1,6 @@
 import pytest
-import backend.app.db as db_module
 
+import backend.app.db as db_module
 from backend.tests.conftest import db_failure_conn
 
 _AUTH_STATE = {
@@ -141,7 +141,10 @@ def test_save_dungeon_layout_upserts_on_second_call(test_client, kind):
 
     # --- plain upsert: a second PUT replaces the row rather than conflicting ---
     first = _layout(doors=[_fixture("doors")])
-    second = {**_layout(doors=[_fixture("doors")]), "rooms": [{"room_id": 1, "z": 0, "origin": [0, 0], "cells": [[0, 0]]}]}
+    second = {
+        **_layout(doors=[_fixture("doors")]),
+        "rooms": [{"room_id": 1, "z": 0, "origin": [0, 0], "cells": [[0, 0]]}],
+    }
     put_layout(first)
     put_response = put_layout(second)
     assert put_response.status_code == 200
@@ -201,7 +204,9 @@ def test_save_dungeon_layout_upserts_on_second_call(test_client, kind):
 
     # --- descriptive change: title/kind/loot edits preserve every override ---
     put_layout(_layout(**{kind: [_fixture(kind)]}))
-    put_session({kind: {"1": {"open": True, "obstacles": {"lock": {"armed": False}}}}, "partyRoomId": 6})
+    put_session(
+        {kind: {"1": {"open": True, "obstacles": {"lock": {"armed": False}}}}, "partyRoomId": 6}
+    )
     if kind == "props":
         put_layout(_layout(**{kind: [_fixture(kind, title="Table")]}))
     else:
@@ -230,12 +235,12 @@ def test_deleting_dungeon_removes_its_layout(test_client):
 
 def test_incoming_gateways(test_client):
     """A portal in dungeon A pointing at dungeon B shows up in B's list; empty and 404 cases."""
-    dungeon_a = test_client.post(
-        "/api/dungeons", json={"title": "The Castle", "data": {}}
-    ).json()["id"]
-    dungeon_b = test_client.post(
-        "/api/dungeons", json={"title": "The Sewers", "data": {}}
-    ).json()["id"]
+    dungeon_a = test_client.post("/api/dungeons", json={"title": "The Castle", "data": {}}).json()[
+        "id"
+    ]
+    dungeon_b = test_client.post("/api/dungeons", json={"title": "The Sewers", "data": {}}).json()[
+        "id"
+    ]
 
     layout_a = {
         "meta": {"cellSizeFt": 5, "padding": 3},

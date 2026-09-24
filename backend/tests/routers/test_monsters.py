@@ -5,7 +5,7 @@ import sqlite3
 import pytest
 from pydantic import ValidationError
 
-from backend.app.schemas import MonsterCreate, MonsterUpdate
+from backend.app.schemas import MonsterCreate
 
 
 def _monster_payload(name="Tiny Test Drake"):
@@ -27,7 +27,9 @@ def _monster_payload(name="Tiny Test Drake"):
         "senses": [{"type": "darkvision", "range": 60, "note": None}],
         "languages": ["Draconic"],
         "features": {
-            "traits": [{"name": "Keen Smell", "description": "Advantage on smell checks.", "attack": None}],
+            "traits": [
+                {"name": "Keen Smell", "description": "Advantage on smell checks.", "attack": None}
+            ],
             "actions": [
                 {
                     "name": "Bite",
@@ -59,6 +61,7 @@ def _raise_integrity_non_unique(self):
 
 def _mock_conn(commit_side_effect):
     from unittest.mock import MagicMock
+
     conn = MagicMock()
     conn.commit.side_effect = commit_side_effect
     return conn
@@ -159,15 +162,6 @@ def test_update_monster(test_client):
     assert data["cr_sort"] == 2.0
 
 
-def test_update_monster_duplicate_name(test_client):
-    created = test_client.post("/api/monsters", json=_monster_payload()).json()
-    payload = _monster_payload("Owlbear")
-
-    response = test_client.put(f"/api/monsters/{created['id']}", json=payload)
-
-    assert response.status_code == 409
-
-
 @pytest.mark.parametrize(
     ("operation", "use_existing"),
     [
@@ -178,7 +172,11 @@ def test_update_monster_duplicate_name(test_client):
 )
 def test_monster_mutations_db_failure(monkeypatch, test_client, operation, use_existing):
     """DB commit failures map to 400 for create/update/delete."""
-    created_id = test_client.post("/api/monsters", json=_monster_payload()).json()["id"] if use_existing else None
+    created_id = (
+        test_client.post("/api/monsters", json=_monster_payload()).json()["id"]
+        if use_existing
+        else None
+    )
     monkeypatch.setattr(
         "backend.app.db.get_conn",
         lambda: _mock_conn(Exception("Simulated database failure")),

@@ -1,10 +1,11 @@
-from fastapi import Query
-from typing import List
 import json
+from typing import List
+
+from fastapi import Query
 
 from ..api_errors import ApiError, ApiRouter, error_responses
 from ..caching import cached_get
-from ..db import get_db, dict_from_row, parse_json_value
+from ..db import dict_from_row, get_db, parse_json_value
 from ..schemas import Dungeon, DungeonCreate, DungeonUpdate
 from ..schemas.errors import DungeonError
 
@@ -57,10 +58,7 @@ def get_dungeon(dungeon_id: int):
     """Get a specific dungeon by ID."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute(
-            """SELECT id, title, data FROM dungeons WHERE id = ?""",
-            (dungeon_id,)
-        )
+        cursor.execute("""SELECT id, title, data FROM dungeons WHERE id = ?""", (dungeon_id,))
         row = cursor.fetchone()
         if not row:
             raise ApiError(404, DungeonError(code="dungeon_not_found", message="Dungeon not found"))
@@ -83,7 +81,7 @@ def create_dungeon(dungeon: DungeonCreate):
             cursor.execute(
                 """INSERT INTO dungeons (title, data)
                    VALUES (?, ?)""",
-                (dungeon.title, json.dumps(dungeon.data))
+                (dungeon.title, json.dumps(dungeon.data)),
             )
             conn.commit()
             dungeon_id = cursor.lastrowid
@@ -91,13 +89,12 @@ def create_dungeon(dungeon: DungeonCreate):
             conn.rollback()
             raise ApiError(
                 400,
-                DungeonError(code="failed_to_create_dungeon", message=f"Failed to create dungeon: {str(e)}"),
+                DungeonError(
+                    code="failed_to_create_dungeon", message=f"Failed to create dungeon: {str(e)}"
+                ),
             )
 
-        cursor.execute(
-            """SELECT id, title, data FROM dungeons WHERE id = ?""",
-            (dungeon_id,)
-        )
+        cursor.execute("""SELECT id, title, data FROM dungeons WHERE id = ?""", (dungeon_id,))
         row = cursor.fetchone()
         return _parse_dungeon_row(row)
 
@@ -122,20 +119,19 @@ def update_dungeon(dungeon_id: int, dungeon: DungeonUpdate):
                 """UPDATE dungeons
                    SET title = ?, data = ?
                    WHERE id = ?""",
-                (dungeon.title, json.dumps(dungeon.data), dungeon_id)
+                (dungeon.title, json.dumps(dungeon.data), dungeon_id),
             )
             conn.commit()
         except Exception as e:
             conn.rollback()
             raise ApiError(
                 400,
-                DungeonError(code="failed_to_update_dungeon", message=f"Failed to update dungeon: {str(e)}"),
+                DungeonError(
+                    code="failed_to_update_dungeon", message=f"Failed to update dungeon: {str(e)}"
+                ),
             )
 
-        cursor.execute(
-            """SELECT id, title, data FROM dungeons WHERE id = ?""",
-            (dungeon_id,)
-        )
+        cursor.execute("""SELECT id, title, data FROM dungeons WHERE id = ?""", (dungeon_id,))
         row = cursor.fetchone()
         return _parse_dungeon_row(row)
 
@@ -162,5 +158,7 @@ def delete_dungeon(dungeon_id: int):
             conn.rollback()
             raise ApiError(
                 400,
-                DungeonError(code="failed_to_delete_dungeon", message=f"Failed to delete dungeon: {str(e)}"),
+                DungeonError(
+                    code="failed_to_delete_dungeon", message=f"Failed to delete dungeon: {str(e)}"
+                ),
             )

@@ -1,11 +1,13 @@
-from fastapi import Query
-from typing import List, Optional
 import json
 import sqlite3
+from typing import List, Optional
+
+from fastapi import Query
 
 from ..api_errors import ApiError, ApiRouter, error_responses
 from ..caching import cached_get
-from ..db import get_db, dict_from_row, parse_spell_row as _parse_spell_row
+from ..db import dict_from_row, get_db
+from ..db import parse_spell_row as _parse_spell_row
 from ..schemas import Player, Spell, SpellCreate, SpellPlayerAssignments, SpellUpdate
 from ..schemas.errors import SpellError
 
@@ -21,12 +23,24 @@ _SPELL_COLUMNS = """
 def _spell_values(spell: SpellCreate) -> tuple:
     data = spell.model_dump()
     return (
-        data["name"], data["level"], data["school"], data["description"],
-        data["quick_rules"], data["alternate_description"], json.dumps(data["damage"]),
-        json.dumps(data["healing"]), data["range"], json.dumps(data["higher_levels"]),
-        json.dumps(data["casting_times"]), data["duration"], data["concentration"],
-        data["ritual"], json.dumps(data["components"]), data["materials"],
-        json.dumps(data["attacks"]), json.dumps(data["area_of_effect"]),
+        data["name"],
+        data["level"],
+        data["school"],
+        data["description"],
+        data["quick_rules"],
+        data["alternate_description"],
+        json.dumps(data["damage"]),
+        json.dumps(data["healing"]),
+        data["range"],
+        json.dumps(data["higher_levels"]),
+        json.dumps(data["casting_times"]),
+        data["duration"],
+        data["concentration"],
+        data["ritual"],
+        json.dumps(data["components"]),
+        data["materials"],
+        json.dumps(data["attacks"]),
+        json.dumps(data["area_of_effect"]),
         json.dumps(data["categories"]),
     )
 
@@ -135,7 +149,10 @@ def replace_spell_players(spell_id: int, assignments: SpellPlayerAssignments):
             conn.rollback()
             raise ApiError(
                 400,
-                SpellError(code="failed_to_replace_spell_players", message=f"Failed to replace spell players: {str(e)}"),
+                SpellError(
+                    code="failed_to_replace_spell_players",
+                    message=f"Failed to replace spell players: {str(e)}",
+                ),
             )
 
         cursor.execute(
@@ -148,6 +165,7 @@ def replace_spell_players(spell_id: int, assignments: SpellPlayerAssignments):
         )
         return [dict_from_row(row) for row in cursor.fetchall()]
 
+
 @router.get(
     "/spells/{spell_id}",
     response_model=Spell,
@@ -159,10 +177,7 @@ def get_spell(spell_id: int):
     """Get a specific spell by ID."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute(
-            f"SELECT {_SPELL_COLUMNS} FROM spells WHERE id = ?",
-            (spell_id,)
-        )
+        cursor.execute(f"SELECT {_SPELL_COLUMNS} FROM spells WHERE id = ?", (spell_id,))
         row = cursor.fetchone()
         if not row:
             raise ApiError(404, SpellError(code="spell_not_found", message="Spell not found"))
@@ -180,10 +195,7 @@ def get_spell_by_title(spell_name: str):
     """Get a specific spell by name."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute(
-            f"SELECT {_SPELL_COLUMNS} FROM spells WHERE name = ?",
-            (spell_name,)
-        )
+        cursor.execute(f"SELECT {_SPELL_COLUMNS} FROM spells WHERE name = ?", (spell_name,))
         row = cursor.fetchone()
         if not row:
             raise ApiError(404, SpellError(code="spell_not_found", message="Spell not found"))
@@ -205,9 +217,10 @@ def create_spell(spell: SpellCreate):
         try:
             cursor.execute(
                 """INSERT INTO spells
-                   (name, level, school, description, quick_rules, alternate_description, damage, healing,
-                    range, higher_levels, casting_times, duration, concentration, ritual,
-                    components, materials, attacks, area_of_effect, categories)
+                   (name, level, school, description, quick_rules, alternate_description,
+                    damage, healing, range, higher_levels, casting_times, duration,
+                    concentration, ritual, components, materials, attacks, area_of_effect,
+                    categories)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 _spell_values(spell),
             )
@@ -217,14 +230,14 @@ def create_spell(spell: SpellCreate):
             conn.rollback()
             raise ApiError(
                 400,
-                SpellError(code="spell_name_already_exists", message="A spell with this name already exists"),
+                SpellError(
+                    code="spell_name_already_exists",
+                    message="A spell with this name already exists",
+                ),
             )
 
         # Fetch the created spell
-        cursor.execute(
-            f"SELECT {_SPELL_COLUMNS} FROM spells WHERE id = ?",
-            (spell_id,)
-        )
+        cursor.execute(f"SELECT {_SPELL_COLUMNS} FROM spells WHERE id = ?", (spell_id,))
         row = cursor.fetchone()
         return _parse_spell_row(row)
 
@@ -248,9 +261,11 @@ def update_spell(spell_id: int, spell: SpellUpdate):
         try:
             cursor.execute(
                 """UPDATE spells
-                   SET name = ?, level = ?, school = ?, description = ?, quick_rules = ?, alternate_description = ?,
-                       damage = ?, healing = ?, range = ?, higher_levels = ?, casting_times = ?,
-                       duration = ?, concentration = ?, ritual = ?, components = ?, materials = ?,
+                   SET name = ?, level = ?, school = ?, description = ?, quick_rules = ?,
+                       alternate_description = ?, damage = ?, healing = ?, range = ?,
+                       higher_levels = ?, casting_times = ?, duration = ?, concentration = ?,
+                       ritual = ?, components = ?,
+                       materials = ?,
                        attacks = ?, area_of_effect = ?, categories = ?
                    WHERE id = ?""",
                 (*_spell_values(spell), spell_id),
@@ -260,14 +275,14 @@ def update_spell(spell_id: int, spell: SpellUpdate):
             conn.rollback()
             raise ApiError(
                 400,
-                SpellError(code="spell_name_already_exists", message="A spell with this name already exists"),
+                SpellError(
+                    code="spell_name_already_exists",
+                    message="A spell with this name already exists",
+                ),
             )
 
         # Fetch and return the updated spell
-        cursor.execute(
-            f"SELECT {_SPELL_COLUMNS} FROM spells WHERE id = ?",
-            (spell_id,)
-        )
+        cursor.execute(f"SELECT {_SPELL_COLUMNS} FROM spells WHERE id = ?", (spell_id,))
         row = cursor.fetchone()
         return _parse_spell_row(row)
 
@@ -293,5 +308,9 @@ def delete_spell(spell_id: int):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise ApiError(400, SpellError(code="failed_to_delete_spell", message=f"Failed to delete spell: {str(e)}"))
-
+            raise ApiError(
+                400,
+                SpellError(
+                    code="failed_to_delete_spell", message=f"Failed to delete spell: {str(e)}"
+                ),
+            )

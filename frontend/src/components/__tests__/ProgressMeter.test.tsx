@@ -5,8 +5,14 @@ import { ProgressMeter } from "../ProgressMeter";
 describe("ProgressMeter", () => {
   it("exposes the determinate value and value text", () => {
     render(<ProgressMeter value={75} label="Engine analysis" valueText="75%" />);
-    expect(screen.getByRole("meter", { name: "Engine analysis" })).toHaveAttribute("aria-valuenow", "75");
-    expect(screen.getByRole("meter", { name: "Engine analysis" })).toHaveAttribute("aria-valuetext", "75%");
+    expect(screen.getByRole("meter", { name: "Engine analysis" })).toHaveAttribute(
+      "aria-valuenow",
+      "75",
+    );
+    expect(screen.getByRole("meter", { name: "Engine analysis" })).toHaveAttribute(
+      "aria-valuetext",
+      "75%",
+    );
   });
   it("clamps the value to its range", () => {
     render(<ProgressMeter value={150} label="Coverage" />);

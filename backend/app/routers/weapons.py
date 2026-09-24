@@ -1,10 +1,11 @@
-from fastapi import Query
-from typing import List
 import json
+from typing import List
+
+from fastapi import Query
 
 from ..api_errors import ApiError, ApiRouter, error_responses
 from ..caching import cached_get
-from ..db import get_db, dict_from_row, parse_json_value
+from ..db import dict_from_row, get_db, parse_json_value
 from ..schemas import Player, Weapon, WeaponCreate, WeaponUpdate
 from ..schemas.errors import WeaponError
 
@@ -41,8 +42,7 @@ def list_weapons(
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            f"SELECT {SELECT_COLUMNS} FROM weapons ORDER BY name LIMIT ? OFFSET ?",
-            (limit, offset)
+            f"SELECT {SELECT_COLUMNS} FROM weapons ORDER BY name LIMIT ? OFFSET ?", (limit, offset)
         )
         rows = cursor.fetchall()
         return [_parse_weapon_row(row) for row in rows]
@@ -118,13 +118,18 @@ def create_weapon(weapon: WeaponCreate):
                     weapon.quick_rules,
                     weapon.weapon_attack_bonus,
                     weapon.weapon_damage_bonus,
-                )
+                ),
             )
             conn.commit()
             weapon_id = cursor.lastrowid
         except Exception as e:
             conn.rollback()
-            raise ApiError(400, WeaponError(code="failed_to_create_weapon", message=f"Failed to create weapon: {str(e)}"))
+            raise ApiError(
+                400,
+                WeaponError(
+                    code="failed_to_create_weapon", message=f"Failed to create weapon: {str(e)}"
+                ),
+            )
 
         cursor.execute(f"SELECT {SELECT_COLUMNS} FROM weapons WHERE id = ?", (weapon_id,))
         row = cursor.fetchone()
@@ -170,12 +175,17 @@ def update_weapon(weapon_id: int, weapon: WeaponUpdate):
                     weapon.weapon_attack_bonus,
                     weapon.weapon_damage_bonus,
                     weapon_id,
-                )
+                ),
             )
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise ApiError(400, WeaponError(code="failed_to_update_weapon", message=f"Failed to update weapon: {str(e)}"))
+            raise ApiError(
+                400,
+                WeaponError(
+                    code="failed_to_update_weapon", message=f"Failed to update weapon: {str(e)}"
+                ),
+            )
 
         cursor.execute(f"SELECT {SELECT_COLUMNS} FROM weapons WHERE id = ?", (weapon_id,))
         row = cursor.fetchone()
@@ -203,7 +213,7 @@ def get_weapon_players(weapon_id: int):
                JOIN player_weapons pw ON p.id = pw.player_id
                WHERE pw.weapon_id = ?
                ORDER BY p.name""",
-            (weapon_id,)
+            (weapon_id,),
         )
         rows = cursor.fetchall()
         return [dict_from_row(row) for row in rows]
@@ -228,4 +238,9 @@ def delete_weapon(weapon_id: int):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            raise ApiError(400, WeaponError(code="failed_to_delete_weapon", message=f"Failed to delete weapon: {str(e)}"))
+            raise ApiError(
+                400,
+                WeaponError(
+                    code="failed_to_delete_weapon", message=f"Failed to delete weapon: {str(e)}"
+                ),
+            )

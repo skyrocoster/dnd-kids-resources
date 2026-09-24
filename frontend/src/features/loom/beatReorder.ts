@@ -1,6 +1,6 @@
 export interface OrderedBeat {
-  nodeId: number
-  position: number
+  nodeId: number;
+  position: number;
 }
 
 /** Returns the API payload needed to place a beat in its new narrative slot. */
@@ -16,13 +16,13 @@ export function beatReorderTarget(
     fromIndex >= beats.length ||
     toIndex > beats.length
   ) {
-    return null
+    return null;
   }
 
-  const newOrder = beats.slice()
-  const [moved] = newOrder.splice(fromIndex, 1)
-  newOrder.splice(toIndex, 0, moved)
-  const follower = newOrder[toIndex + 1]
+  const newOrder = beats.slice();
+  const [moved] = newOrder.splice(fromIndex, 1);
+  newOrder.splice(toIndex, 0, moved);
+  const follower = newOrder[toIndex + 1];
 
-  return { nodeId: moved.nodeId, position: follower?.position ?? Number.MAX_SAFE_INTEGER }
+  return { nodeId: moved.nodeId, position: follower?.position ?? Number.MAX_SAFE_INTEGER };
 }

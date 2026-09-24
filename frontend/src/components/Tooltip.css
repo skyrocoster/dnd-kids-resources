@@ -25,11 +25,29 @@
   line-height: var(--type-body-sm-line);
 }
 
-.tooltip-arrow { width: 12px; height: 8px; overflow: clip; }
-.tooltip-arrow::before { content: ''; display: block; width: 8px; height: 8px; transform: translate(25%, 50%) rotate(45deg); border: 1px solid var(--md-outline-variant); background: var(--md-surface-3); }
-.tooltip-arrow[data-side='top'] { transform: rotate(180deg); }
-.tooltip-arrow[data-side='left'] { transform: rotate(90deg); }
-.tooltip-arrow[data-side='right'] { transform: rotate(-90deg); }
+.tooltip-arrow {
+  width: 12px;
+  height: 8px;
+  overflow: clip;
+}
+.tooltip-arrow::before {
+  content: "";
+  display: block;
+  width: 8px;
+  height: 8px;
+  transform: translate(25%, 50%) rotate(45deg);
+  border: 1px solid var(--md-outline-variant);
+  background: var(--md-surface-3);
+}
+.tooltip-arrow[data-side="top"] {
+  transform: rotate(180deg);
+}
+.tooltip-arrow[data-side="left"] {
+  transform: rotate(90deg);
+}
+.tooltip-arrow[data-side="right"] {
+  transform: rotate(-90deg);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .tooltip-popup {

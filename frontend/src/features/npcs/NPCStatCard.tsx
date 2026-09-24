@@ -1,6 +1,6 @@
-import type { NPC } from '../../api/types'
-import { DiceText } from '../../components/DiceText'
-import { MonsterStatBlock } from '../monsters/MonsterStatBlock'
+import type { NPC } from "../../api/types";
+import { DiceText } from "../../components/DiceText";
+import { MonsterStatBlock } from "../monsters/MonsterStatBlock";
 import {
   composeAppearance,
   formatMovementSpeeds,
@@ -8,13 +8,13 @@ import {
   hasStatblock,
   identityLine,
   npcToMonsterView,
-} from './npcModel'
-import './NPCStatCard.css'
+} from "./npcModel";
+import "./NPCStatCard.css";
 
 interface NPCStatCardProps {
-  npc: NPC
-  compact?: boolean
-  onPull?: () => void
+  npc: NPC;
+  compact?: boolean;
+  onPull?: () => void;
 }
 
 /**
@@ -23,15 +23,15 @@ interface NPCStatCardProps {
  * then progressively-disclosed stat detail - each section only when present.
  */
 export function NPCStatCard({ npc, compact = false, onPull }: NPCStatCardProps) {
-  const identity = identityLine(npc)
-  const appearance = composeAppearance(npc.appearance)
-  const speed = formatMovementSpeeds(npc.speed)
-  const showStatStrip = hasCombatStats(npc)
-  const showMonsterBlock = hasStatblock(npc)
+  const identity = identityLine(npc);
+  const appearance = composeAppearance(npc.appearance);
+  const speed = formatMovementSpeeds(npc.speed);
+  const showStatStrip = hasCombatStats(npc);
+  const showMonsterBlock = hasStatblock(npc);
 
   return (
     <article
-      className={`npc-stat-card${compact ? ' npc-stat-card-compact' : ''}`}
+      className={`npc-stat-card${compact ? " npc-stat-card-compact" : ""}`}
       data-variant="npc"
       data-testid="npc-stat-card"
     >
@@ -80,15 +80,11 @@ export function NPCStatCard({ npc, compact = false, onPull }: NPCStatCardProps) 
       ) : !compact ? (
         <div className="npc-stat-card-empty">
           <p className="npc-stat-card-empty-text">No combat stats yet.</p>
-          <button
-            className="npc-stat-card-empty-button"
-            disabled={!onPull}
-            onClick={onPull}
-          >
+          <button className="npc-stat-card-empty-button" disabled={!onPull} onClick={onPull}>
             Pull from a monster…
           </button>
         </div>
       ) : null}
     </article>
-  )
+  );
 }

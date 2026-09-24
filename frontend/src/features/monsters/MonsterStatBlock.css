@@ -5,7 +5,11 @@
   gap: 0;
   padding: 1.25rem;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--md-tertiary) 8%, transparent), transparent 12rem),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--md-tertiary) 8%, transparent),
+      transparent 12rem
+    ),
     var(--md-surface-2);
   border: 1px solid color-mix(in srgb, var(--md-tertiary) 28%, var(--md-outline-variant));
   border-radius: 1rem;
@@ -15,12 +19,16 @@
 }
 
 .monster-stat-block::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--md-tertiary) 8%, transparent), transparent 22%),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--md-tertiary) 8%, transparent),
+      transparent 22%
+    ),
     linear-gradient(0deg, rgb(0 0 0 / 0.1), transparent 18%);
 }
 
@@ -149,7 +157,11 @@
   gap: 0.125rem;
   min-height: 5rem;
   padding: 0.75rem 0.35rem;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--md-tertiary) 12%, transparent), var(--md-surface-3));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--md-tertiary) 12%, transparent),
+    var(--md-surface-3)
+  );
   border: 1px solid color-mix(in srgb, var(--md-tertiary) 8%, transparent);
   border-radius: 0.75rem;
 }

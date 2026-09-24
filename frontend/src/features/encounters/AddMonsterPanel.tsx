@@ -1,34 +1,40 @@
-import { useEffect, useState } from 'react'
-import * as api from '../../api/client'
-import type { Monster } from '../../api/types'
-import { IconButton } from '../../components/IconButton'
-import { SearchList } from '../../components/SearchList'
-import './AddMonsterPanel.css'
+import { useEffect, useState } from "react";
+import * as api from "../../api/client";
+import type { Monster } from "../../api/types";
+import { IconButton } from "../../components/IconButton";
+import { SearchList } from "../../components/SearchList";
+import "./AddMonsterPanel.css";
 
 interface AddMonsterPanelProps {
-  onAdd: (monster: Monster) => void
-  onClose: () => void
+  onAdd: (monster: Monster) => void;
+  onClose: () => void;
 }
 
 export function AddMonsterPanel({ onAdd, onClose }: AddMonsterPanelProps) {
-  const [monsters, setMonsters] = useState<Monster[]>([])
-  const [loadError, setLoadError] = useState<string | null>(null)
+  const [monsters, setMonsters] = useState<Monster[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     api
       .listMonsters()
       .then((data) => {
-        setMonsters([...data].sort((a, b) => a.name.localeCompare(b.name)))
-        setLoadError(null)
+        setMonsters([...data].sort((a, b) => a.name.localeCompare(b.name)));
+        setLoadError(null);
       })
-      .catch((error) => setLoadError(error instanceof Error ? error.message : 'Failed to load monsters.'))
-  }, [])
+      .catch((error) =>
+        setLoadError(error instanceof Error ? error.message : "Failed to load monsters."),
+      );
+  }, []);
 
   return (
     <div className="add-monster-panel">
       <div className="add-monster-panel-header">
         <h3>Add monster</h3>
-        <IconButton label="Close add monster panel" className="add-monster-panel-close" onClick={onClose}>
+        <IconButton
+          label="Close add monster panel"
+          className="add-monster-panel-close"
+          onClick={onClose}
+        >
           ×
         </IconButton>
       </div>
@@ -44,5 +50,5 @@ export function AddMonsterPanel({ onAdd, onClose }: AddMonsterPanelProps) {
         emptyMessage="No monsters found."
       />
     </div>
-  )
+  );
 }

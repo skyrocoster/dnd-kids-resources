@@ -1,5 +1,7 @@
 """Tests for spell CRUD endpoints."""
+
 import pytest
+
 import backend.app.routers.spells as spells_router
 
 
@@ -80,7 +82,6 @@ def test_update_spell_duplicate_name_fails(test_client):
     }
     response = test_client.post("/api/spells", json=spell_a)
     assert response.status_code == 201
-    spell_a_id = response.json()["id"]
 
     spell_b = {
         "name": "Duplicate Test B",
@@ -128,8 +129,12 @@ def test_update_nonexistent_spell(test_client):
 
 def test_get_spell_players_returns_assigned_players_sorted(test_client):
     spell_id = test_client.get("/api/spells").json()[0]["id"]
-    beta = test_client.post("/api/players", json={"name": "Beta Caster", "class_": "Wizard", "level": 3}).json()
-    alpha = test_client.post("/api/players", json={"name": "Alpha Caster", "class_": "Cleric", "level": 4}).json()
+    beta = test_client.post(
+        "/api/players", json={"name": "Beta Caster", "class_": "Wizard", "level": 3}
+    ).json()
+    alpha = test_client.post(
+        "/api/players", json={"name": "Alpha Caster", "class_": "Cleric", "level": 4}
+    ).json()
 
     assert test_client.post(f"/api/players/{beta['id']}/spells/{spell_id}").status_code == 201
     assert test_client.post(f"/api/players/{alpha['id']}/spells/{spell_id}").status_code == 201
@@ -141,7 +146,9 @@ def test_get_spell_players_returns_assigned_players_sorted(test_client):
 
 def test_replace_spell_players_replaces_assignments_atomically(test_client):
     spell_id = test_client.get("/api/spells").json()[0]["id"]
-    removed = test_client.post("/api/players", json={"name": "Removed Caster", "class_": "Druid"}).json()
+    removed = test_client.post(
+        "/api/players", json={"name": "Removed Caster", "class_": "Druid"}
+    ).json()
     kept = test_client.post("/api/players", json={"name": "Kept Caster", "class_": "Wizard"}).json()
 
     assert test_client.post(f"/api/players/{removed['id']}/spells/{spell_id}").status_code == 201
@@ -156,9 +163,13 @@ def test_replace_spell_players_replaces_assignments_atomically(test_client):
 
 def test_replace_spell_players_rejects_duplicate_player_ids(test_client):
     spell_id = test_client.get("/api/spells").json()[0]["id"]
-    player = test_client.post("/api/players", json={"name": "Duplicate Caster", "class_": "Wizard"}).json()
+    player = test_client.post(
+        "/api/players", json={"name": "Duplicate Caster", "class_": "Wizard"}
+    ).json()
 
-    response = test_client.put(f"/api/spells/{spell_id}/players", json={"player_ids": [player["id"], player["id"]]})
+    response = test_client.put(
+        f"/api/spells/{spell_id}/players", json={"player_ids": [player["id"], player["id"]]}
+    )
     assert response.status_code == 400
     assert response.json()["message"] == "Duplicate player ids"
 
@@ -168,7 +179,10 @@ def test_spell_player_assignment_404s(test_client):
 
     assert test_client.get("/api/spells/99999/players").status_code == 404
     assert test_client.put("/api/spells/99999/players", json={"player_ids": []}).status_code == 404
-    assert test_client.put(f"/api/spells/{spell_id}/players", json={"player_ids": [99999]}).status_code == 404
+    assert (
+        test_client.put(f"/api/spells/{spell_id}/players", json={"player_ids": [99999]}).status_code
+        == 404
+    )
 
 
 def test_replace_spell_players_db_failure_rolls_back(monkeypatch, test_client):
@@ -220,17 +234,47 @@ def test_replace_spell_players_db_failure_rolls_back(monkeypatch, test_client):
 @pytest.mark.parametrize(
     "payload",
     [
-        {"name": "Missing Quick Rules", "level": 1, "description": "Test", "range": "Self", "duration": "Instantaneous", "concentration": False, "ritual": False},
-        {"name": "Blank Quick Rules", "level": 1, "description": "Test", "quick_rules": "   ", "range": "Self", "duration": "Instantaneous", "concentration": False, "ritual": False},
-        {"name": "Malformed Quick Rules", "level": 1, "description": "Test", "quick_rules": "Use {spell_attack_bonus", "range": "Self", "duration": "Instantaneous", "concentration": False, "ritual": False},
-        {"name": "Unknown Quick Rules", "level": 1, "description": "Test", "quick_rules": "Use {weapon_bonus}.", "range": "Self", "duration": "Instantaneous", "concentration": False, "ritual": False},
+        {
+            "name": "Missing Quick Rules",
+            "level": 1,
+            "description": "Test",
+            "range": "Self",
+            "duration": "Instantaneous",
+            "concentration": False,
+            "ritual": False,
+        },
+        {
+            "name": "Blank Quick Rules",
+            "level": 1,
+            "description": "Test",
+            "quick_rules": "   ",
+            "range": "Self",
+            "duration": "Instantaneous",
+            "concentration": False,
+            "ritual": False,
+        },
+        {
+            "name": "Malformed Quick Rules",
+            "level": 1,
+            "description": "Test",
+            "quick_rules": "Use {spell_attack_bonus",
+            "range": "Self",
+            "duration": "Instantaneous",
+            "concentration": False,
+            "ritual": False,
+        },
+        {
+            "name": "Unknown Quick Rules",
+            "level": 1,
+            "description": "Test",
+            "quick_rules": "Use {weapon_bonus}.",
+            "range": "Self",
+            "duration": "Instantaneous",
+            "concentration": False,
+            "ritual": False,
+        },
     ],
 )
 def test_create_spell_rejects_invalid_quick_rules(test_client, payload):
     response = test_client.post("/api/spells", json=payload)
     assert response.status_code == 422
-
-
-
-
-

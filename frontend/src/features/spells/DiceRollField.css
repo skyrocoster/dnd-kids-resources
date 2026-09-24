@@ -4,9 +4,18 @@
   gap: 0.35rem;
 }
 
-.dice-roll-count,
-.dice-roll-type {
-  width: 4.5rem;
+.dice-roll-group .fc-select-trigger,
+.dice-roll-group .fc-input-frame {
+  box-sizing: border-box;
+  flex: 0 0 4.5rem;
+  inline-size: 4.5rem;
+  min-inline-size: 0;
+  min-block-size: var(--control-height);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-md);
+  background: var(--md-surface);
+  color: var(--md-on-surface);
 }
 
 .dice-roll-sep {
@@ -15,5 +24,5 @@
 }
 
 .dice-roll-mod {
-  width: 4.5rem;
+  width: 100%;
 }

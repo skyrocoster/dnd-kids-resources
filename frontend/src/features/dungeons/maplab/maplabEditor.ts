@@ -20,66 +20,81 @@ import {
   type MapProp,
   type MapRoom,
   type MapStair,
-} from '../../../model/maplabModel'
-import { FIXTURE_TYPES } from './fixtureTypes'
+} from "../../../model/maplabModel";
+import { FIXTURE_TYPES } from "./fixtureTypes";
 
 export interface EditorState {
-  layout: MapLayout
-  selectedRoomId: number | null
-  selectedDoorId: number | null
-  selectedPropId: number | null
-  selectedStairId: number | null // Phase H
-  selectedPortalId: number | null // Phase H
-  selectedFeatureId: number | null
-  activeZ: number
-  past: EditorSnapshot[]
-  future: EditorSnapshot[]
+  layout: MapLayout;
+  selectedRoomId: number | null;
+  selectedDoorId: number | null;
+  selectedPropId: number | null;
+  selectedStairId: number | null; // Phase H
+  selectedPortalId: number | null; // Phase H
+  selectedFeatureId: number | null;
+  activeZ: number;
+  past: EditorSnapshot[];
+  future: EditorSnapshot[];
 }
 
-type EditorSnapshot = Omit<EditorState, 'past' | 'future'>
+type EditorSnapshot = Omit<EditorState, "past" | "future">;
 
 export type EditorAction =
-  | { type: 'addRoom' }
-  | { type: 'addRoomWithCells'; cells: MapCell[] }
-  | { type: 'addFloorAbove' }
-  | { type: 'addFloorBelow' }
-  | { type: 'selectRoom'; roomId: number | null }
-  | { type: 'deleteRoom'; roomId: number }
-  | { type: 'dropEmptyRoom'; roomId: number }
-  | { type: 'toggleCell'; roomId: number; cell: [number, number] }
-  | { type: 'setRoomFootprint'; roomId: number; cells: MapCell[] }
-  | { type: 'setRoomMeta'; roomId: number; meta: { title?: string; description?: string; kind?: string; wallKind?: string } }
-  | { type: 'addDoor'; cell: [number, number]; side: CardinalSide }
-  | { type: 'selectDoor'; doorId: number | null }
-  | { type: 'updateFixtureFlags'; fixtureId: number; fixtureType: 'door' | 'stair' | 'prop' | 'portal'; flags: Record<string, unknown> }
-  | { type: 'deleteDoor'; doorId: number }
-  | { type: 'addProp'; cell: [number, number]; kind?: string }
-  | { type: 'selectProp'; propId: number | null }
-  | { type: 'deleteProp'; propId: number }
-  | { type: 'addStair'; from: { z: number; cell: [number, number] } } // Phase H, stub
-  | { type: 'selectStair'; stairId: number | null } // Phase H, stub
-  | { type: 'deleteStair'; stairId: number } // Phase H, stub
-  | { type: 'setStairDirection'; z: number; cell: MapCell; direction: 'up' | 'down'; enabled: boolean } // Phase I
-  | { type: 'addPortal'; cell: [number, number]; to?: { dungeon_id: number } } // Phase H
-  | { type: 'selectPortal'; portalId: number | null } // Phase H
-  | { type: 'deletePortal'; portalId: number } // Phase H
-  | { type: 'addFeature'; kind: string; cell: MapCell; z: number }
-  | { type: 'toggleFeatureCell'; featureId: number; cell: MapCell }
-  | { type: 'selectFeature'; featureId: number | null }
-  | { type: 'deleteFeature'; featureId: number }
-  | { type: 'setFeatureMeta'; featureId: number; meta: { title?: string; kind?: string } }
-  | { type: 'setActiveZ'; z: number }
-  | { type: 'loadLayout'; layout: MapLayout }
-  | { type: 'resetToFixture'; layout: MapLayout }
-  | { type: 'setPadding'; padding: MapLayoutMeta['padding'] }
-  | { type: 'undo' }
-  | { type: 'redo' }
+  | { type: "addRoom" }
+  | { type: "addRoomWithCells"; cells: MapCell[] }
+  | { type: "addFloorAbove" }
+  | { type: "addFloorBelow" }
+  | { type: "selectRoom"; roomId: number | null }
+  | { type: "deleteRoom"; roomId: number }
+  | { type: "dropEmptyRoom"; roomId: number }
+  | { type: "toggleCell"; roomId: number; cell: [number, number] }
+  | { type: "setRoomFootprint"; roomId: number; cells: MapCell[] }
+  | {
+      type: "setRoomMeta";
+      roomId: number;
+      meta: { title?: string; description?: string; kind?: string; wallKind?: string };
+    }
+  | { type: "addDoor"; cell: [number, number]; side: CardinalSide }
+  | { type: "selectDoor"; doorId: number | null }
+  | {
+      type: "updateFixtureFlags";
+      fixtureId: number;
+      fixtureType: "door" | "stair" | "prop" | "portal";
+      flags: Record<string, unknown>;
+    }
+  | { type: "deleteDoor"; doorId: number }
+  | { type: "addProp"; cell: [number, number]; kind?: string }
+  | { type: "selectProp"; propId: number | null }
+  | { type: "deleteProp"; propId: number }
+  | { type: "addStair"; from: { z: number; cell: [number, number] } } // Phase H, stub
+  | { type: "selectStair"; stairId: number | null } // Phase H, stub
+  | { type: "deleteStair"; stairId: number } // Phase H, stub
+  | {
+      type: "setStairDirection";
+      z: number;
+      cell: MapCell;
+      direction: "up" | "down";
+      enabled: boolean;
+    } // Phase I
+  | { type: "addPortal"; cell: [number, number]; to?: { dungeon_id: number } } // Phase H
+  | { type: "selectPortal"; portalId: number | null } // Phase H
+  | { type: "deletePortal"; portalId: number } // Phase H
+  | { type: "addFeature"; kind: string; cell: MapCell; z: number }
+  | { type: "toggleFeatureCell"; featureId: number; cell: MapCell }
+  | { type: "selectFeature"; featureId: number | null }
+  | { type: "deleteFeature"; featureId: number }
+  | { type: "setFeatureMeta"; featureId: number; meta: { title?: string; kind?: string } }
+  | { type: "setActiveZ"; z: number }
+  | { type: "loadLayout"; layout: MapLayout }
+  | { type: "resetToFixture"; layout: MapLayout }
+  | { type: "setPadding"; padding: MapLayoutMeta["padding"] }
+  | { type: "undo" }
+  | { type: "redo" };
 
 function reduceEditor(state: EditorState, action: EditorAction): EditorState {
   switch (action.type) {
-    case 'addRoom': {
-      const room_id = nextRoomId(state.layout)
-      const newRoom: MapRoom = { room_id, z: state.activeZ, origin: [0, 0], cells: [] }
+    case "addRoom": {
+      const room_id = nextRoomId(state.layout);
+      const newRoom: MapRoom = { room_id, z: state.activeZ, origin: [0, 0], cells: [] };
       return {
         ...state,
         layout: { ...state.layout, rooms: [...state.layout.rooms, newRoom] },
@@ -89,23 +104,27 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
         selectedStairId: null,
         selectedPortalId: null,
         selectedFeatureId: null,
-      }
+      };
     }
 
-    case 'addRoomWithCells': {
+    case "addRoomWithCells": {
       // Atomic create-with-footprint for the room brush's first stroke: one room-shaped stroke of
       // cells becomes one room, in one dispatch — mirrors 'setRoomFootprint's overlap/connectivity
       // guard so a stroke that lands on invalid cells silently produces no room instead of a
       // partially-formed one.
-      const uniqueCells = Array.from(new Map(action.cells.map((cell) => [`${cell[0]},${cell[1]}`, cell])).values())
-      if (uniqueCells.length === 0) return state
-      const sameFloorRooms = state.layout.rooms.filter((room) => room.z === state.activeZ)
-      const overlapsOtherRoom = uniqueCells.some((cell) => roomOfCell(cell, sameFloorRooms) !== null)
-      if (overlapsOtherRoom || !isConnectedPolyomino(uniqueCells)) return state
+      const uniqueCells = Array.from(
+        new Map(action.cells.map((cell) => [`${cell[0]},${cell[1]}`, cell])).values(),
+      );
+      if (uniqueCells.length === 0) return state;
+      const sameFloorRooms = state.layout.rooms.filter((room) => room.z === state.activeZ);
+      const overlapsOtherRoom = uniqueCells.some(
+        (cell) => roomOfCell(cell, sameFloorRooms) !== null,
+      );
+      if (overlapsOtherRoom || !isConnectedPolyomino(uniqueCells)) return state;
 
-      const room_id = nextRoomId(state.layout)
-      const { origin, cells } = normalizeCells(uniqueCells)
-      const newRoom: MapRoom = { room_id, z: state.activeZ, origin, cells }
+      const room_id = nextRoomId(state.layout);
+      const { origin, cells } = normalizeCells(uniqueCells);
+      const newRoom: MapRoom = { room_id, z: state.activeZ, origin, cells };
       return {
         ...state,
         layout: { ...state.layout, rooms: [...state.layout.rooms, newRoom] },
@@ -115,22 +134,22 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
         selectedStairId: null,
         selectedPortalId: null,
         selectedFeatureId: null,
-      }
+      };
     }
 
-    case 'setRoomMeta': {
-      const room = state.layout.rooms.find((candidate) => candidate.room_id === action.roomId)
-      if (!room) return state
+    case "setRoomMeta": {
+      const room = state.layout.rooms.find((candidate) => candidate.room_id === action.roomId);
+      if (!room) return state;
 
       const rooms = state.layout.rooms.map((candidate) =>
         candidate.room_id === action.roomId ? { ...candidate, ...action.meta } : candidate,
-      )
-      return { ...state, layout: { ...state.layout, rooms } }
+      );
+      return { ...state, layout: { ...state.layout, rooms } };
     }
 
-    case 'addFloorAbove': {
-      const z = state.activeZ + 1
-      if (state.layout.floors.some((floor) => floor.z === z)) return state
+    case "addFloorAbove": {
+      const z = state.activeZ + 1;
+      if (state.layout.floors.some((floor) => floor.z === z)) return state;
       return {
         ...state,
         layout: {
@@ -144,12 +163,12 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
         selectedStairId: null,
         selectedPortalId: null,
         selectedFeatureId: null,
-      }
+      };
     }
 
-    case 'addFloorBelow': {
-      const z = state.activeZ - 1
-      if (state.layout.floors.some((floor) => floor.z === z)) return state
+    case "addFloorBelow": {
+      const z = state.activeZ - 1;
+      if (state.layout.floors.some((floor) => floor.z === z)) return state;
       return {
         ...state,
         layout: {
@@ -163,10 +182,10 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
         selectedStairId: null,
         selectedPortalId: null,
         selectedFeatureId: null,
-      }
+      };
     }
 
-    case 'selectRoom':
+    case "selectRoom":
       return {
         ...state,
         selectedRoomId: action.roomId,
@@ -175,77 +194,84 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
         selectedStairId: action.roomId === null ? state.selectedStairId : null,
         selectedPortalId: action.roomId === null ? state.selectedPortalId : null,
         selectedFeatureId: action.roomId === null ? state.selectedFeatureId : null,
-      }
+      };
 
-    case 'deleteRoom': {
-      const rooms = state.layout.rooms.filter((room) => room.room_id !== action.roomId)
+    case "deleteRoom": {
+      const rooms = state.layout.rooms.filter((room) => room.room_id !== action.roomId);
       // A door's `cell` belongs to exactly one room's wall (the side-authored owner); once that
       // room is gone the cell no longer belongs to any remaining room, so the door is orphaned.
       // A shared-wall door whose cell belongs to the *surviving* room stays put.
-      const doors = state.layout.doors.filter((door) => roomOfCell(door.cell, rooms) !== null)
-      const selectedDoorSurvives = doors.some((door) => door.door_id === state.selectedDoorId)
+      const doors = state.layout.doors.filter((door) => roomOfCell(door.cell, rooms) !== null);
+      const selectedDoorSurvives = doors.some((door) => door.door_id === state.selectedDoorId);
       return {
         ...state,
         layout: { ...state.layout, rooms, doors },
         selectedRoomId: state.selectedRoomId === action.roomId ? null : state.selectedRoomId,
         selectedDoorId: selectedDoorSurvives ? state.selectedDoorId : null,
-      }
+      };
     }
-    case 'dropEmptyRoom': {
-      const rooms = state.layout.rooms.filter((room) => room.room_id !== action.roomId)
-      const doors = state.layout.doors.filter((door) => roomOfCell(door.cell, rooms) !== null)
-      const selectedDoorSurvives = doors.some((door) => door.door_id === state.selectedDoorId)
+    case "dropEmptyRoom": {
+      const rooms = state.layout.rooms.filter((room) => room.room_id !== action.roomId);
+      const doors = state.layout.doors.filter((door) => roomOfCell(door.cell, rooms) !== null);
+      const selectedDoorSurvives = doors.some((door) => door.door_id === state.selectedDoorId);
       return {
         ...state,
         layout: { ...state.layout, rooms, doors },
         selectedRoomId: state.selectedRoomId === action.roomId ? null : state.selectedRoomId,
         selectedDoorId: selectedDoorSurvives ? state.selectedDoorId : null,
-      }
+      };
     }
 
-    case 'toggleCell': {
-      const room = state.layout.rooms.find((r) => r.room_id === action.roomId)
-      if (!room) return state
+    case "toggleCell": {
+      const room = state.layout.rooms.find((r) => r.room_id === action.roomId);
+      if (!room) return state;
 
-      const absolute = absoluteCells(room)
-      const isOwned = absolute.some(([x, y]) => x === action.cell[0] && y === action.cell[1])
+      const absolute = absoluteCells(room);
+      const isOwned = absolute.some(([x, y]) => x === action.cell[0] && y === action.cell[1]);
 
-      let nextAbsolute: MapCell[]
+      let nextAbsolute: MapCell[];
       if (isOwned) {
-        const candidate = absolute.filter(([x, y]) => !(x === action.cell[0] && y === action.cell[1]))
-        if (!isConnectedPolyomino(candidate)) return state
-        nextAbsolute = candidate
+        const candidate = absolute.filter(
+          ([x, y]) => !(x === action.cell[0] && y === action.cell[1]),
+        );
+        if (!isConnectedPolyomino(candidate)) return state;
+        nextAbsolute = candidate;
       } else {
-        if (!canPaintCell(state.layout, action.roomId, action.cell)) return state
-        nextAbsolute = [...absolute, action.cell]
+        if (!canPaintCell(state.layout, action.roomId, action.cell)) return state;
+        nextAbsolute = [...absolute, action.cell];
       }
 
-      const { origin, cells } = normalizeCells(nextAbsolute)
-      const rooms = state.layout.rooms.map((r) => (r.room_id === action.roomId ? { ...r, origin, cells } : r))
-      return { ...state, layout: { ...state.layout, rooms } }
+      const { origin, cells } = normalizeCells(nextAbsolute);
+      const rooms = state.layout.rooms.map((r) =>
+        r.room_id === action.roomId ? { ...r, origin, cells } : r,
+      );
+      return { ...state, layout: { ...state.layout, rooms } };
     }
 
-    case 'setRoomFootprint':
-      {
-        const room = state.layout.rooms.find((r) => r.room_id === action.roomId)
-        if (!room) return state
+    case "setRoomFootprint": {
+      const room = state.layout.rooms.find((r) => r.room_id === action.roomId);
+      if (!room) return state;
 
-        const uniqueCells = Array.from(new Map(action.cells.map((cell) => [`${cell[0]},${cell[1]}`, cell])).values())
-        const sameFloorRooms = state.layout.rooms.filter((r) => r.z === room.z)
-        const overlapsOtherRoom = uniqueCells.some((cell) => {
-          const owner = roomOfCell(cell, sameFloorRooms)
-          return owner !== null && owner.room_id !== action.roomId
-        })
-        if (overlapsOtherRoom || !isConnectedPolyomino(uniqueCells)) return state
+      const uniqueCells = Array.from(
+        new Map(action.cells.map((cell) => [`${cell[0]},${cell[1]}`, cell])).values(),
+      );
+      const sameFloorRooms = state.layout.rooms.filter((r) => r.z === room.z);
+      const overlapsOtherRoom = uniqueCells.some((cell) => {
+        const owner = roomOfCell(cell, sameFloorRooms);
+        return owner !== null && owner.room_id !== action.roomId;
+      });
+      if (overlapsOtherRoom || !isConnectedPolyomino(uniqueCells)) return state;
 
-        const { origin, cells } = normalizeCells(uniqueCells)
-        const rooms = state.layout.rooms.map((r) => (r.room_id === action.roomId ? { ...r, origin, cells } : r))
-        return { ...state, layout: { ...state.layout, rooms } }
-      }
+      const { origin, cells } = normalizeCells(uniqueCells);
+      const rooms = state.layout.rooms.map((r) =>
+        r.room_id === action.roomId ? { ...r, origin, cells } : r,
+      );
+      return { ...state, layout: { ...state.layout, rooms } };
+    }
 
-    case 'addDoor': {
-      const door_id = nextDoorId(state.layout)
-      const defaults = FIXTURE_TYPES.door.defaultFlags
+    case "addDoor": {
+      const door_id = nextDoorId(state.layout);
+      const defaults = FIXTURE_TYPES.door.defaultFlags;
       const newDoor: MapDoor = {
         door_id,
         cell: action.cell,
@@ -254,7 +280,7 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
         hidden: Boolean(defaults.hidden),
         locked: Boolean(defaults.locked),
         trapped: Boolean(defaults.trapped),
-      }
+      };
       return {
         ...state,
         layout: {
@@ -268,10 +294,10 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
         selectedStairId: null,
         selectedPortalId: null,
         selectedFeatureId: null,
-      }
+      };
     }
 
-    case 'selectDoor':
+    case "selectDoor":
       return {
         ...state,
         selectedDoorId: action.doorId,
@@ -280,20 +306,20 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
         selectedStairId: action.doorId === null ? state.selectedStairId : null,
         selectedPortalId: action.doorId === null ? state.selectedPortalId : null,
         selectedFeatureId: action.doorId === null ? state.selectedFeatureId : null,
-      }
+      };
 
-    case 'updateFixtureFlags': {
-      if (action.fixtureType === 'door') {
+    case "updateFixtureFlags": {
+      if (action.fixtureType === "door") {
         const doors = state.layout.doors.map((door) =>
           door.door_id === action.fixtureId ? ({ ...door, ...action.flags } as MapDoor) : door,
-        )
-        return { ...state, layout: { ...state.layout, doors } }
-      } else if (action.fixtureType === 'prop') {
+        );
+        return { ...state, layout: { ...state.layout, doors } };
+      } else if (action.fixtureType === "prop") {
         const props = state.layout.props.map((prop) =>
           prop.prop_id === action.fixtureId ? ({ ...prop, ...action.flags } as MapProp) : prop,
-        )
-        return { ...state, layout: { ...state.layout, props } }
-      } else if (action.fixtureType === 'stair') {
+        );
+        return { ...state, layout: { ...state.layout, props } };
+      } else if (action.fixtureType === "stair") {
         // A MapStair already stores both endpoints (from/to), so one record renders on both
         // floors via `stairCellForZ` — no separate paired record is needed here (unlike portals,
         // which are one-way objects). Destination is set structurally via `setStairDirection`
@@ -301,12 +327,12 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
         // trapped/note).
         const stairs = state.layout.stairs.map((stair) =>
           stair.stair_id === action.fixtureId ? ({ ...stair, ...action.flags } as MapStair) : stair,
-        )
-        return { ...state, layout: { ...state.layout, stairs } }
-      } else if (action.fixtureType === 'portal') {
-        const source = state.layout.portals.find((portal) => portal.portal_id === action.fixtureId)
-        if (!source) return state
-        const updatedSource = { ...source, ...action.flags } as MapPortal
+        );
+        return { ...state, layout: { ...state.layout, stairs } };
+      } else if (action.fixtureType === "portal") {
+        const source = state.layout.portals.find((portal) => portal.portal_id === action.fixtureId);
+        if (!source) return state;
+        const updatedSource = { ...source, ...action.flags } as MapPortal;
 
         if (updatedSource.to?.dungeon_id !== undefined) {
           // Gateway to another dungeon: that layout isn't loaded here (and might be open,
@@ -314,12 +340,12 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
           // the source portal itself.
           const portals = state.layout.portals.map((portal) =>
             portal.portal_id === source.portal_id ? updatedSource : portal,
-          )
-          return { ...state, layout: { ...state.layout, portals } }
+          );
+          return { ...state, layout: { ...state.layout, portals } };
         }
 
-        if ('to' in action.flags && updatedSource.to) {
-          const target = updatedSource.to as { z: number; cell: MapCell }
+        if ("to" in action.flags && updatedSource.to) {
+          const target = updatedSource.to as { z: number; cell: MapCell };
           // The portal that currently points back at the source — its "pair" before this edit.
           // Portals only ever exist in pairs, so retargeting the source relocates this record to
           // the new destination rather than leaving it behind as an orphan one-way portal.
@@ -330,7 +356,7 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
               portal.to.z === source.z &&
               portal.to.cell[0] === source.cell[0] &&
               portal.to.cell[1] === source.cell[1],
-          )
+          );
           const targetPortal = state.layout.portals.find(
             (portal) =>
               portal.portal_id !== source.portal_id &&
@@ -338,9 +364,9 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
               portal.z === target.z &&
               portal.cell[0] === target.cell[0] &&
               portal.cell[1] === target.cell[1],
-          )
+          );
 
-          let portals: MapPortal[]
+          let portals: MapPortal[];
           if (targetPortal) {
             // Re-link: an independent portal already sits at the target, so it becomes the new
             // pair — it now points back at the source. The old pair (if any) is dropped: nothing
@@ -348,24 +374,29 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
             portals = state.layout.portals
               .filter((portal) => portal.portal_id !== oldPair?.portal_id)
               .map((portal) => {
-                if (portal.portal_id === source.portal_id) return updatedSource
+                if (portal.portal_id === source.portal_id) return updatedSource;
                 if (portal.portal_id === targetPortal.portal_id) {
-                  return { ...portal, to: { z: updatedSource.z, cell: updatedSource.cell } }
+                  return { ...portal, to: { z: updatedSource.z, cell: updatedSource.cell } };
                 }
-                return portal
-              })
+                return portal;
+              });
           } else if (oldPair) {
             // Move the existing pair to the new target rather than creating a third portal.
             portals = state.layout.portals.map((portal) => {
-              if (portal.portal_id === source.portal_id) return updatedSource
+              if (portal.portal_id === source.portal_id) return updatedSource;
               if (portal.portal_id === oldPair.portal_id) {
-                return { ...portal, cell: target.cell, z: target.z, to: { z: updatedSource.z, cell: updatedSource.cell } }
+                return {
+                  ...portal,
+                  cell: target.cell,
+                  z: target.z,
+                  to: { z: updatedSource.z, cell: updatedSource.cell },
+                };
               }
-              return portal
-            })
+              return portal;
+            });
           } else {
             // No existing pair (e.g. a freshly created portal) — auto-create one at the target.
-            const portal_id = nextPortalId(state.layout)
+            const portal_id = nextPortalId(state.layout);
             const newPortal: MapPortal = {
               portal_id,
               cell: target.cell,
@@ -374,42 +405,44 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
               hidden: false,
               locked: false,
               trapped: false,
-            }
+            };
             return {
               ...state,
               layout: {
                 ...state.layout,
                 portals: [
-                  ...state.layout.portals.map((portal) => (portal.portal_id === source.portal_id ? updatedSource : portal)),
+                  ...state.layout.portals.map((portal) =>
+                    portal.portal_id === source.portal_id ? updatedSource : portal,
+                  ),
                   newPortal,
                 ],
                 meta: { ...state.layout.meta, nextPortalId: portal_id + 1 },
               },
-            }
+            };
           }
-          return { ...state, layout: { ...state.layout, portals } }
+          return { ...state, layout: { ...state.layout, portals } };
         }
 
         const portals = state.layout.portals.map((portal) =>
           portal.portal_id === source.portal_id ? updatedSource : portal,
-        )
-        return { ...state, layout: { ...state.layout, portals } }
+        );
+        return { ...state, layout: { ...state.layout, portals } };
       }
-      return state
+      return state;
     }
 
-    case 'deleteDoor': {
-      const doors = state.layout.doors.filter((door) => door.door_id !== action.doorId)
+    case "deleteDoor": {
+      const doors = state.layout.doors.filter((door) => door.door_id !== action.doorId);
       return {
         ...state,
         layout: { ...state.layout, doors },
         selectedDoorId: state.selectedDoorId === action.doorId ? null : state.selectedDoorId,
-      }
+      };
     }
 
-    case 'addProp': {
-      const prop_id = nextPropId(state.layout)
-      const defaults = FIXTURE_TYPES.prop.defaultFlags
+    case "addProp": {
+      const prop_id = nextPropId(state.layout);
+      const defaults = FIXTURE_TYPES.prop.defaultFlags;
       const newProp: MapProp = {
         prop_id,
         kind: action.kind ?? String(defaults.kind),
@@ -419,7 +452,7 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
         hidden: Boolean(defaults.hidden),
         locked: Boolean(defaults.locked),
         trapped: Boolean(defaults.trapped),
-      }
+      };
       return {
         ...state,
         layout: {
@@ -433,10 +466,10 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
         selectedStairId: null,
         selectedPortalId: null,
         selectedFeatureId: null,
-      }
+      };
     }
 
-    case 'selectProp':
+    case "selectProp":
       return {
         ...state,
         selectedPropId: action.propId,
@@ -445,41 +478,41 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
         selectedStairId: action.propId === null ? state.selectedStairId : null,
         selectedPortalId: action.propId === null ? state.selectedPortalId : null,
         selectedFeatureId: action.propId === null ? state.selectedFeatureId : null,
-      }
+      };
 
-    case 'deleteProp': {
-      const props = state.layout.props.filter((prop) => prop.prop_id !== action.propId)
+    case "deleteProp": {
+      const props = state.layout.props.filter((prop) => prop.prop_id !== action.propId);
       return {
         ...state,
         layout: { ...state.layout, props },
         selectedPropId: state.selectedPropId === action.propId ? null : state.selectedPropId,
-      }
+      };
     }
 
-    case 'addStair': {
-      const stair_id = nextStairId(state.layout)
-      const defaults = FIXTURE_TYPES.stair.defaultFlags
+    case "addStair": {
+      const stair_id = nextStairId(state.layout);
+      const defaults = FIXTURE_TYPES.stair.defaultFlags;
       // Default direction: prefer down (the floor below is the common case — a stairwell
       // reachable from where you're standing), else up if there's no floor below, else fall back
       // to a same-floor placeholder on a single-floor layout (both direction checkboxes disabled,
       // inert until a floor exists to point at).
-      const floors = floorsInLayout(state.layout)
-      const hasFloorBelow = floors.some((floor) => floor.z === action.from.z - 1)
-      const hasFloorAbove = floors.some((floor) => floor.z === action.from.z + 1)
+      const floors = floorsInLayout(state.layout);
+      const hasFloorBelow = floors.some((floor) => floor.z === action.from.z - 1);
+      const hasFloorAbove = floors.some((floor) => floor.z === action.from.z + 1);
       const to = hasFloorBelow
         ? { z: action.from.z - 1, cell: action.from.cell }
         : hasFloorAbove
           ? { z: action.from.z + 1, cell: action.from.cell }
-          : action.from
+          : action.from;
       const newStair: MapStair = {
         stair_id,
         from: action.from,
         to,
-        title: typeof defaults.title === 'string' ? defaults.title : undefined,
+        title: typeof defaults.title === "string" ? defaults.title : undefined,
         hidden: Boolean(defaults.hidden),
         locked: Boolean(defaults.locked),
         trapped: Boolean(defaults.trapped),
-      }
+      };
       return {
         ...state,
         layout: {
@@ -493,10 +526,10 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
         selectedPropId: null,
         selectedPortalId: null,
         selectedFeatureId: null,
-      }
+      };
     }
 
-    case 'selectStair':
+    case "selectStair":
       return {
         ...state,
         selectedStairId: action.stairId,
@@ -505,36 +538,50 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
         selectedPropId: action.stairId === null ? state.selectedPropId : null,
         selectedPortalId: action.stairId === null ? state.selectedPortalId : null,
         selectedFeatureId: action.stairId === null ? state.selectedFeatureId : null,
-      }
+      };
 
-    case 'deleteStair': {
-      const stairs = state.layout.stairs.filter((stair) => stair.stair_id !== action.stairId)
+    case "deleteStair": {
+      const stairs = state.layout.stairs.filter((stair) => stair.stair_id !== action.stairId);
       return {
         ...state,
         layout: { ...state.layout, stairs },
         selectedStairId: state.selectedStairId === action.stairId ? null : state.selectedStairId,
-      }
+      };
     }
 
-    case 'setStairDirection': {
+    case "setStairDirection": {
       // Stairs only ever cross to the adjacent floor at the same [x, y] — no arbitrary cell
       // picking. A cell can independently have an up-stair and/or a down-stair (a landing);
       // this toggles the one MapStair record for the given direction at (z, cell).
-      const targetZ = action.direction === 'up' ? action.z + 1 : action.z - 1
+      const targetZ = action.direction === "up" ? action.z + 1 : action.z - 1;
       // A stair record is undirected — from/to just name its two endpoints — so it must match
       // regardless of which endpoint happens to be stored as `from` vs `to`.
-      const endpointsMatch = (stair: MapStair, aZ: number, aCell: MapCell, bZ: number, bCell: MapCell) =>
-        (stair.from.z === aZ && stair.from.cell[0] === aCell[0] && stair.from.cell[1] === aCell[1] &&
-          stair.to.z === bZ && stair.to.cell[0] === bCell[0] && stair.to.cell[1] === bCell[1]) ||
-        (stair.to.z === aZ && stair.to.cell[0] === aCell[0] && stair.to.cell[1] === aCell[1] &&
-          stair.from.z === bZ && stair.from.cell[0] === bCell[0] && stair.from.cell[1] === bCell[1])
+      const endpointsMatch = (
+        stair: MapStair,
+        aZ: number,
+        aCell: MapCell,
+        bZ: number,
+        bCell: MapCell,
+      ) =>
+        (stair.from.z === aZ &&
+          stair.from.cell[0] === aCell[0] &&
+          stair.from.cell[1] === aCell[1] &&
+          stair.to.z === bZ &&
+          stair.to.cell[0] === bCell[0] &&
+          stair.to.cell[1] === bCell[1]) ||
+        (stair.to.z === aZ &&
+          stair.to.cell[0] === aCell[0] &&
+          stair.to.cell[1] === aCell[1] &&
+          stair.from.z === bZ &&
+          stair.from.cell[0] === bCell[0] &&
+          stair.from.cell[1] === bCell[1]);
       const existing = state.layout.stairs.find((stair) =>
         endpointsMatch(stair, action.z, action.cell, targetZ, action.cell),
-      )
+      );
 
       if (action.enabled) {
-        if (existing) return state
-        const stair_id = nextStairId(state.layout)
+        if (existing) return state;
+        const stair_id = nextStairId(state.layout);
         const newStair: MapStair = {
           stair_id,
           from: { z: action.z, cell: action.cell },
@@ -542,7 +589,7 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
           hidden: false,
           locked: false,
           trapped: false,
-        }
+        };
         return {
           ...state,
           layout: {
@@ -551,21 +598,21 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
             meta: { ...state.layout.meta, nextStairId: stair_id + 1 },
           },
           selectedStairId: stair_id,
-        }
+        };
       }
 
-      if (!existing) return state
-      const stairs = state.layout.stairs.filter((stair) => stair.stair_id !== existing.stair_id)
+      if (!existing) return state;
+      const stairs = state.layout.stairs.filter((stair) => stair.stair_id !== existing.stair_id);
       return {
         ...state,
         layout: { ...state.layout, stairs },
         selectedStairId: state.selectedStairId === existing.stair_id ? null : state.selectedStairId,
-      }
+      };
     }
 
-    case 'addPortal': {
-      const portal_id = nextPortalId(state.layout)
-      const defaults = FIXTURE_TYPES.portal.defaultFlags
+    case "addPortal": {
+      const portal_id = nextPortalId(state.layout);
+      const defaults = FIXTURE_TYPES.portal.defaultFlags;
       const newPortal: MapPortal = {
         portal_id,
         cell: action.cell,
@@ -573,11 +620,11 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
         // no destination until the DM picks one via the destination picker, unless the caller
         // (e.g. the resolve list's "Add the return gateway" action) already knows the target dungeon
         to: action.to,
-        title: typeof defaults.title === 'string' ? defaults.title : undefined,
+        title: typeof defaults.title === "string" ? defaults.title : undefined,
         hidden: Boolean(defaults.hidden),
         locked: Boolean(defaults.locked),
         trapped: Boolean(defaults.trapped),
-      }
+      };
       return {
         ...state,
         layout: {
@@ -591,10 +638,10 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
         selectedPropId: null,
         selectedStairId: null,
         selectedFeatureId: null,
-      }
+      };
     }
 
-    case 'selectPortal':
+    case "selectPortal":
       return {
         ...state,
         selectedPortalId: action.portalId,
@@ -603,25 +650,26 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
         selectedPropId: action.portalId === null ? state.selectedPropId : null,
         selectedStairId: action.portalId === null ? state.selectedStairId : null,
         selectedFeatureId: action.portalId === null ? state.selectedFeatureId : null,
-      }
+      };
 
-    case 'deletePortal': {
-      const portals = state.layout.portals.filter((portal) => portal.portal_id !== action.portalId)
+    case "deletePortal": {
+      const portals = state.layout.portals.filter((portal) => portal.portal_id !== action.portalId);
       return {
         ...state,
         layout: { ...state.layout, portals },
-        selectedPortalId: state.selectedPortalId === action.portalId ? null : state.selectedPortalId,
-      }
+        selectedPortalId:
+          state.selectedPortalId === action.portalId ? null : state.selectedPortalId,
+      };
     }
 
-    case 'addFeature': {
-      const feature_id = nextFeatureId(state.layout)
+    case "addFeature": {
+      const feature_id = nextFeatureId(state.layout);
       const newFeature: MapFeature = {
         feature_id,
         z: action.z,
         kind: action.kind,
         cells: [action.cell],
-      }
+      };
       return {
         ...state,
         layout: { ...state.layout, features: [...state.layout.features, newFeature] },
@@ -631,35 +679,38 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
         selectedPropId: null,
         selectedStairId: null,
         selectedPortalId: null,
-      }
+      };
     }
 
-    case 'toggleFeatureCell': {
-      const feature = state.layout.features.find((f) => f.feature_id === action.featureId)
-      if (!feature) return state
-      const hasCell = feature.cells.some(([x, y]) => x === action.cell[0] && y === action.cell[1])
+    case "toggleFeatureCell": {
+      const feature = state.layout.features.find((f) => f.feature_id === action.featureId);
+      if (!feature) return state;
+      const hasCell = feature.cells.some(([x, y]) => x === action.cell[0] && y === action.cell[1]);
       if (hasCell) {
         if (feature.cells.length === 1) {
-          const features = state.layout.features.filter((f) => f.feature_id !== action.featureId)
+          const features = state.layout.features.filter((f) => f.feature_id !== action.featureId);
           return {
             ...state,
             layout: { ...state.layout, features },
-            selectedFeatureId: state.selectedFeatureId === action.featureId ? null : state.selectedFeatureId,
-          }
+            selectedFeatureId:
+              state.selectedFeatureId === action.featureId ? null : state.selectedFeatureId,
+          };
         }
-        const cells = feature.cells.filter(([x, y]) => !(x === action.cell[0] && y === action.cell[1]))
+        const cells = feature.cells.filter(
+          ([x, y]) => !(x === action.cell[0] && y === action.cell[1]),
+        );
         const features = state.layout.features.map((f) =>
           f.feature_id === action.featureId ? { ...f, cells } : f,
-        )
-        return { ...state, layout: { ...state.layout, features } }
+        );
+        return { ...state, layout: { ...state.layout, features } };
       }
       const features = state.layout.features.map((f) =>
         f.feature_id === action.featureId ? { ...f, cells: [...f.cells, action.cell] } : f,
-      )
-      return { ...state, layout: { ...state.layout, features } }
+      );
+      return { ...state, layout: { ...state.layout, features } };
     }
 
-    case 'selectFeature':
+    case "selectFeature":
       return {
         ...state,
         selectedFeatureId: action.featureId,
@@ -668,98 +719,124 @@ function reduceEditor(state: EditorState, action: EditorAction): EditorState {
         selectedPropId: action.featureId !== null ? null : state.selectedPropId,
         selectedStairId: action.featureId !== null ? null : state.selectedStairId,
         selectedPortalId: action.featureId !== null ? null : state.selectedPortalId,
-      }
+      };
 
-    case 'deleteFeature':
+    case "deleteFeature":
       return {
         ...state,
-        layout: { ...state.layout, features: state.layout.features.filter(f => f.feature_id !== action.featureId) },
-        selectedFeatureId: state.selectedFeatureId === action.featureId ? null : state.selectedFeatureId,
-      }
+        layout: {
+          ...state.layout,
+          features: state.layout.features.filter((f) => f.feature_id !== action.featureId),
+        },
+        selectedFeatureId:
+          state.selectedFeatureId === action.featureId ? null : state.selectedFeatureId,
+      };
 
-    case 'setFeatureMeta': {
-      const feature = state.layout.features.find((candidate) => candidate.feature_id === action.featureId)
-      if (!feature) return state
+    case "setFeatureMeta": {
+      const feature = state.layout.features.find(
+        (candidate) => candidate.feature_id === action.featureId,
+      );
+      if (!feature) return state;
       const features = state.layout.features.map((candidate) =>
         candidate.feature_id === action.featureId ? { ...candidate, ...action.meta } : candidate,
-      )
-      return { ...state, layout: { ...state.layout, features } }
+      );
+      return { ...state, layout: { ...state.layout, features } };
     }
 
-    case 'setActiveZ':
-      return { ...state, activeZ: action.z }
+    case "setActiveZ":
+      return { ...state, activeZ: action.z };
 
-    case 'setPadding':
-      return { ...state, layout: { ...state.layout, meta: { ...state.layout.meta, padding: action.padding } } }
+    case "setPadding":
+      return {
+        ...state,
+        layout: { ...state.layout, meta: { ...state.layout.meta, padding: action.padding } },
+      };
 
-    case 'loadLayout':
-      return initialEditorState(action.layout)
+    case "loadLayout":
+      return initialEditorState(action.layout);
 
-    case 'resetToFixture':
-      return initialEditorState(action.layout)
+    case "resetToFixture":
+      return initialEditorState(action.layout);
 
     default:
-      return state
+      return state;
   }
 }
 
 function snapshot(state: EditorState): EditorSnapshot {
-  const { past: _past, future: _future, ...entry } = state
-  return entry
+  const { past: _past, future: _future, ...entry } = state;
+  return entry;
 }
 
 function isHistoryAction(action: EditorAction): boolean {
-  return !['selectRoom', 'selectDoor', 'selectProp', 'selectStair', 'selectPortal', 'selectFeature', 'setActiveZ', 'deleteRoom', 'loadLayout', 'resetToFixture', 'undo', 'redo'].includes(action.type)
+  return ![
+    "selectRoom",
+    "selectDoor",
+    "selectProp",
+    "selectStair",
+    "selectPortal",
+    "selectFeature",
+    "setActiveZ",
+    "deleteRoom",
+    "loadLayout",
+    "resetToFixture",
+    "undo",
+    "redo",
+  ].includes(action.type);
 }
 
 export function mapLabEditorReducer(state: EditorState, action: EditorAction): EditorState {
-  if (action.type === 'undo') {
-    const previous = state.past.at(-1)
-    if (!previous) return state
-    return { ...previous, past: state.past.slice(0, -1), future: [snapshot(state), ...state.future] }
+  if (action.type === "undo") {
+    const previous = state.past.at(-1);
+    if (!previous) return state;
+    return {
+      ...previous,
+      past: state.past.slice(0, -1),
+      future: [snapshot(state), ...state.future],
+    };
   }
-  if (action.type === 'redo') {
-    const next = state.future[0]
-    if (!next) return state
-    return { ...next, past: [...state.past, snapshot(state)], future: state.future.slice(1) }
+  if (action.type === "redo") {
+    const next = state.future[0];
+    if (!next) return state;
+    return { ...next, past: [...state.past, snapshot(state)], future: state.future.slice(1) };
   }
 
-  const next = reduceEditor(state, action)
-  if (action.type === 'loadLayout' || action.type === 'resetToFixture') return next
-  if (!isHistoryAction(action) || next.layout === state.layout) return next
-  return { ...next, past: [...state.past, snapshot(state)], future: [] }
+  const next = reduceEditor(state, action);
+  if (action.type === "loadLayout" || action.type === "resetToFixture") return next;
+  if (!isHistoryAction(action) || next.layout === state.layout) return next;
+  return { ...next, past: [...state.past, snapshot(state)], future: [] };
 }
 
 /** A cell-removal is rejected if it would split a room's remaining cells into more than one
  * orthogonally-connected group — 0 or 1 remaining cells are trivially connected. */
 function isConnectedPolyomino(cells: MapCell[]): boolean {
-  if (cells.length <= 1) return true
-  const own = new Set(cells.map(([x, y]) => `${x},${y}`))
-  const visited = new Set<string>()
-  const stack: MapCell[] = [cells[0]]
-  visited.add(`${cells[0][0]},${cells[0][1]}`)
+  if (cells.length <= 1) return true;
+  const own = new Set(cells.map(([x, y]) => `${x},${y}`));
+  const visited = new Set<string>();
+  const stack: MapCell[] = [cells[0]];
+  visited.add(`${cells[0][0]},${cells[0][1]}`);
   const deltas: MapCell[] = [
     [0, -1],
     [0, 1],
     [1, 0],
     [-1, 0],
-  ]
+  ];
   while (stack.length > 0) {
-    const [x, y] = stack.pop()!
+    const [x, y] = stack.pop()!;
     for (const [dx, dy] of deltas) {
-      const key = `${x + dx},${y + dy}`
+      const key = `${x + dx},${y + dy}`;
       if (own.has(key) && !visited.has(key)) {
-        visited.add(key)
-        stack.push([x + dx, y + dy])
+        visited.add(key);
+        stack.push([x + dx, y + dy]);
       }
     }
   }
-  return visited.size === cells.length
+  return visited.size === cells.length;
 }
 
 export function initialEditorState(layout: MapLayout): EditorState {
-  const floors = floorsInLayout(layout)
-  const activeZ = floors[0]?.z ?? layout.rooms[0]?.z ?? 0
+  const floors = floorsInLayout(layout);
+  const activeZ = floors[0]?.z ?? layout.rooms[0]?.z ?? 0;
   return {
     layout,
     selectedRoomId: null,
@@ -771,15 +848,14 @@ export function initialEditorState(layout: MapLayout): EditorState {
     activeZ,
     past: [],
     future: [],
-  }
+  };
 }
 
-
 function defaultFloorTitle(z: number): string {
-  if (z === 0) return 'Ground Floor'
-  if (z < 0) return z === -1 ? 'Basement' : `Basement ${Math.abs(z)}`
+  if (z === 0) return "Ground Floor";
+  if (z < 0) return z === -1 ? "Basement" : `Basement ${Math.abs(z)}`;
 
-  const ordinals = ['First', 'Second', 'Third', 'Fourth', 'Fifth']
-  const ordinal = ordinals[z - 1]
-  return ordinal ? `${ordinal} Floor` : `Floor ${z}`
+  const ordinals = ["First", "Second", "Third", "Fourth", "Fifth"];
+  const ordinal = ordinals[z - 1];
+  return ordinal ? `${ordinal} Floor` : `Floor ${z}`;
 }

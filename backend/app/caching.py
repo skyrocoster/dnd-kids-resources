@@ -113,6 +113,7 @@ def invalidate_cache(db_path: Path | str | None = None) -> None:
 
 def cached_get(namespace: str):
     """Cache a synchronous GET handler using its arguments as part of the key."""
+
     def decorate(function):
         function_signature = signature(function)
 
@@ -120,9 +121,7 @@ def cached_get(namespace: str):
         def wrapped(*args, **kwargs):
             try:
                 bound = function_signature.bind(*args, **kwargs)
-                arguments = tuple(
-                    (name, _freeze(value)) for name, value in bound.arguments.items()
-                )
+                arguments = tuple((name, _freeze(value)) for name, value in bound.arguments.items())
             except TypeError:
                 # A new request/context-dependent parameter is deliberately not
                 # cacheable unless it can be represented safely in the key.

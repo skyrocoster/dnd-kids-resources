@@ -1,5 +1,5 @@
 interface StubPageProps {
-  title: string
+  title: string;
 }
 
 export function StubPage({ title }: StubPageProps) {
@@ -8,5 +8,5 @@ export function StubPage({ title }: StubPageProps) {
       <h2>{title}</h2>
       <p>Not built yet.</p>
     </div>
-  )
+  );
 }

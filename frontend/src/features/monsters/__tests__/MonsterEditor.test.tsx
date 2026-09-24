@@ -1,74 +1,83 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import * as api from '../../../api/client'
-import type { Monster } from '../../../api/types'
-import { MonsterEditor } from '../MonsterEditor'
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import * as api from "../../../api/client";
+import type { Monster } from "../../../api/types";
+import { MonsterEditor } from "../MonsterEditor";
 import {
   emptyMonsterForm,
   formStateToMonsterInput,
   monsterToFormState,
   validateMonsterForm,
-} from '../monsterForm'
+} from "../monsterForm";
 
-describe('MonsterEditor model', () => {
-  it('empty form maps to minimal MonsterInput', () => {
-    const input = formStateToMonsterInput(emptyMonsterForm())
-    expect(input.name).toBe('')
-    expect(input.creature_type).toBeNull()
-    expect(input.ac).toBeNull()
-    expect(input.hp).toBeNull()
-  })
+describe("MonsterEditor model", () => {
+  it("empty form maps to minimal MonsterInput", () => {
+    const input = formStateToMonsterInput(emptyMonsterForm());
+    expect(input.name).toBe("");
+    expect(input.creature_type).toBeNull();
+    expect(input.ac).toBeNull();
+    expect(input.hp).toBeNull();
+  });
 
-  it('validates that name is required', () => {
-    const errors = validateMonsterForm(emptyMonsterForm())
-    expect(errors).toContain('Name is required.')
-  })
+  it("validates that name is required", () => {
+    const errors = validateMonsterForm(emptyMonsterForm());
+    expect(errors).toContain("Name is required.");
+  });
 
-  it('passes validation with just a name', () => {
-    const form = emptyMonsterForm()
-    form.name = 'Test Monster'
-    expect(validateMonsterForm(form)).toEqual([])
-  })
+  it("passes validation with just a name", () => {
+    const form = emptyMonsterForm();
+    form.name = "Test Monster";
+    expect(validateMonsterForm(form)).toEqual([]);
+  });
 
-  it('validates numeric fields', () => {
-    const form = emptyMonsterForm()
-    form.name = 'Test'
-    form.acValue = 'not-a-number'
-    form.hpAverage = 'bad'
-    const errors = validateMonsterForm(form)
-    expect(errors).toContain('AC must be a number.')
-    expect(errors).toContain('HP must be a number.')
-  })
+  it("validates numeric fields", () => {
+    const form = emptyMonsterForm();
+    form.name = "Test";
+    form.acValue = "not-a-number";
+    form.hpAverage = "bad";
+    const errors = validateMonsterForm(form);
+    expect(errors).toContain("AC must be a number.");
+    expect(errors).toContain("HP must be a number.");
+  });
 
-  it('round-trips a monster through form state and back', () => {
+  it("round-trips a monster through form state and back", () => {
     const monster: Monster = {
       id: 1,
-      name: 'Test Dragon',
+      name: "Test Dragon",
       aliases: [],
-      sizes: ['large'],
+      sizes: ["large"],
       family: null,
-      alignment: 'chaotic evil',
-      creature_type: { category: 'dragon', tags: ['chromatic'], swarm_size: null },
-      ac: { value: 18, note: 'natural armour', alternatives: [] },
-      hp: { average: 200, formula: '20d12+80' },
-      speed: [{ mode: 'walk', feet: 40, note: null, hover: false }, { mode: 'fly', feet: 80, note: null, hover: false }],
+      alignment: "chaotic evil",
+      creature_type: { category: "dragon", tags: ["chromatic"], swarm_size: null },
+      ac: { value: 18, note: "natural armour", alternatives: [] },
+      hp: { average: 200, formula: "20d12+80" },
+      speed: [
+        { mode: "walk", feet: 40, note: null, hover: false },
+        { mode: "fly", feet: 80, note: null, hover: false },
+      ],
       abilities: { str: 25, dex: 10, con: 21, int: 14, wis: 14, cha: 18 },
       saving_throws: { str: 7, con: 5 },
       skills: { perception: 8, stealth: 4 },
       passive_perception: 18,
-      damage_resistances: [{ damage_type: 'fire', note: null, conditional: false }],
-      damage_immunities: [{ damage_type: 'cold', note: null, conditional: false }],
+      damage_resistances: [{ damage_type: "fire", note: null, conditional: false }],
+      damage_immunities: [{ damage_type: "cold", note: null, conditional: false }],
       damage_vulnerabilities: [],
-      condition_immunities: ['frightened'],
-      senses: [{ type: 'darkvision', range: 120, note: null }],
-      languages: ['Common', 'Draconic'],
+      condition_immunities: ["frightened"],
+      senses: [{ type: "darkvision", range: 120, note: null }],
+      languages: ["Common", "Draconic"],
       audio_path: null,
       features: {
-        traits: [{ name: 'Amphibious', description: 'The dragon can breathe air and water.', attack: null }],
+        traits: [
+          {
+            name: "Amphibious",
+            description: "The dragon can breathe air and water.",
+            attack: null,
+          },
+        ],
         spellcasting: [],
-        actions: [{ name: 'Bite', description: 'Melee weapon attack: +14 to hit.', attack: null }],
+        actions: [{ name: "Bite", description: "Melee weapon attack: +14 to hit.", attack: null }],
         bonus_actions: [],
         reactions: [],
         reaction_intro: null,
@@ -77,64 +86,64 @@ describe('MonsterEditor model', () => {
         legendary_actions_per_round: null,
         mythic_actions: [],
       },
-      cr: '17',
+      cr: "17",
       cr_sort: 1700,
       cr_note: null,
       experience_points: 18000,
-    }
+    };
 
-    const formState = monsterToFormState(monster)
-    expect(formState.name).toBe('Test Dragon')
-    expect(formState.acValue).toBe('18')
-    expect(formState.hpAverage).toBe('200')
-    expect(formState.abilityStr).toBe('25')
-    expect(formState.cr).toBe('17')
+    const formState = monsterToFormState(monster);
+    expect(formState.name).toBe("Test Dragon");
+    expect(formState.acValue).toBe("18");
+    expect(formState.hpAverage).toBe("200");
+    expect(formState.abilityStr).toBe("25");
+    expect(formState.cr).toBe("17");
 
-    const roundTrip = formStateToMonsterInput(formState)
-    expect(roundTrip.name).toBe('Test Dragon')
-    expect(roundTrip.ac?.value).toBe(18)
-    expect(roundTrip.hp?.average).toBe(200)
-    expect(roundTrip.abilities?.str).toBe(25)
-    expect(roundTrip.cr).toBe('17')
-  })
-})
+    const roundTrip = formStateToMonsterInput(formState);
+    expect(roundTrip.name).toBe("Test Dragon");
+    expect(roundTrip.ac?.value).toBe(18);
+    expect(roundTrip.hp?.average).toBe(200);
+    expect(roundTrip.abilities?.str).toBe(25);
+    expect(roundTrip.cr).toBe("17");
+  });
+});
 
-describe('MonsterEditor render', () => {
-  it('renders all five fieldsets for new monster', () => {
+describe("MonsterEditor render", () => {
+  it("renders all five fieldsets for new monster", () => {
     render(
-      <MemoryRouter initialEntries={['/monsters/new']}>
+      <MemoryRouter initialEntries={["/monsters/new"]}>
         <Routes>
           <Route path="/monsters/new" element={<MonsterEditor />} />
         </Routes>
       </MemoryRouter>,
-    )
-    expect(screen.getByText('Add New Monster')).toBeInTheDocument()
-    expect(screen.getByText('Identity')).toBeInTheDocument()
-    expect(screen.getByText('Defenses')).toBeInTheDocument()
-    expect(screen.getByText('Abilities')).toBeInTheDocument()
-    expect(screen.getByText('Actions')).toBeInTheDocument()
-    expect(screen.getByText('Lore')).toBeInTheDocument()
-  })
+    );
+    expect(screen.getByText("Add New Monster")).toBeInTheDocument();
+    expect(screen.getByText("Identity")).toBeInTheDocument();
+    expect(screen.getByText("Defenses")).toBeInTheDocument();
+    expect(screen.getByText("Abilities")).toBeInTheDocument();
+    expect(screen.getByText("Actions")).toBeInTheDocument();
+    expect(screen.getByText("Lore")).toBeInTheDocument();
+  });
 
-  it('shows error when name is empty on submit', async () => {
+  it("shows error when name is empty on submit", async () => {
     render(
-      <MemoryRouter initialEntries={['/monsters/new']}>
+      <MemoryRouter initialEntries={["/monsters/new"]}>
         <Routes>
           <Route path="/monsters/new" element={<MonsterEditor />} />
         </Routes>
       </MemoryRouter>,
-    )
-    const form = screen.getByTestId('monster-editor-form')
-    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
-    expect(await screen.findByText('Name is required.')).toBeInTheDocument()
-  })
+    );
+    const form = screen.getByTestId("monster-editor-form");
+    form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    expect(await screen.findByText("Name is required.")).toBeInTheDocument();
+  });
 
-  it('loads monster for editing and shows its name', async () => {
+  it("loads monster for editing and shows its name", async () => {
     const monster: Monster = {
       id: 99,
-      name: 'Edit Test',
+      name: "Edit Test",
       aliases: [],
-      sizes: ['medium'],
+      sizes: ["medium"],
       family: null,
       alignment: null,
       creature_type: null,
@@ -168,64 +177,66 @@ describe('MonsterEditor render', () => {
       cr_sort: null,
       cr_note: null,
       experience_points: null,
-    }
+    };
 
-    const spy = vi.spyOn(api, 'getMonster').mockResolvedValue(monster)
+    const spy = vi.spyOn(api, "getMonster").mockResolvedValue(monster);
 
     render(
-      <MemoryRouter initialEntries={['/monsters/99/edit']}>
+      <MemoryRouter initialEntries={["/monsters/99/edit"]}>
         <Routes>
           <Route path="/monsters/:id/edit" element={<MonsterEditor />} />
         </Routes>
       </MemoryRouter>,
-    )
+    );
 
-    expect(await screen.findByText('Edit Monster')).toBeInTheDocument()
-    expect(await screen.findByDisplayValue('Edit Test')).toBeInTheDocument()
-    spy.mockRestore()
-  })
+    expect(await screen.findByText("Edit Monster")).toBeInTheDocument();
+    expect(await screen.findByDisplayValue("Edit Test")).toBeInTheDocument();
+    spy.mockRestore();
+  });
 
-  it('withholds the edit form until the monster is loaded', () => {
-    vi.spyOn(api, 'getMonster').mockImplementation(() => new Promise(() => {}))
+  it("withholds the edit form until the monster is loaded", () => {
+    vi.spyOn(api, "getMonster").mockImplementation(() => new Promise(() => {}));
     render(
-      <MemoryRouter initialEntries={['/monsters/99/edit']}>
+      <MemoryRouter initialEntries={["/monsters/99/edit"]}>
         <Routes>
           <Route path="/monsters/:id/edit" element={<MonsterEditor />} />
         </Routes>
       </MemoryRouter>,
-    )
-    expect(screen.getByText('Loading monster…')).toBeInTheDocument()
-    expect(screen.queryByTestId('monster-editor-form')).not.toBeInTheDocument()
-  })
+    );
+    expect(screen.getByText("Loading monster…")).toBeInTheDocument();
+    expect(screen.queryByTestId("monster-editor-form")).not.toBeInTheDocument();
+  });
 
-  it('supports keyboard focus through the primary editor controls', async () => {
-    const user = userEvent.setup()
+  it("supports keyboard focus through the primary editor controls", async () => {
+    const user = userEvent.setup();
 
     render(
-      <MemoryRouter initialEntries={['/monsters/new']}>
+      <MemoryRouter initialEntries={["/monsters/new"]}>
         <Routes>
           <Route path="/monsters/new" element={<MonsterEditor />} />
         </Routes>
       </MemoryRouter>,
-    )
+    );
 
-    await user.tab()
-    expect(screen.getByLabelText('Name')).toHaveFocus()
+    await user.tab();
+    expect(screen.getByLabelText("Name")).toHaveFocus();
 
-    await user.tab()
-    expect(screen.getByLabelText('Size (comma-separated)')).toHaveFocus()
+    await user.tab();
+    expect(screen.getByLabelText("Size (comma-separated)")).toHaveFocus();
 
-    const saveButton = screen.getByRole('button', { name: 'Create Monster' })
-    saveButton.focus()
-    expect(saveButton).toHaveFocus()
-  })
+    const saveButton = screen.getByRole("button", { name: "Create Monster" });
+    expect(saveButton).toHaveAttribute("type", "submit");
+    expect(saveButton).toHaveClass("btn--primary");
+    saveButton.focus();
+    expect(saveButton).toHaveFocus();
+  });
 
-  it('navigates to /monsters after saving a new monster', async () => {
+  it("navigates to /monsters after saving a new monster", async () => {
     const monster: Monster = {
       id: 1,
-      name: 'New Monster',
+      name: "New Monster",
       aliases: [],
-      sizes: ['medium'],
+      sizes: ["medium"],
       family: null,
       alignment: null,
       creature_type: null,
@@ -243,35 +254,59 @@ describe('MonsterEditor render', () => {
       senses: [],
       languages: [],
       audio_path: null,
-      features: { traits: [], spellcasting: [], actions: [], bonus_actions: [], reactions: [], reaction_intro: null, legendary_actions: [], legendary_intro: null, legendary_actions_per_round: null, mythic_actions: [] },
+      features: {
+        traits: [],
+        spellcasting: [],
+        actions: [],
+        bonus_actions: [],
+        reactions: [],
+        reaction_intro: null,
+        legendary_actions: [],
+        legendary_intro: null,
+        legendary_actions_per_round: null,
+        mythic_actions: [],
+      },
       cr: null,
       cr_sort: null,
       cr_note: null,
       experience_points: null,
-    }
-    vi.spyOn(api, 'createMonster').mockResolvedValue(monster)
-    const user = userEvent.setup()
+    };
+    let resolveCreate: () => void = () => {};
+    vi.spyOn(api, "createMonster").mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveCreate = () => resolve(monster);
+        }),
+    );
+    const user = userEvent.setup();
 
     render(
-      <MemoryRouter initialEntries={['/monsters/new']}>
+      <MemoryRouter initialEntries={["/monsters/new"]}>
         <Routes>
           <Route path="/monsters/new" element={<MonsterEditor />} />
           <Route path="/monsters" element={<div>Monster list page</div>} />
         </Routes>
       </MemoryRouter>,
-    )
+    );
 
-    await user.type(screen.getByLabelText('Name'), 'New Monster')
-    await user.click(screen.getByRole('button', { name: 'Create Monster' }))
-    await waitFor(() => expect(screen.getByText('Monster list page')).toBeInTheDocument())
-  })
+    await user.type(screen.getByLabelText("Name"), "New Monster");
+    const saveButton = screen.getByRole("button", { name: "Create Monster" });
+    expect(saveButton).toHaveAttribute("type", "submit");
+    expect(saveButton).toHaveClass("btn--primary");
+    await user.click(saveButton);
+    const savingButton = screen.getByRole("button", { name: "Saving…" });
+    expect(savingButton).toBeDisabled();
+    expect(savingButton).not.toHaveAttribute("aria-busy");
+    resolveCreate();
+    await waitFor(() => expect(screen.getByText("Monster list page")).toBeInTheDocument());
+  });
 
-  it('navigates to /monsters after deleting an existing monster', async () => {
+  it("navigates to /monsters after deleting an existing monster", async () => {
     const monster: Monster = {
       id: 99,
-      name: 'Delete Test',
+      name: "Delete Test",
       aliases: [],
-      sizes: ['medium'],
+      sizes: ["medium"],
       family: null,
       alignment: null,
       creature_type: null,
@@ -289,55 +324,84 @@ describe('MonsterEditor render', () => {
       senses: [],
       languages: [],
       audio_path: null,
-      features: { traits: [], spellcasting: [], actions: [], bonus_actions: [], reactions: [], reaction_intro: null, legendary_actions: [], legendary_intro: null, legendary_actions_per_round: null, mythic_actions: [] },
+      features: {
+        traits: [],
+        spellcasting: [],
+        actions: [],
+        bonus_actions: [],
+        reactions: [],
+        reaction_intro: null,
+        legendary_actions: [],
+        legendary_intro: null,
+        legendary_actions_per_round: null,
+        mythic_actions: [],
+      },
       cr: null,
       cr_sort: null,
       cr_note: null,
       experience_points: null,
-    }
-    vi.spyOn(api, 'getMonster').mockResolvedValue(monster)
-    let resolveDelete: () => void = () => {}
-    vi.spyOn(api, 'deleteMonster').mockImplementation(() => new Promise((resolve) => { resolveDelete = () => resolve(undefined) }))
-    const user = userEvent.setup()
+    };
+    vi.spyOn(api, "getMonster").mockResolvedValue(monster);
+    let resolveDelete: () => void = () => {};
+    vi.spyOn(api, "deleteMonster").mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveDelete = () => resolve(undefined);
+        }),
+    );
+    const user = userEvent.setup();
 
-    render(
-      <MemoryRouter initialEntries={['/monsters/99/edit']}>
+    const { container } = render(
+      <MemoryRouter initialEntries={["/monsters/99/edit"]}>
         <Routes>
           <Route path="/monsters/:id/edit" element={<MonsterEditor />} />
           <Route path="/monsters" element={<div>Monster list page</div>} />
         </Routes>
       </MemoryRouter>,
-    )
+    );
 
-    expect(await screen.findByDisplayValue('Delete Test')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Delete' }))
-    await user.click(screen.getByRole('button', { name: 'Delete Monster' }))
-    expect(screen.getByRole('alertdialog')).toHaveAttribute('aria-busy', 'true')
-    resolveDelete()
-    await waitFor(() => expect(screen.getByText('Monster list page')).toBeInTheDocument())
-  })
+    expect(await screen.findByDisplayValue("Delete Test")).toBeInTheDocument();
+    const deleteButton = screen.getByRole("button", { name: "Delete" });
+    expect(deleteButton).toHaveAttribute("type", "button");
+    expect(deleteButton).toHaveClass("btn--danger");
+    await user.click(deleteButton);
+    expect(screen.getByText('Delete "Delete Test"? This cannot be undone.')).toBeInTheDocument();
+    expect(api.deleteMonster).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Delete Monster" }));
+    expect(screen.getByRole("alertdialog")).toHaveAttribute("aria-busy", "true");
+    expect(container.querySelector(".monster-editor-actions .btn--danger")).toBeDisabled();
+    expect(container.querySelector(".monster-editor-actions .btn--primary")).toBeDisabled();
+    expect(container.querySelector(".monster-editor-actions .btn--primary")).toHaveTextContent(
+      "Saving…",
+    );
+    resolveDelete();
+    await waitFor(() => expect(screen.getByText("Monster list page")).toBeInTheDocument());
+  });
 
-  it('navigates to /monsters on Cancel', async () => {
-    const user = userEvent.setup()
+  it("navigates to /monsters on Cancel", async () => {
+    const user = userEvent.setup();
 
     render(
-      <MemoryRouter initialEntries={['/monsters/new']}>
+      <MemoryRouter initialEntries={["/monsters/new"]}>
         <Routes>
           <Route path="/monsters/new" element={<MonsterEditor />} />
           <Route path="/monsters" element={<div>Monster list page</div>} />
         </Routes>
       </MemoryRouter>,
-    )
+    );
 
-    await user.click(screen.getByRole('button', { name: 'Cancel' }))
-    expect(screen.getByText('Monster list page')).toBeInTheDocument()
-  })
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getByText("Monster list page")).toBeInTheDocument();
+  });
 
-  it('derives editor accents from monster role tokens', async () => {
-    const { readFileSync } = await import('node:fs')
-    const { resolve } = await import('node:path')
-    const css = readFileSync(resolve(process.cwd(), 'src/features/monsters/MonsterEditor.css'), 'utf-8')
-    expect(css).toContain('color-mix(in srgb, var(--md-tertiary) 5%, transparent)')
-    expect(css).toContain('color-mix(in srgb, var(--md-on-tertiary) 4%, transparent)')
-  })
-})
+  it("derives editor accents from monster role tokens", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    const css = readFileSync(
+      resolve(process.cwd(), "src/features/monsters/MonsterEditor.css"),
+      "utf-8",
+    );
+    expect(css).toContain("color-mix(in srgb, var(--md-tertiary) 5%, transparent)");
+    expect(css).toContain("color-mix(in srgb, var(--md-on-tertiary) 4%, transparent)");
+  });
+});

@@ -1,100 +1,100 @@
-import type { Spell, SpellCategory, SpellInput } from '../../api/types'
+import type { Spell, SpellCategory, SpellInput } from "../../api/types";
 
-let rowIdCounter = 0
+let rowIdCounter = 0;
 export function nextRowId(): string {
-  rowIdCounter += 1
-  return `row-${rowIdCounter}`
+  rowIdCounter += 1;
+  return `row-${rowIdCounter}`;
 }
 
 export interface AttackRow {
-  id: string
-  kind: '' | 'melee' | 'ranged'
-  savingThrows: string[]
+  id: string;
+  kind: "" | "melee" | "ranged";
+  savingThrows: string[];
 }
 
 export interface DamageRow {
-  id: string
-  name: string
-  formula: string
-  damageTypes: string[]
+  id: string;
+  name: string;
+  formula: string;
+  damageTypes: string[];
 }
 
 export interface SpellFormState {
-  name: string
-  level: string
-  school: string
-  categories: SpellCategory[]
-  castingTimes: string
-  duration: string
-  range: string
-  concentration: boolean
-  ritual: boolean
-  materials: string
-  description: string
-  alternateDescription: string
-  quickRules: string
-  higherLevelsText: string
-  higherLevelDamageBySlot: Record<string, string>
-  areaShape: string
-  areaSize: string
-  attackRows: AttackRow[]
-  damageRows: DamageRow[]
-  healingAmount: string
-  healingTempHp: boolean
-  healingMaxHp: boolean
-  components: string[]
+  name: string;
+  level: string;
+  school: string;
+  categories: SpellCategory[];
+  castingTimes: string;
+  duration: string;
+  range: string;
+  concentration: boolean;
+  ritual: boolean;
+  materials: string;
+  description: string;
+  alternateDescription: string;
+  quickRules: string;
+  higherLevelsText: string;
+  higherLevelDamageBySlot: Record<string, string>;
+  areaShape: string;
+  areaSize: string;
+  attackRows: AttackRow[];
+  damageRows: DamageRow[];
+  healingAmount: string;
+  healingTempHp: boolean;
+  healingMaxHp: boolean;
+  components: string[];
 }
 
 export function emptySpellForm(): SpellFormState {
   return {
-    name: '',
-    level: '0',
-    school: '',
+    name: "",
+    level: "0",
+    school: "",
     categories: [],
-    castingTimes: '',
-    duration: '',
-    range: '',
+    castingTimes: "",
+    duration: "",
+    range: "",
     concentration: false,
     ritual: false,
-    materials: '',
-    description: '',
-    alternateDescription: '',
-    quickRules: '',
-    higherLevelsText: '',
+    materials: "",
+    description: "",
+    alternateDescription: "",
+    quickRules: "",
+    higherLevelsText: "",
     higherLevelDamageBySlot: {},
-    areaShape: '',
-    areaSize: '',
+    areaShape: "",
+    areaSize: "",
     attackRows: [],
     damageRows: [],
-    healingAmount: '',
+    healingAmount: "",
     healingTempHp: false,
     healingMaxHp: false,
     components: [],
-  }
+  };
 }
 
 export function spellToFormState(spell: Spell): SpellFormState {
   return {
     name: spell.name,
     level: String(spell.level),
-    school: spell.school || '',
+    school: spell.school || "",
     categories: spell.categories,
-    castingTimes: spell.casting_times.join('\n'),
+    castingTimes: spell.casting_times.join("\n"),
     duration: spell.duration,
     range: spell.range,
     concentration: spell.concentration,
     ritual: spell.ritual,
-    materials: spell.materials || '',
+    materials: spell.materials || "",
     description: spell.description,
-    alternateDescription: spell.alternate_description || '',
-    quickRules: spell.quick_rules || '',
-    higherLevelsText: spell.higher_levels.text || '',
+    alternateDescription: spell.alternate_description || "",
+    quickRules: spell.quick_rules || "",
+    higherLevelsText: spell.higher_levels.text || "",
     higherLevelDamageBySlot: spell.higher_levels.damage_by_slot,
-    areaShape: spell.area_of_effect.shape || '',
-    areaSize: spell.area_of_effect.size == null ? '' : String(spell.area_of_effect.size),
+    areaShape: spell.area_of_effect.shape || "",
+    areaSize: spell.area_of_effect.size == null ? "" : String(spell.area_of_effect.size),
     attackRows: spell.attacks.map((attack) => ({
       id: nextRowId(),
-      kind: attack.kind || '',
+      kind: attack.kind || "",
       savingThrows: attack.saving_throws,
     })),
     damageRows: spell.damage.map((damage) => ({
@@ -103,18 +103,18 @@ export function spellToFormState(spell: Spell): SpellFormState {
       formula: damage.formula,
       damageTypes: damage.damage_types,
     })),
-    healingAmount: spell.healing.amount || '',
+    healingAmount: spell.healing.amount || "",
     healingTempHp: spell.healing.temp_hp,
     healingMaxHp: spell.healing.max_hp,
     components: spell.components,
-  }
+  };
 }
 
 export function formStateToSpellInput(form: SpellFormState): SpellInput {
-  const size = Number.parseInt(form.areaSize, 10)
+  const size = Number.parseInt(form.areaSize, 10);
 
   return {
-    name: form.name || 'New Spell',
+    name: form.name || "New Spell",
     level: Number.parseInt(form.level, 10) || 0,
     school: form.school || null,
     categories: form.categories,
@@ -132,9 +132,12 @@ export function formStateToSpellInput(form: SpellFormState): SpellInput {
       max_hp: form.healingMaxHp,
     },
     range: form.range,
-    higher_levels: { text: form.higherLevelsText || null, damage_by_slot: form.higherLevelDamageBySlot },
+    higher_levels: {
+      text: form.higherLevelsText || null,
+      damage_by_slot: form.higherLevelDamageBySlot,
+    },
     casting_times: form.castingTimes
-      .split('\n')
+      .split("\n")
       .map((time) => time.trim())
       .filter(Boolean),
     duration: form.duration,
@@ -142,11 +145,13 @@ export function formStateToSpellInput(form: SpellFormState): SpellInput {
     ritual: form.ritual,
     components: form.components,
     materials: form.materials || null,
-    attacks: form.attackRows.map(({ kind, savingThrows }) => ({ kind: kind || null, saving_throws: savingThrows })),
+    attacks: form.attackRows.map(({ kind, savingThrows }) => ({
+      kind: kind || null,
+      saving_throws: savingThrows,
+    })),
     area_of_effect: {
       shape: form.areaShape || null,
       size: Number.isNaN(size) ? null : size,
     },
-  }
+  };
 }
-

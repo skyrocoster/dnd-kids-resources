@@ -1,78 +1,80 @@
-import { useEffect, useMemo, useState } from 'react'
-import { listNPCs } from '../../../api/client'
-import type { NPC } from '../../../api/types'
-import { Button } from '../../../components/Button'
-import { DiceText } from '../../../components/DiceText'
-import { NpcChip } from '../../npcs/NpcChip'
+import { useEffect, useMemo, useState } from "react";
+import { listNPCs } from "../../../api/client";
+import type { NPC } from "../../../api/types";
+import { Button } from "../../../components/Button";
+import { DiceText } from "../../../components/DiceText";
+import { NpcChip } from "../../npcs/NpcChip";
 import {
   getRoomThreatHints,
   groupEntriesByType,
   type DungeonData,
   type DungeonEntry,
   type DungeonRoom,
-} from '../dungeonModel'
-import type { MapLayout, MapRoom } from '../../../model/maplabModel'
-import { getNpcUnion } from '../../../model/maplabModel'
-import './RoomDetailsPanel.css'
+} from "../dungeonModel";
+import type { MapLayout, MapRoom } from "../../../model/maplabModel";
+import { getNpcUnion } from "../../../model/maplabModel";
+import "./RoomDetailsPanel.css";
 
 interface RoomDetailsPanelProps {
-  room: MapRoom | null
-  dungeonRoom: DungeonRoom | null
-  parsed: DungeonData
-  dungeonId: number
-  layout?: MapLayout
-  onRunEncounter: (encounterId: number) => void
-  onOpenNpc: (npcId: number) => void
-  onPartyIsHere?: () => void
-  actionError?: string | null
-  clearActionError?: () => void
+  room: MapRoom | null;
+  dungeonRoom: DungeonRoom | null;
+  parsed: DungeonData;
+  dungeonId: number;
+  layout?: MapLayout;
+  onRunEncounter: (encounterId: number) => void;
+  onOpenNpc: (npcId: number) => void;
+  onPartyIsHere?: () => void;
+  actionError?: string | null;
+  clearActionError?: () => void;
 }
 
 function roomTitle(room: MapRoom | null, dungeonRoom: DungeonRoom | null): string {
-  if (dungeonRoom?.title) return dungeonRoom.title
-  if (room?.title) return room.title
-  if (room) return `Room #${room.room_id}`
-  return 'Room details'
+  if (dungeonRoom?.title) return dungeonRoom.title;
+  if (room?.title) return room.title;
+  if (room) return `Room #${room.room_id}`;
+  return "Room details";
 }
 
 function formatTreasureContents(contents: unknown[] | null | undefined): string | null {
-  if (!contents || contents.length === 0) return null
+  if (!contents || contents.length === 0) return null;
 
   const labels = contents
     .map((item) => {
-      if (typeof item === 'string' || typeof item === 'number') return String(item)
-      if (!item || typeof item !== 'object') return null
+      if (typeof item === "string" || typeof item === "number") return String(item);
+      if (!item || typeof item !== "object") return null;
 
-      const record = item as Record<string, unknown>
-      const name = typeof record.name === 'string'
-        ? record.name
-        : typeof record.title === 'string'
-          ? record.title
-          : typeof record.item_name === 'string'
-            ? record.item_name
-            : null
-      if (!name) return null
+      const record = item as Record<string, unknown>;
+      const name =
+        typeof record.name === "string"
+          ? record.name
+          : typeof record.title === "string"
+            ? record.title
+            : typeof record.item_name === "string"
+              ? record.item_name
+              : null;
+      if (!name) return null;
 
-      const quantity = typeof record.quantity === 'number'
-        ? record.quantity
-        : typeof record.count === 'number'
-          ? record.count
-          : null
-      return quantity && quantity > 1 ? `${quantity} x ${name}` : name
+      const quantity =
+        typeof record.quantity === "number"
+          ? record.quantity
+          : typeof record.count === "number"
+            ? record.count
+            : null;
+      return quantity && quantity > 1 ? `${quantity} x ${name}` : name;
     })
-    .filter((item): item is string => item !== null)
+    .filter((item): item is string => item !== null);
 
-  return labels.length > 0 ? labels.join(', ') : 'Treasure present'
+  return labels.length > 0 ? labels.join(", ") : "Treasure present";
 }
 
 function EntryBlock({
   entry,
   onRunEncounter,
 }: {
-  entry: DungeonEntry
-  onRunEncounter: (encounterId: number) => void
+  entry: DungeonEntry;
+  onRunEncounter: (encounterId: number) => void;
 }) {
-  const treasure = formatTreasureContents(entry.treasure_contents)
+  const treasure = formatTreasureContents(entry.treasure_contents);
 
   return (
     <article className="maplab-room-details-entry">
@@ -97,7 +99,7 @@ function EntryBlock({
       )}
       {treasure && <p className="maplab-room-details-treasure">Treasure: {treasure}</p>}
     </article>
-  )
+  );
 }
 
 export function RoomDetailsPanel({
@@ -112,36 +114,39 @@ export function RoomDetailsPanel({
   actionError,
   clearActionError: _clearActionError,
 }: RoomDetailsPanelProps) {
-  const [npcs, setNpcs] = useState<NPC[]>([])
+  const [npcs, setNpcs] = useState<NPC[]>([]);
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
     listNPCs()
       .then((result) => {
-        if (!cancelled) setNpcs(result)
+        if (!cancelled) setNpcs(result);
       })
       .catch(() => {
-        if (!cancelled) setNpcs([])
-      })
+        if (!cancelled) setNpcs([]);
+      });
 
     return () => {
-      cancelled = true
-    }
-  }, [dungeonId])
+      cancelled = true;
+    };
+  }, [dungeonId]);
 
-  const roster = useMemo(() => new Map(npcs.map((npc) => [npc.id, npc.name] as const)), [npcs])
-  const entryGroups = dungeonRoom ? groupEntriesByType(dungeonRoom) : []
-  const threatHints = dungeonRoom ? getRoomThreatHints(dungeonRoom) : null
+  const roster = useMemo(() => new Map(npcs.map((npc) => [npc.id, npc.name] as const)), [npcs]);
+  const entryGroups = dungeonRoom ? groupEntriesByType(dungeonRoom) : [];
+  const threatHints = dungeonRoom ? getRoomThreatHints(dungeonRoom) : null;
 
   // Compute the union of explicit room NPCs + marker-derived NPCs, de-duplicated
-  const unionNpcIds = useMemo(() => getNpcUnion(dungeonRoom?.npcs, room, layout), [dungeonRoom, room, layout])
+  const unionNpcIds = useMemo(
+    () => getNpcUnion(dungeonRoom?.npcs, room, layout),
+    [dungeonRoom, room, layout],
+  );
 
   if (room === null) {
     return (
       <section className="maplab-room-details-panel" aria-label="Room details">
         <p className="maplab-room-details-empty">Select a room on the map to see its details.</p>
       </section>
-    )
+    );
   }
 
   return (
@@ -159,15 +164,20 @@ export function RoomDetailsPanel({
           </Button>
         )}
         {actionError && (
-          <p role="status" className="maplab-room-details-error">{actionError}</p>
+          <p role="status" className="maplab-room-details-error">
+            {actionError}
+          </p>
         )}
-        {threatHints && (threatHints.hasTrap || threatHints.hasMonster || threatHints.hasEncounter) && (
-          <div className="maplab-room-details-badges" aria-label="Threat hints">
-            {threatHints.hasTrap && <span className="maplab-room-details-badge">Trap</span>}
-            {threatHints.hasMonster && <span className="maplab-room-details-badge">Monster</span>}
-            {threatHints.hasEncounter && <span className="maplab-room-details-badge">Encounter</span>}
-          </div>
-        )}
+        {threatHints &&
+          (threatHints.hasTrap || threatHints.hasMonster || threatHints.hasEncounter) && (
+            <div className="maplab-room-details-badges" aria-label="Threat hints">
+              {threatHints.hasTrap && <span className="maplab-room-details-badge">Trap</span>}
+              {threatHints.hasMonster && <span className="maplab-room-details-badge">Monster</span>}
+              {threatHints.hasEncounter && (
+                <span className="maplab-room-details-badge">Encounter</span>
+              )}
+            </div>
+          )}
       </header>
 
       {dungeonRoom === null ? (
@@ -208,5 +218,5 @@ export function RoomDetailsPanel({
         </section>
       )}
     </section>
-  )
+  );
 }

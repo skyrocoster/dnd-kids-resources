@@ -1,49 +1,71 @@
-import { memo, forwardRef, useCallback } from 'react'
-import type { LoomNode } from '../../api/types'
-import { PencilIcon, BanknoteIcon, TrashIcon } from '../../components/icons'
-import { IconButton } from '../../components/IconButton'
+import { memo, forwardRef, useCallback } from "react";
+import type { LoomNode } from "../../api/types";
+import { PencilIcon, BanknoteIcon, TrashIcon } from "../../components/icons";
+import { IconButton } from "../../components/IconButton";
 
 interface LoomNodeCardProps {
-  node: LoomNode
-  isNow: boolean
-  isNext: boolean
-  threadColor: string | null
-  selected?: boolean
-  onClick?: (nodeId: number) => void
-  threadId?: number
-  bodyIndex?: number
-  sessionTag?: string | null
-  onEdit?: (node: LoomNode) => void
-  onBank?: (node: LoomNode) => void
-  onDelete?: (node: LoomNode) => void
+  node: LoomNode;
+  isNow: boolean;
+  isNext: boolean;
+  threadColor: string | null;
+  selected?: boolean;
+  onClick?: (nodeId: number) => void;
+  threadId?: number;
+  bodyIndex?: number;
+  sessionTag?: string | null;
+  onEdit?: (node: LoomNode) => void;
+  onBank?: (node: LoomNode) => void;
+  onDelete?: (node: LoomNode) => void;
 }
 
 function LoomNodeCardImpl(
-  { node, isNow, isNext, threadColor, selected, onClick, threadId, bodyIndex, sessionTag, onEdit, onBank, onDelete }: LoomNodeCardProps,
+  {
+    node,
+    isNow,
+    isNext,
+    threadColor,
+    selected,
+    onClick,
+    threadId,
+    bodyIndex,
+    sessionTag,
+    onEdit,
+    onBank,
+    onDelete,
+  }: LoomNodeCardProps,
   ref: React.Ref<HTMLDivElement>,
 ) {
-  const isGhosted = node.kind === 'beat' && !node.fulfilled_at
-  const isDraggable = (node.kind === 'beat' || node.kind === 'session') && node.thread_id != null && bodyIndex != null
+  const isGhosted = node.kind === "beat" && !node.fulfilled_at;
+  const isDraggable =
+    (node.kind === "beat" || node.kind === "session") &&
+    node.thread_id != null &&
+    bodyIndex != null;
 
   const classNames = [
-    'loom-node',
+    "loom-node",
     `loom-node--${node.kind}`,
-    ...(isGhosted ? ['loom-node--ghosted'] : []),
-    ...(selected ? ['loom-node--selected'] : []),
-    ...(isDraggable ? ['loom-node--draggable'] : []),
-  ].join(' ')
+    ...(isGhosted ? ["loom-node--ghosted"] : []),
+    ...(selected ? ["loom-node--selected"] : []),
+    ...(isDraggable ? ["loom-node--draggable"] : []),
+  ].join(" ");
 
   const handleDragStart = useCallback(
     (e: React.DragEvent) => {
-      if (!isDraggable) return
-      e.dataTransfer.effectAllowed = 'move'
+      if (!isDraggable) return;
+      e.dataTransfer.effectAllowed = "move";
       e.dataTransfer.setData(
-        'application/json',
-        JSON.stringify({ action: 'reorder', nodeId: node.id, fromBodyIndex: bodyIndex, sourceThreadId: threadId, nodeKind: node.kind }),
-      )
+        "application/json",
+        JSON.stringify({
+          action: "reorder",
+          nodeId: node.id,
+          fromBodyIndex: bodyIndex,
+          sourceThreadId: threadId,
+          nodeKind: node.kind,
+        }),
+      );
     },
     [isDraggable, node.id, node.kind, bodyIndex, threadId],
-  )
+  );
 
   return (
     <div
@@ -51,11 +73,14 @@ function LoomNodeCardImpl(
       className={classNames}
       data-head={isNow || undefined}
       data-next={isNext || undefined}
-      onClick={(e) => { e.stopPropagation(); onClick?.(node.id) }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.(node.id);
+      }}
       onKeyDown={(e) => {
-        if (e.key !== 'Enter' && e.key !== ' ') return
-        e.preventDefault()
-        onClick?.(node.id)
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        onClick?.(node.id);
       }}
       role="button"
       tabIndex={0}
@@ -64,30 +89,65 @@ function LoomNodeCardImpl(
       draggable={isDraggable}
       onDragStart={handleDragStart}
     >
-      {threadColor && <span className="loom-node-spine" data-color={threadColor} aria-hidden="true" />}
+      {threadColor && (
+        <span className="loom-node-spine" data-color={threadColor} aria-hidden="true" />
+      )}
       {isNow && <span className="loom-node-badge loom-node-badge--now">Current</span>}
       {isNext && <span className="loom-node-badge loom-node-badge--next">Next</span>}
       <div className="loom-node-title">{node.title}</div>
       <div className="loom-node-markers">
-        <span className="loom-node-marker-kind" data-kind={node.kind}>{node.kind === 'start' ? 'START' : node.kind === 'end' ? 'END' : node.kind === 'beat' ? 'Beat' : 'Session'}</span>
-        {node.carried_count > 0 && <span className="loom-node-marker-carry">{node.carried_count}×</span>}
+        <span className="loom-node-marker-kind" data-kind={node.kind}>
+          {node.kind === "start"
+            ? "START"
+            : node.kind === "end"
+              ? "END"
+              : node.kind === "beat"
+                ? "Beat"
+                : "Session"}
+        </span>
+        {node.carried_count > 0 && (
+          <span className="loom-node-marker-carry">{node.carried_count}×</span>
+        )}
       </div>
-      {node.kind === 'session' && sessionTag && <div className="loom-node-session">{sessionTag}</div>}
-      {node.kind === 'beat' && node.thread_id != null && (
+      {node.kind === "session" && sessionTag && (
+        <div className="loom-node-session">{sessionTag}</div>
+      )}
+      {node.kind === "beat" && node.thread_id != null && (
         <div className="loom-node-actions">
-          <IconButton label="Edit beat" className="loom-node-action-btn" onClick={(e) => { e.stopPropagation(); onEdit?.(node) }}>
+          <IconButton
+            label="Edit beat"
+            className="loom-node-action-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit?.(node);
+            }}
+          >
             <PencilIcon size={12} aria-hidden="true" />
           </IconButton>
-          <IconButton label="Bank beat" className="loom-node-action-btn" onClick={(e) => { e.stopPropagation(); onBank?.(node) }}>
+          <IconButton
+            label="Bank beat"
+            className="loom-node-action-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              onBank?.(node);
+            }}
+          >
             <BanknoteIcon size={12} aria-hidden="true" />
           </IconButton>
-          <IconButton label="Delete beat" className="loom-node-action-btn" onClick={(e) => { e.stopPropagation(); onDelete?.(node) }}>
+          <IconButton
+            label="Delete beat"
+            className="loom-node-action-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete?.(node);
+            }}
+          >
             <TrashIcon size={12} aria-hidden="true" />
           </IconButton>
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export const LoomNodeCard = memo(forwardRef(LoomNodeCardImpl))
+export const LoomNodeCard = memo(forwardRef(LoomNodeCardImpl));

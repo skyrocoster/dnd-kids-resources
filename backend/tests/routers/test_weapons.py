@@ -32,7 +32,16 @@ class TestWeaponCreate:
         payload = {
             **_VALID_PAYLOAD,
             "name": "Mod Blade",
-            "attack": [{"type": "melee", "damage": "1d8", "damage_type": "slashing", "hands": 1, "attack_mod": 3, "damage_mod": 2}],
+            "attack": [
+                {
+                    "type": "melee",
+                    "damage": "1d8",
+                    "damage_type": "slashing",
+                    "hands": 1,
+                    "attack_mod": 3,
+                    "damage_mod": 2,
+                }
+            ],
         }
         resp = test_client.post("/api/weapons", json=payload)
         assert resp.status_code == 201
@@ -56,7 +65,12 @@ class TestWeaponCreate:
         ids=["blank", "unknown-token", "malformed"],
     )
     def test_create_rejects_bad_quick_rules(self, test_client, quick_rules):
-        assert test_client.post("/api/weapons", json={**_VALID_PAYLOAD, "quick_rules": quick_rules}).status_code == 422
+        assert (
+            test_client.post(
+                "/api/weapons", json={**_VALID_PAYLOAD, "quick_rules": quick_rules}
+            ).status_code
+            == 422
+        )
 
     def test_create_rejects_missing_quick_rules(self, test_client):
         payload = {k: v for k, v in _VALID_PAYLOAD.items() if k != "quick_rules"}
@@ -82,7 +96,16 @@ class TestWeaponUpdate:
         payload = {
             **_VALID_PAYLOAD,
             "name": "Upd Mod Blade",
-            "attack": [{"type": "melee", "damage": "1d6", "damage_type": "piercing", "hands": 1, "attack_mod": 4, "damage_mod": 1}],
+            "attack": [
+                {
+                    "type": "melee",
+                    "damage": "1d6",
+                    "damage_type": "piercing",
+                    "hands": 1,
+                    "attack_mod": 4,
+                    "damage_mod": 1,
+                }
+            ],
         }
         created = test_client.post("/api/weapons", json=payload).json()
         wid = created["id"]
@@ -95,9 +118,14 @@ class TestWeaponUpdate:
         assert data["attack"][0]["attack_mod"] == 4
         assert data["attack"][0]["damage_mod"] == 1
 
+
 class TestWeaponSheetReadyTotals:
     def test_optional_totals_default_to_null(self, test_client):
-        payload = {k: v for k, v in _VALID_PAYLOAD.items() if k not in ("weapon_attack_bonus", "weapon_damage_bonus")}
+        payload = {
+            k: v
+            for k, v in _VALID_PAYLOAD.items()
+            if k not in ("weapon_attack_bonus", "weapon_damage_bonus")
+        }
         resp = test_client.post("/api/weapons", json=payload)
         assert resp.status_code == 201
         data = resp.json()
@@ -105,7 +133,12 @@ class TestWeaponSheetReadyTotals:
         assert data["weapon_damage_bonus"] is None
 
     def test_totals_round_trip(self, test_client):
-        payload = {**_VALID_PAYLOAD, "weapon_attack_bonus": 8, "weapon_damage_bonus": 4, "name": "Killer Blade"}
+        payload = {
+            **_VALID_PAYLOAD,
+            "weapon_attack_bonus": 8,
+            "weapon_damage_bonus": 4,
+            "name": "Killer Blade",
+        }
         resp = test_client.post("/api/weapons", json=payload)
         assert resp.status_code == 201
         data = resp.json()
@@ -122,7 +155,9 @@ class TestWeaponSheetReadyTotals:
 class TestWeaponDeletionSafety:
     def test_get_players_lists_assignees(self, test_client):
         weapon_id = test_client.post("/api/weapons", json=_VALID_PAYLOAD).json()["id"]
-        player_id = test_client.post("/api/players", json={"name": "Aria", "class_": "Fighter", "level": 3}).json()["id"]
+        player_id = test_client.post(
+            "/api/players", json={"name": "Aria", "class_": "Fighter", "level": 3}
+        ).json()["id"]
         test_client.post(f"/api/players/{player_id}/weapons/{weapon_id}")
 
         resp = test_client.get(f"/api/weapons/{weapon_id}/players")
@@ -137,7 +172,9 @@ class TestWeaponDeletionSafety:
 
     def test_delete_cascades_player_assignment(self, test_client):
         weapon_id = test_client.post("/api/weapons", json=_VALID_PAYLOAD).json()["id"]
-        player_id = test_client.post("/api/players", json={"name": "Bram", "class_": "Rogue", "level": 2}).json()["id"]
+        player_id = test_client.post(
+            "/api/players", json={"name": "Bram", "class_": "Rogue", "level": 2}
+        ).json()["id"]
         test_client.post(f"/api/players/{player_id}/weapons/{weapon_id}")
 
         resp = test_client.delete(f"/api/weapons/{weapon_id}")

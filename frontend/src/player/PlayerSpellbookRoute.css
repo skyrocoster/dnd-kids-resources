@@ -20,7 +20,7 @@
 }
 
 .player-spellbook-map-link,
-.player-spellbook-tab {
+.player-spellbook-tabs > .form-advanced-toggle {
   min-width: 64px;
   min-height: 64px;
   padding: var(--space-3);
@@ -34,13 +34,25 @@
   cursor: pointer;
 }
 
-.player-spellbook-tabs {
+.player-spellbook-tabs.form-advanced-toggle-group {
   display: flex;
+  flex-wrap: nowrap;
   gap: var(--space-3);
   margin-top: var(--space-6);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
-.player-spellbook-tab[aria-pressed='true'] {
+.player-spellbook
+  .player-spellbook-tabs
+  > .form-advanced-toggle:hover:not([data-disabled]):not([aria-pressed="true"]) {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+.player-spellbook .player-spellbook-tabs > .form-advanced-toggle[aria-pressed="true"] {
   background: var(--md-primary);
   color: var(--md-on-primary);
 }

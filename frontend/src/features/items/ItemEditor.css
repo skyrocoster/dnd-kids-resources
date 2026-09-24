@@ -1,5 +1,20 @@
-.item-editor-dialog { width: min(580px, 96vw); }
-.item-editor-status { margin: 0 0 1rem; padding: 0.5rem 0.75rem; background: var(--md-surface-2, var(--md-surface)); border-radius: 0.375rem; }
-.item-editor-status.error { color: var(--md-error); }
-.item-editor-status.success { color: var(--md-loot); }
-.item-editor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0 1rem; }
+.item-editor-dialog {
+  width: min(580px, 96vw);
+}
+.item-editor-status {
+  margin: 0 0 1rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--md-surface-2, var(--md-surface));
+  border-radius: 0.375rem;
+}
+.item-editor-status.error {
+  color: var(--md-error);
+}
+.item-editor-status.success {
+  color: var(--md-loot);
+}
+.item-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0 1rem;
+}
