@@ -9,6 +9,8 @@ import {
   getAbilities,
   getDungeonLayout,
   getPlayerSpellbook,
+  listMonsters,
+  listSpells,
   saveDungeonLayout,
   updateMonster,
 } from "../client";
@@ -56,6 +58,48 @@ describe("generated API client facade", () => {
     expect(requestUrl(fetchMock).pathname).toBe("/api/players/spellbook");
     expect((fetchMock.mock.calls[0][0] as Request).signal.aborted).toBe(false);
     expect(result).toEqual(spellbook);
+  });
+
+  it("fetches all spell pages beyond the API's 500-row limit", async () => {
+    const firstPage = Array.from({ length: 500 }, (_, index) => ({ id: index + 1 }));
+    const secondPage = Array.from({ length: 25 }, (_, index) => ({ id: index + 501 }));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(firstPage))
+      .mockResolvedValueOnce(jsonResponse(secondPage));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const spells = await listSpells();
+
+    expect(spells).toHaveLength(525);
+    expect(spells[524]).toEqual({ id: 525 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const urls = fetchMock.mock.calls.map(([request]) => new URL((request as Request).url));
+    expect(
+      urls.map((url) => [url.searchParams.get("limit"), url.searchParams.get("offset")]),
+    ).toEqual([
+      ["500", "0"],
+      ["500", "500"],
+    ]);
+  });
+
+  it("fetches every monster page, including rows beyond 1,000", async () => {
+    const pages = [
+      Array.from({ length: 500 }, (_, index) => ({ id: index + 1 })),
+      Array.from({ length: 500 }, (_, index) => ({ id: index + 501 })),
+      [{ id: 1001 }],
+    ];
+    const fetchMock = vi.fn();
+    for (const page of pages) fetchMock.mockResolvedValueOnce(jsonResponse(page));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const monsters = await listMonsters();
+
+    expect(monsters).toHaveLength(1001);
+    expect(monsters[1000]).toEqual({ id: 1001 });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const urls = fetchMock.mock.calls.map(([request]) => new URL((request as Request).url));
+    expect(urls.map((url) => url.searchParams.get("offset"))).toEqual(["0", "500", "1000"]);
   });
 
   it("preserves opaque nested JSON in generated response data and request bodies", async () => {

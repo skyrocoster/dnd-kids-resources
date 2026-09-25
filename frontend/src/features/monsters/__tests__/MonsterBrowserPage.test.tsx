@@ -172,6 +172,22 @@ describe("MonsterBrowserPage", () => {
     expect(screen.getByText(/darkvision 60 ft\./)).toBeInTheDocument();
   });
 
+  it("searches and selects a monster after the first 100 catalog rows", async () => {
+    const manyMonsters = Array.from({ length: 101 }, (_, index) =>
+      monster({ id: index + 1, name: `Creature ${String(index + 1).padStart(3, "0")}` }),
+    );
+    manyMonsters[100].name = "Zzz Beyond First Page";
+    vi.spyOn(api, "listMonsters").mockResolvedValue(manyMonsters);
+    const user = userEvent.setup();
+
+    renderPage();
+    await screen.findByRole("button", { name: "Creature 001" });
+    await user.type(screen.getByRole("searchbox", { name: "Search monsters…" }), "Beyond First");
+    await user.click(screen.getByRole("button", { name: "Zzz Beyond First Page" }));
+
+    expect(screen.getByRole("heading", { name: "Zzz Beyond First Page" })).toBeInTheDocument();
+  });
+
   it("prints the currently selected monster", async () => {
     vi.spyOn(api, "listMonsters").mockResolvedValue(monsters);
     const print = vi.spyOn(window, "print").mockImplementation(() => undefined);

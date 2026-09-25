@@ -1,4 +1,13 @@
 import type { Preview } from "@storybook/react-vite";
+import "../src/index.css";
+import "../src/storybook/apiMocks";
+import { storybookViewports } from "../src/storybook/viewports";
+
+// The application is dark-only and its theme tokens are scoped to this root
+// attribute. Storybook has its own preview document, so set the same theme.
+if (typeof document !== "undefined") {
+  document.documentElement.dataset.theme = "dark";
+}
 
 const preview: Preview = {
   parameters: {
@@ -10,10 +19,22 @@ const preview: Preview = {
     },
 
     a11y: {
-      // 'todo' - show a11y violations in the test UI only
-      // 'error' - fail CI on a11y violations
-      // 'off' - skip a11y checks entirely
-      test: "todo",
+      test: "error",
+    },
+    viewport: {
+      options: storybookViewports,
+    },
+    options: {
+      storySort: {
+        order: [
+          "Production",
+          ["Application", "Design System"],
+          "In Development",
+          ["Application", "Design System"],
+          "Reference",
+          ["Catalogues", "Storybook Fixtures"],
+        ],
+      },
     },
   },
 };

@@ -5,6 +5,8 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   padding: 15px 20px;
   font-family: "Nunito Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  background-color: #fff;
+  color: #1f2937;
 }
 
 .storybook-header svg {
@@ -27,6 +29,6 @@
 
 .storybook-header .welcome {
   margin-right: 10px;
-  color: #333;
+  color: #1f2937;
   font-size: 14px;
 }

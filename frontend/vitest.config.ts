@@ -9,6 +9,42 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [react()],
+  // Storybook's browser project imports controls lazily. Pre-bundle these
+  // dependencies up front so Vite does not reload the test page mid-run when
+  // the Storybook preview first discovers their package entry points.
+  optimizeDeps: {
+    include: [
+      "@base-ui/react/accordion",
+      "@base-ui/react/autocomplete",
+      "@base-ui/react/avatar",
+      "@base-ui/react/button",
+      "@base-ui/react/checkbox-group",
+      "@base-ui/react/checkbox",
+      "@base-ui/react/collapsible",
+      "@base-ui/react/combobox",
+      "@base-ui/react/context-menu",
+      "@base-ui/react/dialog",
+      "@base-ui/react/field",
+      "@base-ui/react/input",
+      "@base-ui/react/menu",
+      "@base-ui/react/menubar",
+      "@base-ui/react/meter",
+      "@base-ui/react/navigation-menu",
+      "@base-ui/react/popover",
+      "@base-ui/react/preview-card",
+      "@base-ui/react/radio-group",
+      "@base-ui/react/radio",
+      "@base-ui/react/scroll-area",
+      "@base-ui/react/select",
+      "@base-ui/react/separator",
+      "@base-ui/react/tabs",
+      "@base-ui/react/toast",
+      "@base-ui/react/tooltip",
+      "react-day-picker",
+      "react-router-dom",
+      "@storybook/addon-docs",
+    ],
+  },
   test: {
     projects: [
       {

@@ -243,6 +243,10 @@ export function FloatingWindow({ title, storageKey, onClose, children }: Floatin
         role="separator"
         aria-label="Resize window. Arrow keys to resize."
         aria-orientation="horizontal"
+        aria-valuenow={size.width}
+        aria-valuemin={300}
+        aria-valuemax={Math.max(300, Math.floor(window.innerWidth * 0.92))}
+        aria-valuetext={`${size.width} pixels wide by ${size.height} pixels tall`}
         tabIndex={0}
       >
         <span className="floating-window-resize-ridges" aria-hidden />

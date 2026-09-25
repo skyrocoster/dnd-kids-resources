@@ -101,9 +101,10 @@ export function LoomSwimlanes({
         ))}
         <div
           className="loom-grid-col-header loom-grid-col-header--fell"
-          aria-label="Current position"
-        />
-        <div className="loom-grid-col-header loom-grid-col-header--warp" aria-label="Planned beats">
+        >
+          <span className="visually-hidden">Current position</span>
+        </div>
+        <div className="loom-grid-col-header loom-grid-col-header--warp">
           Planned beats
         </div>
       </div>

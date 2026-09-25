@@ -311,6 +311,7 @@ def get_player_spells(player_id: int):
 
         cursor.execute(
             """SELECT s.id, s.name, s.level, s.school, s.description,
+                       s.quick_rules, s.alternate_description,
                        s.damage, s.healing, s.range,
                        s.higher_levels, s.casting_times, s.duration, s.concentration,
                        s.ritual, s.components, s.materials, s.attacks, s.area_of_effect,
@@ -417,6 +418,7 @@ def replace_player_spells(player_id: int, assignments: PlayerSpellAssignments):
 
         cursor.execute(
             """SELECT s.id, s.name, s.level, s.school, s.description,
+                      s.quick_rules, s.alternate_description,
                       s.damage, s.healing, s.range, s.higher_levels, s.casting_times, s.duration,
                       s.concentration, s.ritual, s.components, s.materials,
                       s.attacks, s.area_of_effect, s.categories
@@ -574,9 +576,9 @@ def get_player_detail(player_id: int):
 
         cursor.execute(
             """SELECT s.id, s.name, s.level, s.school, s.description,
+                      s.quick_rules, s.alternate_description,
                       s.damage, s.healing, s.range, s.higher_levels, s.casting_times, s.duration,
-                       s.higher_levels, s.casting_times, s.duration, s.concentration,
-                       s.ritual, s.components, s.materials, s.attacks, s.area_of_effect,
+                      s.concentration, s.ritual, s.components, s.materials, s.attacks, s.area_of_effect,
                        s.categories
                FROM spells s
                JOIN player_spells ps ON s.id = ps.spell_id

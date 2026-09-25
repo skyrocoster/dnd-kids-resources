@@ -54,6 +54,24 @@ describe("SpellBrowserPage", () => {
     expect(screen.getByText("V, S")).toBeInTheDocument();
   });
 
+  it("searches and selects a spell after the first 100 catalog rows", async () => {
+    const manySpells = Array.from({ length: 101 }, (_, index) => ({
+      ...targetSpell,
+      id: index + 1,
+      name: `Spell ${String(index + 1).padStart(3, "0")}`,
+    }));
+    manySpells[100].name = "Zzz Beyond First Page";
+    vi.spyOn(api, "listSpells").mockResolvedValue(manySpells);
+    const user = userEvent.setup();
+
+    render(<SpellBrowserPage />);
+    await screen.findByRole("button", { name: /Spell 001/ });
+    await user.type(screen.getByRole("searchbox", { name: "Search spells…" }), "Beyond First");
+    await user.click(screen.getByRole("button", { name: /Zzz Beyond First Page/ }));
+
+    expect(screen.getByRole("heading", { name: "Zzz Beyond First Page" })).toBeInTheDocument();
+  });
+
   it("shows quick rules before the full description", async () => {
     vi.spyOn(api, "listSpells").mockResolvedValue(spells);
     const user = userEvent.setup();

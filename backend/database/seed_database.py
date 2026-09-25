@@ -11,6 +11,7 @@ Seed files (in data/seeds/):
 - seed_npcs.json, seed_encounters.json
 - seed_items.json, seed_loot_bundles.json
 - seed_players.json, seed_player_spells.json, seed_player_weapons.json
+- seed_revealed_cells.json, seed_at_the_table.json
 
 Use `src/tools/export_db_seeds.py` to re-export the current DB's tables back into data/seeds/.
 
@@ -20,7 +21,9 @@ Usage:
     docker compose exec backend python -m backend.database.seed_database --spells
         # Load only spells
     docker compose exec backend python -m backend.database.seed_database --force
-        # Delete existing data first
+        # Replace all default seed groups (Loom remains excluded)
+    docker compose exec backend python -m backend.database.seed_database --spells --force
+        # Replace only the spells table
 """
 
 import argparse
@@ -37,19 +40,161 @@ from backend.app.reference_text import (
 
 SEEDS_DIR = Path(__file__).resolve().parents[2] / "data" / "seeds"
 
+# A forced group reload replaces only the tables owned by that selected group.
+# The state tables are part of the dungeon group because they refer to dungeons.
+SEED_GROUPS = {
+    "abilities": {
+        "argument": "abilities",
+        "tables": ("abilities",),
+        "files": ("seed_abilities.json",),
+    },
+    "damage_types": {
+        "argument": "damage_types",
+        "tables": ("damage_types",),
+        "files": ("seed_damage_types.json",),
+    },
+    "weapon_properties": {
+        "argument": "weapon_properties",
+        "tables": ("weapon_properties",),
+        "files": ("seed_weapon_properties.json",),
+    },
+    "weapons": {
+        "argument": "weapons",
+        "tables": ("weapons",),
+        "files": ("seed_weapons.json",),
+    },
+    "items": {"argument": "items", "tables": ("items",), "files": ("seed_items.json",)},
+    "monsters": {
+        "argument": "monsters",
+        "tables": ("monsters",),
+        "files": ("seed_monsters.json",),
+    },
+    "npcs": {"argument": "npcs", "tables": ("npcs",), "files": ("seed_npcs.json",)},
+    "spells": {
+        "argument": "spells",
+        "tables": ("spells",),
+        "files": ("seed_spells.json",),
+    },
+    "conditions": {
+        "argument": "conditions",
+        "tables": ("conditions",),
+        "files": ("seed_conditions.json",),
+    },
+    "encounters": {
+        "argument": "encounters",
+        "tables": ("encounter",),
+        "files": ("seed_encounters.json",),
+    },
+    "loot_bundles": {
+        "argument": "loot_bundles",
+        "tables": ("loot_bundle",),
+        "files": ("seed_loot_bundles.json",),
+    },
+    "players": {
+        "argument": "players",
+        "tables": ("players",),
+        "files": ("seed_players.json",),
+    },
+    "player_spells": {
+        "argument": "player_spells",
+        "tables": ("player_spells",),
+        "files": ("seed_player_spells.json",),
+    },
+    "player_weapons": {
+        "argument": "player_weapons",
+        "tables": ("player_weapons",),
+        "files": ("seed_player_weapons.json",),
+    },
+    "dungeons": {
+        "argument": "dungeons",
+        "tables": (
+            "revealed_cells",
+            "at_the_table",
+            "map_session_state",
+            "map_layout",
+            "dungeons",
+        ),
+        "files": (
+            "seed_dungeons.json",
+            "seed_map_layouts.json",
+            "seed_map_session_state.json",
+            "seed_revealed_cells.json",
+            "seed_at_the_table.json",
+        ),
+    },
+    "loom": {
+        "argument": "loom",
+        "tables": ("loom_nodes", "loom_threads", "loom_sessions"),
+        "files": (
+            "seed_loom_threads.json",
+            "seed_loom_sessions.json",
+            "seed_loom_nodes.json",
+        ),
+    },
+}
+_PRELOADED_SEEDS: dict[str, object] | None = None
+
+
+class _DeferredCommitConnection:
+    """Keep legacy population helpers from committing inside the CLI transaction."""
+
+    def __init__(self, connection: sqlite3.Connection):
+        self.connection = connection
+
+    def commit(self) -> None:
+        # main() owns the single commit after every selected group has succeeded.
+        return None
+
 
 def load_json_file(filepath):
     """Load and parse a JSON seed file."""
+    if _PRELOADED_SEEDS is not None and filepath.name in _PRELOADED_SEEDS:
+        return _PRELOADED_SEEDS[filepath.name]
     if not filepath.exists():
-        print(f"[WARNING]  Seed file not found: {filepath}")
-        return []
+        raise FileNotFoundError(f"Seed file not found: {filepath}")
 
     try:
         with open(filepath, "r", encoding="utf-8") as f:
             return json.load(f)
     except json.JSONDecodeError as e:
-        print(f"[ERROR] Invalid JSON in {filepath}: {e}")
-        return []
+        raise ValueError(f"Invalid JSON in {filepath}: {e}") from e
+
+
+def _validate_seed_data(filename: str, data: object) -> None:
+    """Reject invalid top-level shapes before a forced reload starts deleting rows."""
+    if filename == "seed_weapon_properties.json":
+        if isinstance(data, list):
+            records = data
+        elif isinstance(data, dict) and all(isinstance(value, dict) for value in data.values()):
+            return
+        else:
+            raise ValueError(f"Expected a list or object in {filename}")
+    elif filename == "seed_weapons.json" and isinstance(data, dict):
+        records = data.get("item")
+        if not isinstance(records, list):
+            raise ValueError(f"Expected an item list in {filename}")
+    else:
+        if not isinstance(data, list):
+            raise ValueError(f"Expected a list in {filename}")
+        records = data
+
+    if any(not isinstance(record, dict) for record in records):
+        raise ValueError(f"Expected every record in {filename} to be an object")
+    if filename == "seed_at_the_table.json" and len(records) > 1:
+        raise ValueError("seed_at_the_table.json may contain at most one row")
+
+
+def _preload_seed_inputs(groups: list[str]) -> dict[str, object]:
+    """Read and structurally validate every selected input before any delete begins."""
+    filenames = dict.fromkeys(
+        filename for group in groups for filename in SEED_GROUPS[group]["files"]
+    )
+    loaded = {}
+    for filename in filenames:
+        data = load_json_file(SEEDS_DIR / filename)
+        _validate_seed_data(filename, data)
+        loaded[filename] = data
+    return loaded
 
 
 def populate_abilities(cursor, conn, force=False):
@@ -61,16 +206,8 @@ def populate_abilities(cursor, conn, force=False):
 
     if force:
         # Clear existing abilities data, but do not manage schema here
-        try:
-            cursor.execute("DELETE FROM abilities")
-            print("  [TRASH]  Cleared existing abilities data")
-        except Exception as e:
-            print(f"  [WARNING]  Error clearing abilities data: {e}")
-            print(
-                "  [ERROR]  abilities table may not exist. "
-                "Run backend/database/init_database.py first."
-            )
-            return
+        cursor.execute("DELETE FROM abilities")
+        print("  [TRASH]  Cleared existing abilities data")
     else:
         # Check if table exists and has data
         try:
@@ -82,12 +219,8 @@ def populate_abilities(cursor, conn, force=False):
                     "Skip (use --force to override)"
                 )
                 return
-        except Exception:
-            print(
-                "  [ERROR]  Abilities table does not exist. "
-                "Run backend/database/init_database.py first."
-            )
-            return
+        except Exception as e:
+            raise RuntimeError("Failed to read the abilities table") from e
 
     seeds = load_json_file(SEEDS_DIR / "seed_abilities.json")
     if not seeds:
@@ -119,6 +252,7 @@ def populate_abilities(cursor, conn, force=False):
             )
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Error: {ability.get('code')} - {e}")
+            raise
 
     conn.commit()
     cursor.execute("SELECT COUNT(*) FROM abilities")
@@ -194,52 +328,35 @@ def insert_spell(cursor, spell_data):
 
 
 def populate_spells(cursor, conn, force=False):
-    """Populate spells table using the new 5eTools staging workflow or JSON seed fallback."""
+    """Populate the spells table from seed_spells.json."""
     print("\n[BOOKS] Loading spells...")
 
     seed_file = SEEDS_DIR / "seed_spells.json"
-    if seed_file.exists():
-        try:
-            cursor.execute("SELECT COUNT(*) FROM spells")
-            count = cursor.fetchone()[0]
-        except Exception:
-            count = 0
-
-        if count > 0 and not force:
-            print(
-                f"  [INFO] Spells table already has {count} records. Skip (use --force to override)"
-            )
-            return
-
-        if force:
-            cursor.execute("DELETE FROM spells")
-            print("  [TRASH]  Cleared existing spells data")
-
-        print(f"  [INFO] Loading spell seeds from {seed_file}")
-        seeds = load_json_file(seed_file)
-        if not seeds:
-            print("  [WARNING]  No spell seeds found")
-            return
-
-        for spell in seeds:
-            try:
-                insert_spell(cursor, spell)
-                print(f"  [CHECK] {spell.get('name')}")
-            except ValueError as e:
-                print(f"  [ERROR]  Invalid spell quick_rules: {spell.get('name')} - {e}")
-                raise
-            except sqlite3.IntegrityError as e:
-                print(f"  [WARNING]  Duplicate or error: {spell.get('name')} - {e}")
-
-        conn.commit()
-        print(f"  [OK] Loaded {len(seeds)} spells from JSON seed file")
+    cursor.execute("SELECT COUNT(*) FROM spells")
+    count = cursor.fetchone()[0]
+    if count > 0 and not force:
+        print(f"  [INFO] Spells table already has {count} records. Skip (use --force to override)")
         return
 
-    print(
-        "  [WARNING] No seed_spells.json found. "
-        "Create it with export_db_seeds.py or add it manually."
-    )
-    return
+    print(f"  [INFO] Loading spell seeds from {seed_file}")
+    seeds = load_json_file(seed_file)
+    if not seeds:
+        print("  [WARNING]  No spell seeds found")
+        return
+
+    for spell in seeds:
+        try:
+            insert_spell(cursor, spell)
+            print(f"  [CHECK] {spell.get('name')}")
+        except ValueError as e:
+            print(f"  [ERROR]  Invalid spell quick_rules: {spell.get('name')} - {e}")
+            raise
+        except sqlite3.IntegrityError as e:
+            print(f"  [WARNING]  Duplicate or error: {spell.get('name')} - {e}")
+            raise
+
+    conn.commit()
+    print(f"  [OK] Loaded {len(seeds)} spells from JSON seed file")
 
 
 def populate_conditions(cursor, conn, force=False):
@@ -249,8 +366,8 @@ def populate_conditions(cursor, conn, force=False):
     try:
         cursor.execute("SELECT COUNT(*) FROM conditions")
         count = cursor.fetchone()[0]
-    except sqlite3.OperationalError:
-        count = 0
+    except sqlite3.OperationalError as e:
+        raise RuntimeError("Failed to read the conditions table") from e
 
     if count > 0 and not force:
         print(
@@ -263,12 +380,12 @@ def populate_conditions(cursor, conn, force=False):
     if force or count == 0:
         try:
             cursor.execute("SELECT 1 FROM conditions LIMIT 1")
-        except Exception:
+        except Exception as e:
             print(
                 "  [ERROR]  Conditions table does not exist. "
                 "Run backend/database/init_database.py first."
             )
-            return
+            raise RuntimeError("Failed to inspect the conditions table") from e
 
     seeds = load_json_file(SEEDS_DIR / "seed_conditions.json")
     if not seeds:
@@ -295,6 +412,7 @@ def populate_conditions(cursor, conn, force=False):
             print(f"  [CHECK] {condition.get('title')}")
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Duplicate or error: {condition.get('title')} - {e}")
+            raise
 
     conn.commit()
     print(f"  [OK] Loaded {len(seeds)} conditions")
@@ -306,8 +424,8 @@ def populate_monsters(cursor, conn, force=False):
     try:
         cursor.execute("SELECT COUNT(*) FROM monsters")
         count = cursor.fetchone()[0]
-    except sqlite3.OperationalError:
-        count = 0
+    except sqlite3.OperationalError as e:
+        raise RuntimeError("Failed to read the monsters table") from e
     if count > 0 and not force:
         print(
             f"  [INFO]  Monsters table already has {count} records. Skip (use --force to override)"
@@ -316,12 +434,12 @@ def populate_monsters(cursor, conn, force=False):
     if force or count == 0:
         try:
             cursor.execute("SELECT 1 FROM monsters LIMIT 1")
-        except Exception:
+        except Exception as e:
             print(
                 "  [ERROR]  Monsters table does not exist. "
                 "Run backend/database/init_database.py first."
             )
-            return
+            raise RuntimeError("Failed to inspect the monsters table") from e
     seeds = load_json_file(SEEDS_DIR / "seed_monsters.json")
     if not seeds:
         print("  [WARNING]  No monster seeds found")
@@ -379,6 +497,7 @@ def populate_monsters(cursor, conn, force=False):
             print(f"  [CHECK] {monster.get('name')}")
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Duplicate or error: {monster.get('name')} - {e}")
+            raise
     conn.commit()
     print(f"  [OK] Loaded {len(seeds)} monsters")
 
@@ -389,8 +508,8 @@ def populate_npcs(cursor, conn, force=False):
     try:
         cursor.execute("SELECT COUNT(*) FROM npcs")
         count = cursor.fetchone()[0]
-    except sqlite3.OperationalError:
-        count = 0
+    except sqlite3.OperationalError as e:
+        raise RuntimeError("Failed to read the NPCs table") from e
 
     if count > 0 and not force:
         print(f"  [INFO] NPCs table already has {count} records. Skip (use --force to override)")
@@ -399,11 +518,11 @@ def populate_npcs(cursor, conn, force=False):
     if force or count == 0:
         try:
             cursor.execute("SELECT 1 FROM npcs LIMIT 1")
-        except Exception:
+        except Exception as e:
             print(
                 "  [ERROR] NPCs table does not exist. Run backend/database/init_database.py first."
             )
-            return
+            raise RuntimeError("Failed to inspect the NPCs table") from e
 
     seeds = load_json_file(SEEDS_DIR / "seed_npcs.json")
     if not seeds:
@@ -455,6 +574,7 @@ def populate_npcs(cursor, conn, force=False):
             print(f"  [CHECK] {npc.get('name')}")
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Duplicate or error: {npc.get('name')} - {e}")
+            raise
 
     conn.commit()
     print(f"  [OK] Loaded {len(seeds)} NPCs")
@@ -466,8 +586,8 @@ def populate_loom_threads(cursor, conn, force=False):
     try:
         cursor.execute("SELECT COUNT(*) FROM loom_threads")
         count = cursor.fetchone()[0]
-    except sqlite3.OperationalError:
-        count = 0
+    except sqlite3.OperationalError as e:
+        raise RuntimeError("Failed to read the Loom threads table") from e
 
     if count > 0 and not force:
         print(
@@ -497,6 +617,7 @@ def populate_loom_threads(cursor, conn, force=False):
             print(f"  [CHECK] {thread.get('name')}")
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Duplicate or error: {thread.get('name')} - {e}")
+            raise
 
     conn.commit()
     print(f"  [OK] Loaded {len(seeds)} loom threads")
@@ -508,8 +629,8 @@ def populate_loom_sessions(cursor, conn, force=False):
     try:
         cursor.execute("SELECT COUNT(*) FROM loom_sessions")
         count = cursor.fetchone()[0]
-    except sqlite3.OperationalError:
-        count = 0
+    except sqlite3.OperationalError as e:
+        raise RuntimeError("Failed to read the Loom sessions table") from e
 
     if count > 0 and not force:
         print(
@@ -539,6 +660,7 @@ def populate_loom_sessions(cursor, conn, force=False):
             print(f"  [CHECK] {session.get('name')}")
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Duplicate or error: {session.get('name')} - {e}")
+            raise
 
     conn.commit()
     print(f"  [OK] Loaded {len(seeds)} loom sessions")
@@ -550,8 +672,8 @@ def populate_loom_nodes(cursor, conn, force=False):
     try:
         cursor.execute("SELECT COUNT(*) FROM loom_nodes")
         count = cursor.fetchone()[0]
-    except sqlite3.OperationalError:
-        count = 0
+    except sqlite3.OperationalError as e:
+        raise RuntimeError("Failed to read the Loom nodes table") from e
 
     if count > 0 and not force:
         print(
@@ -587,6 +709,7 @@ def populate_loom_nodes(cursor, conn, force=False):
             print(f"  [CHECK] {node.get('title')}")
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Duplicate or error: {node.get('title')} - {e}")
+            raise
 
     conn.commit()
     print(f"  [OK] Loaded {len(seeds)} loom nodes")
@@ -601,31 +724,16 @@ def populate_damage_types(cursor, conn, force=False):
 
     if force:
         # Clear existing damage types data, but do not manage schema here
-        try:
-            cursor.execute("DELETE FROM damage_types")
-            print("  [TRASH]  Cleared existing damage_types data")
-        except Exception as e:
-            print(f"  [WARNING]  Error clearing damage_types data: {e}")
-            print(
-                "  [ERROR]  damage_types table may not exist. "
-                "Run backend/database/init_database.py first."
-            )
-            return
+        cursor.execute("DELETE FROM damage_types")
+        print("  [TRASH]  Cleared existing damage_types data")
     else:
         # Check if table exists and has data
-        try:
-            cursor.execute("SELECT COUNT(*) FROM damage_types")
-            count = cursor.fetchone()[0]
-            if count > 0:
-                print(
-                    f"  [INFO]  Damage types table already has {count} records. "
-                    "Skip (use --force to override)"
-                )
-                return
-        except Exception:
+        cursor.execute("SELECT COUNT(*) FROM damage_types")
+        count = cursor.fetchone()[0]
+        if count > 0:
             print(
-                "  [ERROR]  Damage types table does not exist. "
-                "Run backend/database/init_database.py first."
+                f"  [INFO]  Damage types table already has {count} records. "
+                "Skip (use --force to override)"
             )
             return
 
@@ -657,6 +765,7 @@ def populate_damage_types(cursor, conn, force=False):
             )
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Error: {damage_type.get('code')} - {e}")
+            raise
 
     conn.commit()
     cursor.execute("SELECT COUNT(*) FROM damage_types")
@@ -669,30 +778,15 @@ def populate_weapon_properties(cursor, conn, force=False):
     print("[ARMS] Loading weapon properties...")
 
     if force:
-        try:
-            cursor.execute("DELETE FROM weapon_properties")
-            print("  [TRASH]  Cleared existing weapon_properties data")
-        except Exception as e:
-            print(f"  [WARNING]  Error clearing weapon_properties data: {e}")
-            print(
-                "  [ERROR]  weapon_properties table may not exist. "
-                "Run backend/database/init_database.py first."
-            )
-            return
+        cursor.execute("DELETE FROM weapon_properties")
+        print("  [TRASH]  Cleared existing weapon_properties data")
     else:
-        try:
-            cursor.execute("SELECT COUNT(*) FROM weapon_properties")
-            count = cursor.fetchone()[0]
-            if count > 0:
-                print(
-                    f"  [INFO]  Weapon properties table already has {count} records. "
-                    "Skip (use --force to override)"
-                )
-                return
-        except Exception:
+        cursor.execute("SELECT COUNT(*) FROM weapon_properties")
+        count = cursor.fetchone()[0]
+        if count > 0:
             print(
-                "  [ERROR]  weapon_properties table does not exist. "
-                "Run backend/database/init_database.py first."
+                f"  [INFO]  Weapon properties table already has {count} records. "
+                "Skip (use --force to override)"
             )
             return
 
@@ -716,8 +810,7 @@ def populate_weapon_properties(cursor, conn, force=False):
     elif isinstance(seeds, list):
         property_items = seeds
     else:
-        print("  [WARNING]  Unexpected seed format for weapon properties")
-        return
+        raise ValueError("Unexpected seed format for weapon properties")
 
     for prop in property_items:
         try:
@@ -732,6 +825,7 @@ def populate_weapon_properties(cursor, conn, force=False):
             print(f"  [CHECK] {prop.get('code').upper()}: {prop.get('name')}")
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Duplicate or error: {prop.get('code')} - {e}")
+            raise
 
     conn.commit()
     cursor.execute("SELECT COUNT(*) FROM weapon_properties")
@@ -814,30 +908,15 @@ def populate_weapons(cursor, conn, force=False):
     print("[ARMS] Loading weapons...")
 
     if force:
-        try:
-            cursor.execute("DELETE FROM weapons")
-            print("  [TRASH]  Cleared existing weapons data")
-        except Exception as e:
-            print(f"  [WARNING]  Error clearing weapons data: {e}")
-            print(
-                "  [ERROR]  weapons table may not exist. "
-                "Run backend/database/init_database.py first."
-            )
-            return
+        cursor.execute("DELETE FROM weapons")
+        print("  [TRASH]  Cleared existing weapons data")
     else:
-        try:
-            cursor.execute("SELECT COUNT(*) FROM weapons")
-            count = cursor.fetchone()[0]
-            if count > 0:
-                print(
-                    "  [INFO] Weapons table already has {count} records. "
-                    "Skip (use --force to override)"
-                )
-                return
-        except Exception:
+        cursor.execute("SELECT COUNT(*) FROM weapons")
+        count = cursor.fetchone()[0]
+        if count > 0:
             print(
-                "  [ERROR]  weapons table does not exist. "
-                "Run backend/database/init_database.py first."
+                f"  [INFO] Weapons table already has {count} records. "
+                "Skip (use --force to override)"
             )
             return
 
@@ -860,6 +939,7 @@ def populate_weapons(cursor, conn, force=False):
             raise
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Duplicate or error: {weapon.get('name')} - {e}")
+            raise
 
     conn.commit()
     cursor.execute("SELECT COUNT(*) FROM weapons")
@@ -900,12 +980,8 @@ def populate_loot_bundles(cursor, conn, force=False):
     try:
         cursor.execute("SELECT COUNT(*) FROM loot_bundle")
         count = cursor.fetchone()[0]
-    except sqlite3.OperationalError:
-        print(
-            "  [ERROR] loot_bundle table does not exist. "
-            "Run backend/database/init_database.py first."
-        )
-        return
+    except sqlite3.OperationalError as e:
+        raise RuntimeError("Failed to read the loot_bundle table") from e
 
     if count > 0 and not force:
         print(
@@ -943,11 +1019,8 @@ def populate_loot_bundles(cursor, conn, force=False):
 def populate_encounters(cursor, conn, force=False):
     """Populate encounter table from seed_encounters.json."""
     print("\n[ENCOUNTER] Loading encounters...")
-    try:
-        cursor.execute("SELECT COUNT(*) FROM encounter")
-        count = cursor.fetchone()[0]
-    except sqlite3.OperationalError:
-        count = 0
+    cursor.execute("SELECT COUNT(*) FROM encounter")
+    count = cursor.fetchone()[0]
 
     if count > 0 and not force:
         print(
@@ -956,16 +1029,8 @@ def populate_encounters(cursor, conn, force=False):
         return
 
     if force:
-        try:
-            cursor.execute("DELETE FROM encounter")
-            print("  [TRASH]  Cleared existing encounter data")
-        except Exception as e:
-            print(f"  [WARNING]  Error clearing encounter data: {e}")
-            print(
-                "  [ERROR]  encounter table may not exist. "
-                "Run backend/database/init_database.py first."
-            )
-            return
+        cursor.execute("DELETE FROM encounter")
+        print("  [TRASH]  Cleared existing encounter data")
 
     seeds = load_json_file(SEEDS_DIR / "seed_encounters.json")
     if not seeds:
@@ -989,6 +1054,7 @@ def populate_encounters(cursor, conn, force=False):
             print(f"  [CHECK] {encounter.get('name')}")
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Duplicate or error: {encounter.get('name')} - {e}")
+            raise
 
     conn.commit()
     cursor.execute("SELECT COUNT(*) FROM encounter")
@@ -999,27 +1065,16 @@ def populate_encounters(cursor, conn, force=False):
 def populate_players(cursor, conn, force=False):
     """Populate players table from seed_players.json."""
     print("\n[HERO] Loading players...")
-    try:
-        cursor.execute("SELECT COUNT(*) FROM players")
-        count = cursor.fetchone()[0]
-    except sqlite3.OperationalError:
-        count = 0
+    cursor.execute("SELECT COUNT(*) FROM players")
+    count = cursor.fetchone()[0]
 
     if count > 0 and not force:
         print(f"  [INFO] Players table already has {count} records. Skip (use --force to override)")
         return
 
     if force:
-        try:
-            cursor.execute("DELETE FROM players")
-            print("  [TRASH]  Cleared existing players data")
-        except Exception as e:
-            print(f"  [WARNING]  Error clearing players data: {e}")
-            print(
-                "  [ERROR]  players table may not exist. "
-                "Run backend/database/init_database.py first."
-            )
-            return
+        cursor.execute("DELETE FROM players")
+        print("  [TRASH]  Cleared existing players data")
 
     seeds = load_json_file(SEEDS_DIR / "seed_players.json")
     if not seeds:
@@ -1079,6 +1134,7 @@ def populate_players(cursor, conn, force=False):
             print(f"  [CHECK] {player.get('name')}")
         except sqlite3.IntegrityError as e:
             print(f"  [WARNING]  Duplicate or error: {player.get('name')} - {e}")
+            raise
 
     conn.commit()
     cursor.execute("SELECT COUNT(*) FROM players")
@@ -1089,11 +1145,8 @@ def populate_players(cursor, conn, force=False):
 def populate_player_spells(cursor, conn, force=False):
     """Populate player_spells table from seed_player_spells.json."""
     print("\n[SPELLBOOK] Loading player spells...")
-    try:
-        cursor.execute("SELECT COUNT(*) FROM player_spells")
-        count = cursor.fetchone()[0]
-    except sqlite3.OperationalError:
-        count = 0
+    cursor.execute("SELECT COUNT(*) FROM player_spells")
+    count = cursor.fetchone()[0]
 
     if count > 0 and not force:
         print(
@@ -1103,16 +1156,8 @@ def populate_player_spells(cursor, conn, force=False):
         return
 
     if force:
-        try:
-            cursor.execute("DELETE FROM player_spells")
-            print("  [TRASH]  Cleared existing player spells data")
-        except Exception as e:
-            print(f"  [WARNING]  Error clearing player spells data: {e}")
-            print(
-                "  [ERROR]  player_spells table may not exist. "
-                "Run backend/database/init_database.py first."
-            )
-            return
+        cursor.execute("DELETE FROM player_spells")
+        print("  [TRASH]  Cleared existing player spells data")
 
     seeds = load_json_file(SEEDS_DIR / "seed_player_spells.json")
     if not seeds:
@@ -1140,6 +1185,7 @@ def populate_player_spells(cursor, conn, force=False):
                 f"  [WARNING]  Duplicate or error: player_id={entry.get('player_id')} "
                 f"spell_id={entry.get('spell_id')} - {e}"
             )
+            raise
 
     conn.commit()
     cursor.execute("SELECT COUNT(*) FROM player_spells")
@@ -1150,11 +1196,8 @@ def populate_player_spells(cursor, conn, force=False):
 def populate_player_weapons(cursor, conn, force=False):
     """Populate player_weapons table from seed_player_weapons.json."""
     print("\n[ARMS] Loading player weapons...")
-    try:
-        cursor.execute("SELECT COUNT(*) FROM player_weapons")
-        count = cursor.fetchone()[0]
-    except sqlite3.OperationalError:
-        count = 0
+    cursor.execute("SELECT COUNT(*) FROM player_weapons")
+    count = cursor.fetchone()[0]
 
     if count > 0 and not force:
         print(
@@ -1164,16 +1207,8 @@ def populate_player_weapons(cursor, conn, force=False):
         return
 
     if force:
-        try:
-            cursor.execute("DELETE FROM player_weapons")
-            print("  [TRASH]  Cleared existing player weapons data")
-        except Exception as e:
-            print(f"  [WARNING]  Error clearing player weapons data: {e}")
-            print(
-                "  [ERROR]  player_weapons table may not exist. "
-                "Run backend/database/init_database.py first."
-            )
-            return
+        cursor.execute("DELETE FROM player_weapons")
+        print("  [TRASH]  Cleared existing player weapons data")
 
     seeds = load_json_file(SEEDS_DIR / "seed_player_weapons.json")
     if not seeds:
@@ -1201,6 +1236,7 @@ def populate_player_weapons(cursor, conn, force=False):
                 f"  [WARNING]  Duplicate or error: player_id={entry.get('player_id')} "
                 f"weapon_id={entry.get('weapon_id')} - {e}"
             )
+            raise
 
     conn.commit()
     cursor.execute("SELECT COUNT(*) FROM player_weapons")
@@ -1211,14 +1247,8 @@ def populate_player_weapons(cursor, conn, force=False):
 def _populate_dungeon_blob_table(cursor, conn, table, seed_file, label, force=False):
     """Load one of the three dungeon tables, each of which is a key plus a JSON data blob."""
     print(f"\n[DUNGEON] Loading {label}...")
-    try:
-        cursor.execute(f"SELECT COUNT(*) FROM {table}")
-        count = cursor.fetchone()[0]
-    except sqlite3.OperationalError:
-        print(
-            f"  [ERROR] {table} table does not exist. Run backend/database/init_database.py first."
-        )
-        return
+    cursor.execute(f"SELECT COUNT(*) FROM {table}")
+    count = cursor.fetchone()[0]
 
     if count > 0 and not force:
         print(f"  [INFO] {table} already has {count} records. Skip (use --force to override)")
@@ -1246,10 +1276,10 @@ def _populate_dungeon_blob_table(cursor, conn, table, seed_file, label, force=Fa
 
 
 def populate_dungeons(cursor, conn, force=False):
-    """Populate dungeons, map_layout and map_session_state from their seed files.
+    """Populate dungeon content and its saved map/fog/at-the-table state.
 
     Dungeons became seed-backed so that authored content survives an init_database.py rebuild;
-    see docs/areas/dungeons.md. The three tables load together and in FK order.
+    see docs/areas/dungeons.md. The five tables load in foreign-key order.
     """
     _populate_dungeon_blob_table(cursor, conn, "dungeons", "seed_dungeons.json", "dungeons", force)
     _populate_dungeon_blob_table(
@@ -1258,58 +1288,70 @@ def populate_dungeons(cursor, conn, force=False):
     _populate_dungeon_blob_table(
         cursor, conn, "map_session_state", "seed_map_session_state.json", "map session state", force
     )
+    populate_revealed_cells(cursor, conn, force)
+    populate_at_the_table(cursor, conn, force)
 
 
-def clear_all_tables(cursor, conn):
-    """Drop all tables in dependency order to avoid FK constraint violations"""
-    print("\n[FORCE] Clearing all existing table data in dependency order...")
+def populate_revealed_cells(cursor, conn, force=False):
+    """Restore fog-of-war state from seed_revealed_cells.json."""
+    print("\n[FOG] Loading revealed cells...")
+    cursor.execute("SELECT COUNT(*) FROM revealed_cells")
+    count = cursor.fetchone()[0]
+    if count > 0 and not force:
+        print(f"  [INFO] revealed_cells already has {count} records. Skip (use --force to override)")
+        return
+    if force:
+        cursor.execute("DELETE FROM revealed_cells")
 
-    # Disable FK constraints during table operations
-    cursor.execute("PRAGMA foreign_keys = OFF")
-
-    tables_to_clear = [
-        "player_spells",
-        "player_weapons",
-        "players",
-        "monsters",
-        "npcs",
-        "spells",
-        "conditions",
-        "damage_types",
-        "weapon_properties",
-        "weapons",
-        "abilities",
-        "map_session_state",
-        "map_layout",
-        "dungeons",
-        "encounter",
-        "loot_bundle",
-        "items",
-        "loom_nodes",
-        "loom_threads",
-        "loom_sessions",
-    ]
-
-    for table in tables_to_clear:
-        try:
-            cursor.execute(f"DELETE FROM {table}")
-            print(f"  [TRASH]  Cleared {table}")
-        except Exception:
-            # Table might not exist, that's okay
-            pass
-
-    # Reset AUTOINCREMENT counters so explicit IDs can be reused after force reload.
-    try:
-        cursor.execute("DELETE FROM sqlite_sequence")
-        print("  [OK] Reset sqlite_sequence")
-    except sqlite3.OperationalError:
-        # sqlite_sequence does not exist until a table with AUTOINCREMENT is created
-        pass
-
+    seeds = load_json_file(SEEDS_DIR / "seed_revealed_cells.json")
+    for cell in seeds:
+        cursor.execute(
+            "INSERT INTO revealed_cells (dungeon_id, x, y) VALUES (?, ?, ?)",
+            (cell.get("dungeon_id"), cell.get("x"), cell.get("y")),
+        )
     conn.commit()
-    # Re-enable FK constraints
-    cursor.execute("PRAGMA foreign_keys = ON")
-    print("[OK] All table data cleared")
+    print(f"  [OK] Loaded {len(seeds)} revealed cells")
+
+
+def populate_at_the_table(cursor, conn, force=False):
+    """Restore the selected dungeon pointer from seed_at_the_table.json."""
+    print("\n[TABLE] Loading at-the-table state...")
+    cursor.execute("SELECT COUNT(*) FROM at_the_table")
+    count = cursor.fetchone()[0]
+    if count > 0 and not force:
+        print("  [INFO] at_the_table already has a row. Skip (use --force to override)")
+        return
+    if force:
+        cursor.execute("DELETE FROM at_the_table")
+
+    seeds = load_json_file(SEEDS_DIR / "seed_at_the_table.json")
+    for state in seeds:
+        cursor.execute(
+            "INSERT INTO at_the_table (lock, dungeon_id) VALUES (?, ?)",
+            (state.get("lock", 1), state.get("dungeon_id")),
+        )
+    conn.commit()
+    print(f"  [OK] Loaded {len(seeds)} at-the-table rows")
+
+
+def clear_all_tables(cursor, tables_to_clear):
+    """Clear only the selected tables; callers own the surrounding transaction."""
+    allowed_tables = {table for group in SEED_GROUPS.values() for table in group["tables"]}
+    if not tables_to_clear or any(table not in allowed_tables for table in tables_to_clear):
+        raise ValueError("Force clear requires a non-empty list of known seed tables")
+
+    print("\n[FORCE] Clearing selected tables in dependency order...")
+    for table in tables_to_clear:
+        cursor.execute(f"DELETE FROM {table}")
+        print(f"  [TRASH]  Cleared {table}")
+
+    cursor.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'sqlite_sequence'")
+    if cursor.fetchone():
+        cursor.executemany(
+            "DELETE FROM sqlite_sequence WHERE name = ?",
+            [(table,) for table in tables_to_clear],
+        )
+        print("  [OK] Reset selected sqlite_sequence counters")
 
 
 def main():
@@ -1345,32 +1387,23 @@ def main():
         help="Load only the loom demo tapestry (test/playtest fixture, not loaded by default)",
     )
     parser.add_argument(
-        "--force", action="store_true", help="Force reload (clear existing data first)"
+        "--force",
+        action="store_true",
+        help="Replace only the selected seed groups; fail without changing data on any error",
     )
 
     args = parser.parse_args()
-    # If no specific tables selected, load all canonical catalog tables.
+    # If no specific tables selected, load all canonical seed groups except Loom.
     # --loom is never part of "load all": the loom demo tapestry is a frozen
     # test/playtest fixture, not canonical campaign data (see docs/areas/loom.md).
-    load_all = not any(
-        [
-            args.abilities,
-            args.spells,
-            args.conditions,
-            args.monsters,
-            args.npcs,
-            args.players,
-            args.player_spells,
-            args.player_weapons,
-            args.damage_types,
-            args.weapon_properties,
-            args.weapons,
-            args.encounters,
-            args.items,
-            args.loot_bundles,
-            args.dungeons,
-            args.loom,
-        ]
+    load_all = not any(getattr(args, group["argument"]) for group in SEED_GROUPS.values())
+    selected_groups = [
+        name
+        for name, group in SEED_GROUPS.items()
+        if (load_all and name != "loom") or (not load_all and getattr(args, group["argument"]))
+    ]
+    selected_tables = list(
+        dict.fromkeys(table for name in selected_groups for table in SEED_GROUPS[name]["tables"])
     )
 
     print("=" * 60)
@@ -1381,80 +1414,86 @@ def main():
         print(f"[ERROR] Database not found: {DB_PATH}")
         return False
 
+    conn = None
+    global _PRELOADED_SEEDS
     try:
+        # Parse and validate every selected file before opening a write transaction.
+        _PRELOADED_SEEDS = _preload_seed_inputs(selected_groups)
         conn = sqlite3.connect(str(DB_PATH))
-        # DISABLE foreign keys during schema operations (dropping/creating tables)
-        conn.execute("PRAGMA foreign_keys = OFF")
         cursor = conn.cursor()
+        existing_tables = {
+            row[0]
+            for row in cursor.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
+        }
+        missing_tables = [table for table in selected_tables if table not in existing_tables]
+        if missing_tables:
+            raise RuntimeError(
+                "Database schema is missing selected seed table(s): " + ", ".join(missing_tables)
+            )
+
+        # Keep old values and new values in one transaction. Foreign keys are
+        # checked explicitly before commit so selected catalog replacement can
+        # preserve junction/state rows whose referenced IDs remain available.
+        conn.execute("PRAGMA foreign_keys = OFF")
+        conn.execute("BEGIN")
+        population_conn = _DeferredCommitConnection(conn)
 
         if args.force:
-            print("\n[WARNING]  FORCE MODE: Will overwrite existing data\n")
-            # Clear all tables in dependency order first to avoid FK constraint issues
-            clear_all_tables(cursor, conn)
+            print("\n[WARNING]  FORCE MODE: Replacing selected seed groups only\n")
+            clear_all_tables(cursor, selected_tables)
 
-        if load_all or args.abilities:
-            populate_abilities(cursor, conn, args.force)
-        if load_all or args.damage_types:
-            populate_damage_types(cursor, conn, args.force)
-        if load_all or args.weapon_properties:
-            populate_weapon_properties(cursor, conn, args.force)
-        if load_all or args.weapons:
-            populate_weapons(cursor, conn, args.force)
-        if load_all or args.items:
-            populate_items(cursor, conn, args.force)
-        if load_all or args.monsters:
-            populate_monsters(cursor, conn, args.force)
-        if load_all or args.npcs:
-            populate_npcs(cursor, conn, args.force)
-        if load_all or args.spells:
-            populate_spells(cursor, conn, args.force)
-        if load_all or args.conditions:
-            populate_conditions(cursor, conn, args.force)
-        if load_all or args.encounters:
-            populate_encounters(cursor, conn, args.force)
-        if load_all or args.loot_bundles:
-            populate_loot_bundles(cursor, conn, args.force)
-        if load_all or args.players:
-            populate_players(cursor, conn, args.force)
-        if load_all or args.player_spells:
-            populate_player_spells(cursor, conn, args.force)
-        if load_all or args.player_weapons:
-            populate_player_weapons(cursor, conn, args.force)
-        if load_all or args.dungeons:
-            populate_dungeons(cursor, conn, args.force)
-        if args.loom:
-            cursor.execute("PRAGMA foreign_keys = OFF")
-            populate_loom_threads(cursor, conn, args.force)
-            populate_loom_sessions(cursor, conn, args.force)
-            populate_loom_nodes(cursor, conn, args.force)
-            cursor.execute("PRAGMA foreign_keys = ON")
+        if "abilities" in selected_groups:
+            populate_abilities(cursor, population_conn)
+        if "damage_types" in selected_groups:
+            populate_damage_types(cursor, population_conn)
+        if "weapon_properties" in selected_groups:
+            populate_weapon_properties(cursor, population_conn)
+        if "weapons" in selected_groups:
+            populate_weapons(cursor, population_conn)
+        if "items" in selected_groups:
+            populate_items(cursor, population_conn)
+        if "monsters" in selected_groups:
+            populate_monsters(cursor, population_conn)
+        if "npcs" in selected_groups:
+            populate_npcs(cursor, population_conn)
+        if "spells" in selected_groups:
+            populate_spells(cursor, population_conn)
+        if "conditions" in selected_groups:
+            populate_conditions(cursor, population_conn)
+        if "encounters" in selected_groups:
+            populate_encounters(cursor, population_conn)
+        if "loot_bundles" in selected_groups:
+            populate_loot_bundles(cursor, population_conn)
+        if "players" in selected_groups:
+            populate_players(cursor, population_conn)
+        if "player_spells" in selected_groups:
+            populate_player_spells(cursor, population_conn)
+        if "player_weapons" in selected_groups:
+            populate_player_weapons(cursor, population_conn)
+        if "dungeons" in selected_groups:
+            populate_dungeons(cursor, population_conn)
+        if "loom" in selected_groups:
+            populate_loom_threads(cursor, population_conn)
+            populate_loom_sessions(cursor, population_conn)
+            populate_loom_nodes(cursor, population_conn)
 
-        conn.close()
+        foreign_key_errors = cursor.execute("PRAGMA foreign_key_check").fetchall()
+        if foreign_key_errors:
+            raise sqlite3.IntegrityError(
+                f"Seed operation would leave foreign-key violations: {foreign_key_errors[:5]}"
+            )
+        conn.commit()
+        conn.execute("PRAGMA foreign_keys = ON")
 
         print("\n" + "=" * 60)
         print("[OK] PHASE 2 COMPLETE!")
         print("=" * 60)
         print("\nNext Steps:")
         print("  1. Edit seed files in data/seeds/ to add more data")
-        print(
-            "  2. Run: docker compose exec backend python -m backend.database.seed_database --force"
-        )
+        print("  2. Force-reload only the intended groups against a disposable or backed-up database")
         print("  3. Build frontend and run FastAPI server")
-        print("\nSeed files (14 tables):")
-        print("  - data/seeds/seed_abilities.json")
-        print("  - data/seeds/seed_damage_types.json")
-        print("  - data/seeds/seed_weapon_properties.json")
-        print("  - data/seeds/seed_weapons.json")
-        print("  - data/seeds/seed_items.json")
-        print("  - data/seeds/seed_loot_bundles.json")
-        print("  - data/seeds/seed_spells.json")
-        print("  - data/seeds/seed_conditions.json")
-        print("  - data/seeds/seed_monsters.json")
-        print("  - data/seeds/seed_npcs.json")
-        print("  - data/seeds/seed_encounters.json")
-        print("  - data/seeds/seed_players.json")
-        print("  - data/seeds/seed_player_spells.json")
-        print("  - data/seeds/seed_player_weapons.json")
+        print("\nSeed files are read from data/seeds/.")
+        print("The optional Loom demo group is excluded from the default load; select it with --loom.")
 
         return True
 
@@ -1464,6 +1503,13 @@ def main():
 
         traceback.print_exc()
         return False
+    finally:
+        _PRELOADED_SEEDS = None
+        if conn is not None:
+            if conn.in_transaction:
+                conn.rollback()
+            conn.execute("PRAGMA foreign_keys = ON")
+            conn.close()
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 """Tests for player CRUD and nested spell/weapon endpoints."""
 
 import sqlite3
+from contextlib import closing
 
 import pytest
 
@@ -187,6 +188,43 @@ def test_replace_player_spells(test_client):
     assert get_resp.status_code == 200
     get_ids = {s["id"] for s in get_resp.json()}
     assert get_ids == set(spell_ids)
+
+
+def test_nested_player_spell_routes_return_optional_catalog_fields(test_client, test_db_path):
+    """GET, PUT, and detail projections retain stored optional spell text."""
+    quick_rules = "Restore 3 hit points."
+    alternate_description = "A field note for the assigned spell."
+    with closing(sqlite3.connect(test_db_path)) as conn:
+        conn.execute(
+            "UPDATE spells SET quick_rules = ?, alternate_description = ? WHERE id = 1",
+            (quick_rules, alternate_description),
+        )
+        conn.commit()
+
+    player = test_client.post(
+        "/api/players", json={"name": "Optional Spell Fields", "class_": "Wizard"}
+    ).json()
+    player_id = player["id"]
+    assert test_client.post(f"/api/players/{player_id}/spells/1").status_code == 201
+
+    catalog_spell = test_client.get("/api/spells/1").json()
+    get_spells = test_client.get(f"/api/players/{player_id}/spells")
+    replace_spells = test_client.put(
+        f"/api/players/{player_id}/spells", json={"spell_ids": [1]}
+    )
+    player_detail = test_client.get(f"/api/players/{player_id}/detail")
+
+    assert get_spells.status_code == replace_spells.status_code == player_detail.status_code == 200
+    nested_spells = (
+        get_spells.json()[0],
+        replace_spells.json()[0],
+        player_detail.json()["spells"][0],
+    )
+    for nested_spell in nested_spells:
+        assert nested_spell["quick_rules"] == quick_rules
+        assert nested_spell["alternate_description"] == alternate_description
+    assert catalog_spell["quick_rules"] == quick_rules
+    assert catalog_spell["alternate_description"] == alternate_description
 
 
 def test_replace_player_spells_empty(test_client):

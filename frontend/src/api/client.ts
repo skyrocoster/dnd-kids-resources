@@ -78,6 +78,16 @@ type DataResult<T> = { data: T };
 const resultData = <T>(request: Promise<DataResult<T>>): Promise<T> =>
   request.then(({ data }) => data);
 const options = { client: apiClient, responseStyle: "fields", throwOnError: true } as const;
+const PAGE_SIZE = 500;
+
+async function listAllPages<T>(fetchPage: (offset: number) => Promise<T[]>): Promise<T[]> {
+  const records: T[] = [];
+  for (let offset = 0; ; offset += PAGE_SIZE) {
+    const page = await fetchPage(offset);
+    records.push(...page);
+    if (page.length < PAGE_SIZE) return records;
+  }
+}
 
 // Health
 export const getHealth = () => resultData(sdk.getHealth(options));
@@ -91,7 +101,10 @@ export const getSkills = () => resultData(sdk.getSkills(options));
 export const getSpellComponents = () => resultData(sdk.getSpellComponents(options));
 
 // Spells
-export const listSpells = () => resultData(sdk.listSpells(options));
+export const listSpells = () =>
+  listAllPages((offset) =>
+    resultData(sdk.listSpells({ ...options, query: { limit: PAGE_SIZE, offset } })),
+  );
 export const getSpell = (id: number) =>
   resultData(sdk.getSpell({ ...options, path: { spell_id: id } }));
 export const getSpellByTitle = (name: string) =>
@@ -114,7 +127,10 @@ export const replaceSpellPlayers = (spellId: number, playerIds: number[]) =>
   );
 
 // Monsters
-export const listMonsters = () => resultData(sdk.listMonsters(options));
+export const listMonsters = () =>
+  listAllPages((offset) =>
+    resultData(sdk.listMonsters({ ...options, query: { limit: PAGE_SIZE, offset } })),
+  );
 export const getMonster = (id: number) =>
   resultData(sdk.getMonster({ ...options, path: { monster_id: id } }));
 export const getMonsterByName = (name: string) =>

@@ -9,7 +9,7 @@ import { Toggle } from "./Toggle";
 import { ToggleGroup } from "./ToggleGroup";
 
 const meta = {
-  title: "Components/Form/Advanced controls",
+  title: "Production/Design System/Forms/Advanced Controls",
   tags: ["status-production"],
 } satisfies Meta;
 export default meta;

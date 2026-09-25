@@ -50,6 +50,8 @@ def init_database(db_path: Path | None = None):
         "weapon_properties",
         "weapons",
         "abilities",
+        "at_the_table",
+        "revealed_cells",
         "map_layout",
         "map_session_state",
         "dungeons",
