@@ -1,0 +1,259 @@
+.monster-candidate-preview {
+  box-sizing: border-box;
+  width: min(620px, 100%);
+  margin-inline: auto;
+  padding: var(--space-3) var(--space-4) var(--space-5);
+  color: var(--md-on-surface);
+  font-family: var(--type-face);
+}
+
+.monster-composition-card {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-lg);
+  background: var(--md-surface-2);
+  color: var(--md-on-surface);
+}
+
+.monster-composition-heading {
+  margin: 0 0 var(--space-2);
+  color: var(--md-tertiary);
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  line-height: var(--type-label-line);
+}
+
+.monster-identity-candidate__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.monster-identity-candidate__copy {
+  min-width: 0;
+}
+
+.monster-identity-candidate__category {
+  margin: 0 0 var(--space-1);
+  color: var(--md-tertiary);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-line);
+  letter-spacing: var(--type-caption-tracking);
+  text-transform: uppercase;
+}
+
+.monster-identity-candidate__name {
+  margin: 0;
+  color: var(--md-on-surface);
+  font-size: var(--type-headline-size);
+  font-weight: var(--type-headline-weight);
+  line-height: var(--type-headline-line);
+  overflow-wrap: anywhere;
+}
+
+.monster-identity-candidate__descriptor {
+  margin: var(--space-1) 0 0;
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  font-style: italic;
+  overflow-wrap: anywhere;
+}
+
+.monster-identity-candidate__cr {
+  flex: none;
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+  font-size: var(--type-body-sm-size);
+  font-weight: 600;
+}
+
+.monster-vitals-candidate {
+  display: grid;
+  grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.15fr) minmax(0, 1.25fr);
+  grid-template-rows: repeat(2, auto);
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.monster-vitals-candidate__tile {
+  display: grid;
+  grid-row: span 2;
+  grid-template-rows: subgrid;
+  align-items: baseline;
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-2) var(--space-2) var(--space-3);
+  border-top: 1px solid var(--md-tertiary);
+  background: var(--md-surface-3);
+}
+
+.monster-vitals-candidate dt,
+.monster-ability-scores-candidate dt,
+.monster-proficiencies-candidate dt {
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-line);
+  letter-spacing: var(--type-caption-tracking);
+  text-transform: uppercase;
+}
+
+.monster-vitals-candidate dd,
+.monster-ability-scores-candidate dd,
+.monster-proficiencies-candidate dd {
+  min-width: 0;
+  margin: var(--space-1) 0 0;
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  overflow-wrap: anywhere;
+}
+
+.monster-vitals-candidate__tile dd {
+  margin-top: 0;
+  font-size: var(--type-title-size);
+  font-weight: 600;
+  line-height: var(--type-title-line);
+}
+
+.monster-vitals-candidate__note,
+.monster-vitals-candidate__formula {
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-body-sm-size);
+  font-weight: 400;
+}
+
+.monster-vitals-candidate__hit-points dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+  font-size: 2rem;
+  line-height: 2.25rem;
+}
+
+.monster-ability-scores-candidate {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.monster-ability-scores-candidate__tile {
+  min-width: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-md);
+  background: var(--md-surface-3);
+  text-align: center;
+}
+
+.monster-ability-scores-candidate__tile dd {
+  font-size: var(--type-title-size);
+  font-weight: 600;
+  line-height: var(--type-title-line);
+}
+
+.monster-ability-scores-candidate__modifier {
+  display: block;
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-body-sm-size);
+  font-weight: 400;
+  line-height: var(--type-body-sm-line);
+}
+
+.monster-proficiencies-candidate {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.monster-proficiencies-candidate__tile {
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-md);
+  background: var(--md-surface-3);
+}
+
+.monster-detail-regions-candidate {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.monster-detail-regions-candidate__panel {
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-md);
+  background: var(--md-surface-3);
+}
+
+.monster-detail-regions-candidate__content {
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  overflow-wrap: anywhere;
+}
+
+.monster-detail-regions-candidate__content h3 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--type-body-sm-size);
+  font-weight: 600;
+  line-height: var(--type-body-sm-line);
+}
+
+.monster-detail-regions-candidate__content p {
+  margin: var(--space-2) 0 0;
+}
+
+.monster-detail-regions-candidate__content strong {
+  font-weight: 600;
+}
+
+@media (max-width: 500px) {
+  .monster-identity-candidate__header {
+    display: block;
+  }
+
+  .monster-identity-candidate__cr {
+    display: inline-block;
+    margin-top: var(--space-2);
+  }
+
+  .monster-vitals-candidate {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(4, auto);
+  }
+
+  .monster-vitals-candidate__hit-points {
+    order: -1;
+    grid-column: 1 / -1;
+  }
+
+  .monster-ability-scores-candidate {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .monster-proficiencies-candidate,
+  .monster-detail-regions-candidate {
+    grid-template-columns: 1fr;
+  }
+
+  .monster-proficiencies-candidate__tile {
+    padding-inline: var(--space-2);
+  }
+}
+
+@media (max-width: 360px) {
+  .monster-ability-scores-candidate {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

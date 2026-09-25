@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Proficiencies — Monster Stat Block Composition</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --surface: #1c1b1f; --surface-2: #28262e; --surface-3: #2e2b35; --outline: #49454f;
+      --text: #e6e1e6; --muted: #cac4d0;
+      --space-1: .25rem; --space-2: .5rem; --space-3: .75rem; --space-5: 1.5rem;
+      --radius-md: .375rem; --radius-lg: .75rem;
+      font-family: system-ui, "Segoe UI", sans-serif; color: var(--text); background: var(--surface); font-synthesis: none;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--surface); }
+    .shell { width: min(620px, 100%); margin: 0 auto; padding: .75rem 1rem var(--space-5); }
+    .card { padding: 1rem; border: 1px solid var(--outline); border-radius: var(--radius-lg); background: var(--surface-2); }
+    dl { margin: 0; }
+    dt { color: var(--muted); font-size: .6875rem; line-height: 1rem; letter-spacing: .05em; text-transform: uppercase; }
+    dd { margin: .25rem 0 0; font-size: .875rem; line-height: 1.25rem; overflow-wrap: anywhere; }
+    .profs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+    .prof { min-width: 0; margin: 0; padding: var(--space-2) var(--space-3); border: 1px solid var(--outline); border-radius: var(--radius-md); background: var(--surface-3); }
+    @media (max-width: 500px) { .profs { grid-template-columns: 1fr; } .prof { padding-inline: var(--space-2); } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <article class="card">
+      <dl class="profs" aria-label="Saving throws and skills">
+        <div class="prof"><dt>Saving Throws</dt><dd>Dex +5, Con +9, Wis +4, Cha +8</dd></div>
+        <div class="prof"><dt>Skills</dt><dd>Perception +8, Stealth +4</dd></div>
+      </dl>
+    </article>
+  </main>
+</body>
+</html>

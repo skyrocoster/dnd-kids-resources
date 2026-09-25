@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Unified — Monster Stat Block</title>
+  <!--
+    Unified design — synthesis of round-02 options 01–06.
+    Palette, spacing, radius, and type tokens are unchanged from the catalogue
+    (the repo colour scheme). What each option contributed:
+      02/05  vitals band sits directly under the identity header
+      03     HP is the spotlight number — the one counted down during play
+      02     1px accent tick unifies the vitals band (used nowhere else)
+      01/03  six ability tiles, score large with modifier beneath
+      01     three quiet panels below, ordered Actions / Defenses / Lore
+             (02's action-first reading order)
+
+    Iteration: vitals band uses shared subgrid rows so labels align and value
+    baselines sit on one line; saving throws/skills moved from loose paragraphs
+    into a two-tile proficiency strip matching the score tiles.
+  -->
+  <style>
+    :root {
+      color-scheme: dark;
+      --surface: #1c1b1f; --surface-2: #28262e; --surface-3: #2e2b35; --surface-4: #302d38;
+      --text: #e6e1e6; --muted: #cac4d0; --outline: #49454f; --accent: #a0d0be;
+      --accent-container: #1d4f40; --accent-text: #bcecd9;
+      --space-1: .25rem; --space-2: .5rem; --space-3: .75rem; --space-4: 1rem; --space-5: 1.5rem;
+      --radius-sm: .25rem; --radius-md: .375rem; --radius-lg: .75rem;
+      font-family: system-ui, "Segoe UI", sans-serif; color: var(--text); background: var(--surface);
+      font-synthesis: none;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--surface); }
+    .shell { width: min(620px, 100%); margin: 0 auto; padding: var(--space-3) 1rem var(--space-5); }
+    .option-label { margin: 0 0 var(--space-2); color: var(--muted); font-size: .6875rem; line-height: 1rem; }
+    .card { padding: var(--space-4); border: 1px solid var(--outline); border-radius: var(--radius-lg); background: var(--surface-2); }
+
+    /* Identity — shared by all six options */
+    .identity { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+    .eyebrow { margin: 0 0 var(--space-1); color: var(--accent); font-size: .6875rem; line-height: 1rem; letter-spacing: .05em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: 1.5rem; font-weight: 500; line-height: 2rem; }
+    .kind { margin: var(--space-1) 0 0; color: var(--muted); font-size: .875rem; line-height: 1.25rem; font-style: italic; }
+    .cr { flex: none; margin: 0; padding: var(--space-1) var(--space-2); border-radius: 999px; background: var(--accent-container); color: var(--accent-text); font-size: .875rem; font-weight: 600; }
+
+    /* Vitals band — option 02's accent-tick strip with option 03's HP spotlight.
+       Each vital spans two shared subgrid rows (label row, value row) so the
+       labels line up and the value baselines align despite HP's larger type. */
+    .vitals { display: grid; grid-template-columns: .75fr 1.15fr 1.25fr; grid-template-rows: repeat(2, auto); gap: var(--space-2); margin: var(--space-4) 0 0; }
+    .vital { display: grid; grid-row: span 2; grid-template-rows: subgrid; align-items: baseline; min-width: 0; margin: 0; padding: var(--space-2) var(--space-2) var(--space-3); border-top: 1px solid var(--accent); background: var(--surface-3); }
+    dt { color: var(--muted); font-size: .6875rem; line-height: 1rem; letter-spacing: .05em; text-transform: uppercase; }
+    dd { margin: var(--space-1) 0 0; font-size: .875rem; line-height: 1.25rem; overflow-wrap: anywhere; }
+    .vital dd { margin-top: 0; font-size: 1.25rem; font-weight: 600; line-height: 1.5rem; }
+    .vital .note { color: var(--muted); font-size: .8125rem; font-weight: 400; }
+    .vital-hp dd { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-2); font-size: 2rem; line-height: 2.25rem; }
+    .vital-hp .formula { color: var(--muted); font-size: .8125rem; font-weight: 400; }
+
+    /* Abilities — six-tile grid from options 01/03 */
+    h2 { margin: 0 0 var(--space-2); color: var(--accent); font-size: .875rem; font-weight: 500; line-height: 1.25rem; }
+    h3 { margin: 0 0 var(--space-1); font-size: .875rem; font-weight: 600; line-height: 1.25rem; }
+    p { margin: var(--space-2) 0 0; font-size: .875rem; line-height: 1.25rem; overflow-wrap: anywhere; }
+    strong { font-weight: 600; }
+    .abilities { margin-top: var(--space-4); }
+    .scores { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--space-2); margin: 0 0 var(--space-3); }
+    .score { min-width: 0; padding: var(--space-2); border: 1px solid var(--outline); border-radius: var(--radius-md); background: var(--surface-3); text-align: center; }
+    .score dd { margin-top: var(--space-1); font-size: 1.25rem; font-weight: 600; line-height: 1.5rem; }
+    .mod { display: block; color: var(--muted); font-size: .8125rem; font-weight: 400; line-height: 1rem; }
+
+    /* Proficiencies — saves/skills as two labelled tiles, same language as the score tiles */
+    .profs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); margin: 0; }
+    .prof { min-width: 0; margin: 0; padding: var(--space-2) var(--space-3); border: 1px solid var(--outline); border-radius: var(--radius-md); background: var(--surface-3); }
+
+    /* Regions — option 01's three quiet panels, action-first order from option 02 */
+    .regions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
+    .panel { min-width: 0; padding: var(--space-3); border: 1px solid var(--outline); border-radius: var(--radius-md); background: var(--surface-3); }
+
+    @media (max-width: 500px) {
+      .identity { display: block; }
+      .cr { display: inline-block; margin-top: var(--space-2); }
+      .vitals { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(4, auto); }
+      .vital-hp { order: -1; grid-column: 1 / -1; }
+      .scores { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .profs { grid-template-columns: 1fr; }
+      .regions { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 360px) {
+      .scores { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <p class="option-label">Unified design · Synthesis of round two · Options 01–06</p>
+    <article class="card" aria-labelledby="monster-name">
+      <header class="identity">
+        <div>
+          <p class="eyebrow">Dragon</p>
+          <h1 id="monster-name">Young Red Dragon</h1>
+          <p class="kind">large, dragon, chaotic evil</p>
+        </div>
+        <p class="cr">CR 10</p>
+      </header>
+
+      <dl class="vitals" aria-label="Combat statistics">
+        <div class="vital"><dt>AC</dt><dd>18 <span class="note">(natural armor)</span></dd></div>
+        <div class="vital vital-hp"><dt>HP</dt><dd>178 <span class="formula">(17d10 + 85)</span></dd></div>
+        <div class="vital"><dt>Speed</dt><dd>40 ft., fly 80 ft.</dd></div>
+      </dl>
+
+      <section class="abilities" aria-labelledby="abilities-title">
+        <h2 id="abilities-title">Abilities</h2>
+        <dl class="scores" aria-label="Ability scores and modifiers">
+          <div class="score"><dt>STR</dt><dd>23 <span class="mod">+6</span></dd></div>
+          <div class="score"><dt>DEX</dt><dd>10 <span class="mod">+0</span></dd></div>
+          <div class="score"><dt>CON</dt><dd>21 <span class="mod">+5</span></dd></div>
+          <div class="score"><dt>INT</dt><dd>14 <span class="mod">+2</span></dd></div>
+          <div class="score"><dt>WIS</dt><dd>11 <span class="mod">+0</span></dd></div>
+          <div class="score"><dt>CHA</dt><dd>19 <span class="mod">+4</span></dd></div>
+        </dl>
+        <dl class="profs" aria-label="Saving throws and skills">
+          <div class="prof"><dt>Saving Throws</dt><dd>Dex +5, Con +9, Wis +4, Cha +8</dd></div>
+          <div class="prof"><dt>Skills</dt><dd>Perception +8, Stealth +4</dd></div>
+        </dl>
+      </section>
+
+      <div class="regions">
+        <section class="panel" aria-labelledby="actions-title">
+          <h2 id="actions-title">Actions</h2>
+          <h3>Attacks &amp; Actions</h3>
+          <p><strong>Bite:</strong> Melee Weapon Attack.</p>
+        </section>
+        <section class="panel" aria-labelledby="defenses-title">
+          <h2 id="defenses-title">Defenses</h2>
+          <p><strong>Senses</strong> darkvision 120 ft., passive Perception 18</p>
+        </section>
+        <section class="panel" aria-labelledby="lore-title">
+          <h2 id="lore-title">Lore</h2>
+          <p><strong>Fire Breath:</strong> The dragon exhales fire in a cone.</p>
+          <p><strong>Languages</strong> Common, Draconic</p>
+        </section>
+      </div>
+    </article>
+  </main>
+</body>
+</html>
