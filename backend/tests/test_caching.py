@@ -2,12 +2,46 @@ import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 from threading import Event, Lock
 from time import sleep
+from types import ModuleType
 
+from fastapi import APIRouter
+from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
 import backend.app.db as db_module
+import backend.app.main as main_module
 from backend.app.caching import cached_read, invalidate_cache
 from backend.app.main import create_app
+
+
+def test_every_api_get_has_an_explicit_cache_policy():
+    routers = [
+        candidate.router
+        for candidate in vars(main_module).values()
+        if isinstance(candidate, ModuleType)
+        and isinstance(getattr(candidate, "router", None), APIRouter)
+    ]
+    api_routes = [
+        route
+        for router in routers
+        for route in router.routes
+        if isinstance(route, APIRoute)
+    ]
+    get_routes = [route for route in api_routes if route.methods == {"GET"}]
+
+    uncached_gets = {
+        route.operation_id
+        for route in get_routes
+        if not hasattr(route.endpoint, "__cache_namespace__")
+    }
+    assert uncached_gets == {"getHealth"}
+
+    write_routes = [
+        route
+        for route in api_routes
+        if route.methods & {"POST", "PUT", "PATCH", "DELETE"}
+    ]
+    assert all(not hasattr(route.endpoint, "__cache_namespace__") for route in write_routes)
 
 
 def test_repeated_get_hits_cache_and_successful_write_invalidates_it(monkeypatch, test_client):

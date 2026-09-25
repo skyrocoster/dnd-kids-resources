@@ -130,6 +130,9 @@ def cached_get(namespace: str):
             key = (function.__module__, function.__qualname__, arguments)
             return cached_read(namespace, key, lambda: function(*args, **kwargs))
 
+        # Keep the policy inspectable so route-level tests can ensure every API
+        # read explicitly opts into the shared server-side cache.
+        wrapped.__cache_namespace__ = namespace
         return wrapped
 
     return decorate
