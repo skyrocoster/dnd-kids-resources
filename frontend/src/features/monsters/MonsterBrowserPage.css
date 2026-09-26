@@ -17,17 +17,9 @@
 .monster-browser-detail-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   flex-wrap: wrap;
   gap: var(--space-3);
-}
-
-.monster-browser-detail-kicker {
-  color: var(--md-tertiary);
-  font-size: var(--type-caption-size);
-  font-weight: var(--type-caption-weight);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .monster-browser-detail-actions {

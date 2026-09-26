@@ -105,7 +105,6 @@ export function MonsterBrowserPage() {
                 Back to monsters
               </Button>
               <div className="monster-browser-detail-header">
-                <div className="monster-browser-detail-kicker">Bestiary Field Card</div>
                 <div className="monster-browser-detail-actions">
                   <Button variant="secondary" onClick={() => window.print()}>
                     Print Monster
@@ -121,7 +120,7 @@ export function MonsterBrowserPage() {
                   </Button>
                 </div>
               </div>
-              <MonsterStatBlock monster={selected} />
+              <MonsterStatBlock monster={selected} layout="unified" />
             </div>
           ) : (
             <StatePanel

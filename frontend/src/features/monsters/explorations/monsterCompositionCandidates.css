@@ -197,12 +197,43 @@
   background: var(--md-surface-3);
 }
 
+.monster-detail-regions-playground-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.monster-detail-regions-playground-controls button {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-md);
+  background: var(--md-surface-3);
+  color: var(--md-on-surface);
+  font: inherit;
+  cursor: pointer;
+}
+
+.monster-detail-regions-playground-controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.monster-detail-regions-playground-controls output {
+  min-width: 5.5rem;
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-body-sm-size);
+  text-align: center;
+}
+
 .monster-detail-regions-candidate__content {
   font-size: var(--type-body-sm-size);
   line-height: var(--type-body-sm-line);
   overflow-wrap: anywhere;
 }
 
+.monster-detail-regions-candidate__subtitle,
 .monster-detail-regions-candidate__content h3 {
   margin: 0 0 var(--space-1);
   font-size: var(--type-body-sm-size);

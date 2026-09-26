@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { Monster } from "../../../api/types";
 import { MonsterStatBlock } from "../MonsterStatBlock";
@@ -83,6 +83,23 @@ describe("MonsterStatBlock", () => {
     expect(screen.getByRole("heading", { name: "Test Monster" })).toBeInTheDocument();
     expect(screen.getByText("medium, dragon, chaotic evil")).toBeInTheDocument();
     expect(screen.getByText("CR 10")).toBeInTheDocument();
+  });
+
+  it("composes the unified layout in identity, vitals, abilities, actions, defenses, lore order", () => {
+    render(<MonsterStatBlock monster={monster()} layout="unified" />);
+
+    const statBlock = screen.getByTestId("monster-stat-block");
+    expect(statBlock).toHaveAttribute("data-layout", "unified");
+    expect(screen.getByText("Dragon")).toBeInTheDocument();
+    expect(screen.getByText("medium, dragon, chaotic evil")).toBeInTheDocument();
+    expect(screen.getByText("(10d12 + 40)")).toBeInTheDocument();
+
+    const regions = within(statBlock).getAllByRole("region");
+    expect(
+      regions.map((region) => within(region).getByRole("heading", { level: 3 }).textContent),
+    ).toEqual(["Abilities", "Actions", "Defenses", "Lore"]);
+    expect(screen.getByText(/Str \+5, Con \+4/)).toBeInTheDocument();
+    expect(screen.getByText(/Perception \+6, Stealth \+3/)).toBeInTheDocument();
   });
 
   it("renders AC, HP, and speed in the stat strip", () => {

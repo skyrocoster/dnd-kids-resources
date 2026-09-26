@@ -138,7 +138,7 @@ describe("MonsterBrowserPage", () => {
 
     await waitFor(() => expect(screen.getByText("Owlbear")).toBeInTheDocument());
     expect(screen.getByRole("heading", { name: "Aarakocra" })).toBeInTheDocument();
-    expect(screen.getByText("Bestiary Field Card")).toBeInTheDocument();
+    expect(screen.getByTestId("monster-stat-block")).toHaveAttribute("data-layout", "unified");
     expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
   });
 

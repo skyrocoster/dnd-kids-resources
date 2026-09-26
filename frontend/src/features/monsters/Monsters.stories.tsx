@@ -59,7 +59,7 @@ export const MonsterLibraryEmpty: Story = {
 
 export const MonsterStatBlockFull: Story = {
   name: "Monster stat block — complete reference",
-  render: () => <div style={{ maxWidth: 620 }}><MonsterStatBlock monster={dragon} /></div>,
+  render: () => <div style={{ maxWidth: 620 }}><MonsterStatBlock monster={dragon} layout="unified" /></div>,
 };
 
 export const MonsterEditorCreate: Story = {

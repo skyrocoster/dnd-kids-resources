@@ -1,8 +1,9 @@
 import { useId, type ReactNode } from "react";
 
 export interface MonsterDetailRegionCandidatePanel {
-  heading: string;
-  content: ReactNode;
+  title: string;
+  subtitle: string;
+  text: ReactNode;
 }
 
 export interface MonsterDetailRegionsCandidateProps {
@@ -22,12 +23,13 @@ export function MonsterDetailRegionsCandidate({ panels }: MonsterDetailRegionsCa
             <section
               className="monster-detail-regions-candidate__panel"
               aria-labelledby={headingId}
-              key={`${panel.heading}-${index}`}
+              key={`${panel.title}-${index}`}
             >
               <h2 id={headingId} className="monster-composition-heading">
-                {panel.heading}
+                {panel.title}
               </h2>
-              <div className="monster-detail-regions-candidate__content">{panel.content}</div>
+              <h3 className="monster-detail-regions-candidate__subtitle">{panel.subtitle}</h3>
+              <div className="monster-detail-regions-candidate__content">{panel.text}</div>
             </section>
           );
         })}
