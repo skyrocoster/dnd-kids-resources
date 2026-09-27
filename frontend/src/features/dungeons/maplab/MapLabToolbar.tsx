@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { ChevronDownIcon, ChevronUpIcon } from "../../../components/icons";
-import { Disclosure } from "../../../components/Disclosure";
+import { Disclosure } from "../../../components/content/Disclosure";
 import { useToolbarTrayCollapse } from "./mapLabToolbarState";
 
 /** A collapsible toolbar group: label + chevron toggle always visible (so the group structure

@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { listNPCs } from "../../../api/client";
 import type { NPC } from "../../../api/types";
-import { Button } from "../../../components/Button";
-import { DiceText } from "../../../components/DiceText";
-import { CheckboxField } from "../../../components/form/CheckboxField";
-import { SelectField } from "../../../components/form/SelectField";
-import { TextField } from "../../../components/form/TextField";
+import { Button } from "../../../components/actions/Button";
+import { DiceText } from "../../../components/content/DiceText";
+import { CheckboxField } from "../../../components/forms/CheckboxField";
+import { SelectField } from "../../../components/forms/SelectField";
+import { TextField } from "../../../components/forms/TextField";
 import { NpcChip } from "../../npcs/NpcChip";
 import { groupEntriesByType, type DungeonEntry, type DungeonRoom } from "../dungeonModel";
 import { InspectorPanel } from "./InspectorPanel";

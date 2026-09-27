@@ -3,7 +3,7 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { GripVertical } from "lucide-react";
 import { reorderLoomThreadItem } from "../../api/client";
 import type { LoomNode, LoomTapestryThread } from "../../api/types";
-import { Dialog } from "../../components/Dialog";
+import { Dialog } from "../../components/overlays/Dialog";
 import { threadOrdered } from "./loomGraph";
 import { beatReorderTarget, type OrderedBeat } from "./beatReorder";
 import "./LoomEditor.css";

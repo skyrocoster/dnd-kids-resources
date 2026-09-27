@@ -2,9 +2,9 @@ import { useId, useState } from "react";
 import type { FormEvent } from "react";
 import * as api from "../../api/client";
 import type { Player } from "../../api/types";
-import { Button } from "../../components/Button";
-import { Dialog } from "../../components/Dialog";
-import { TextField } from "../../components/form/TextField";
+import { Button } from "../../components/actions/Button";
+import { Dialog } from "../../components/overlays/Dialog";
+import { TextField } from "../../components/forms/TextField";
 import {
   emptyPlayerForm,
   formStateToPlayerInput,

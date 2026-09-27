@@ -2,7 +2,7 @@ import type { Player } from "../../api/types";
 import { formatMovementSpeeds } from "../npcs/npcModel";
 import { hasCombatStats, hasStatblock, playerToMonsterView } from "./playerModel";
 import { MonsterStatBlock } from "../monsters/MonsterStatBlock";
-import { Disclosure } from "../../components/Disclosure";
+import { Disclosure } from "../../components/content/Disclosure";
 import "./PlayerCombatSummary.css";
 
 interface PlayerCombatSummaryProps {

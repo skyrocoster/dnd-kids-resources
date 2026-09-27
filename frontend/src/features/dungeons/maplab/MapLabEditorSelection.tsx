@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { SelectField } from "../../../components/form/SelectField";
-import { TextField } from "../../../components/form/TextField";
+import { SelectField } from "../../../components/forms/SelectField";
+import { TextField } from "../../../components/forms/TextField";
 import { FixturePropertiesForm } from "./FixturePropertiesForm";
 import { InspectorPanel } from "./InspectorPanel";
 import type { ObstacleInspectorAdapter } from "./InspectorPanel";

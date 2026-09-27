@@ -8,7 +8,7 @@ import {
 } from "../model/maplabModel";
 import type { KidMapLayout } from "./curtain";
 import type { Bounds, MapLayout } from "../model/maplabModel";
-import { IconButton } from "../components/IconButton";
+import { IconButton } from "../components/actions/IconButton";
 import { FloorPicker } from "./FloorPicker";
 import { useMapCanvasZoom, BASE_PX_PER_UNIT } from "../map/useMapCanvasZoom";
 import type { ViewportSize, ZoomState } from "../map/useMapCanvasZoom";

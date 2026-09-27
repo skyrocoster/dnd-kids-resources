@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import * as api from "../../api/client";
-import { Button } from "../../components/Button";
-import { ConfirmDialog } from "../../components/ConfirmDialog";
-import { StatePanel } from "../../components/StatePanel";
-import { TextField } from "../../components/form/TextField";
+import { Button } from "../../components/actions/Button";
+import { ConfirmDialog } from "../../components/overlays/ConfirmDialog";
+import { StatePanel } from "../../components/state/StatePanel";
+import { TextField } from "../../components/forms/TextField";
 import {
   emptyMonsterForm,
   formStateToMonsterInput,

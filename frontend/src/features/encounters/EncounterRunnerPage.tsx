@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { Button } from "../../components/Button";
-import { PageHeader } from "../../components/PageHeader";
-import { StatePanel } from "../../components/StatePanel";
+import { Button } from "../../components/actions/Button";
+import { PageHeader } from "../../components/navigation/PageHeader";
+import { StatePanel } from "../../components/state/StatePanel";
 import { useEncounterRunner } from "./useEncounterRunner";
 import { EncounterRunnerBoard } from "./EncounterRunnerBoard";
 import "./EncounterRunnerPage.css";

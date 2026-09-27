@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 import * as api from "../../api/client";
 import type { Item } from "../../api/types";
-import { IconButton } from "../../components/IconButton";
-import { SearchList } from "../../components/SearchList";
+import { IconButton } from "../../components/actions/IconButton";
+import { SearchList } from "../../components/layout/SearchList";
 import { CloseIcon } from "../../components/icons";
 import {
   initialRemoteState,
   remoteError,
   remoteLoading,
   remoteSuccess,
-} from "../../components/remoteState";
-import type { RemoteState } from "../../components/remoteState";
+} from "../../components/state/remoteState";
+import type { RemoteState } from "../../components/state/remoteState";
 import { formatGp } from "./lootTotals";
 import "./AddCatalogPanel.css";
 

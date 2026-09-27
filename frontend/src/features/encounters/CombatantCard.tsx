@@ -3,11 +3,11 @@ import type { PointerEvent } from "react";
 import type { Condition } from "../../api/types";
 import type { RunnerCombatant } from "./encounterRunner";
 import { ConditionPicker } from "./ConditionPicker";
-import { Popover } from "../../components/Popover";
-import { Button } from "../../components/Button";
-import { IconButton } from "../../components/IconButton";
-import { TextInput } from "../../components/form/TextInput";
-import { ToggleGroup } from "../../components/form/ToggleGroup";
+import { Popover } from "../../components/overlays/Popover";
+import { Button } from "../../components/actions/Button";
+import { IconButton } from "../../components/actions/IconButton";
+import { TextInput } from "../../components/forms/TextInput";
+import { ToggleGroup } from "../../components/forms/ToggleGroup";
 import {
   ChevronDownIcon,
   ChevronUpIcon,

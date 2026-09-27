@@ -4,10 +4,10 @@ import { Radio } from "@base-ui/react/radio";
 import { RadioGroup } from "@base-ui/react/radio-group";
 import { createLoomThread, deleteLoomThread, updateLoomThread } from "../../api/client";
 import type { LoomThread, ThreadColor } from "../../api/types";
-import { Button } from "../../components/Button";
-import { ConfirmDialog } from "../../components/ConfirmDialog";
-import { Dialog } from "../../components/Dialog";
-import { TextField } from "../../components/form/TextField";
+import { Button } from "../../components/actions/Button";
+import { ConfirmDialog } from "../../components/overlays/ConfirmDialog";
+import { Dialog } from "../../components/overlays/Dialog";
+import { TextField } from "../../components/forms/TextField";
 import { TrashIcon, PlusIcon } from "../../components/icons";
 import "./LoomEditor.css";
 

@@ -1,5 +1,5 @@
 import { TrashIcon } from "../../../components/icons";
-import { Button } from "../../../components/Button";
+import { Button } from "../../../components/actions/Button";
 
 interface SelectionActionsProps {
   deleteLabel: string;

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { listNPCs } from "../../../api/client";
 import type { NPC } from "../../../api/types";
-import { Button } from "../../../components/Button";
-import { DiceText } from "../../../components/DiceText";
+import { Button } from "../../../components/actions/Button";
+import { DiceText } from "../../../components/content/DiceText";
 import { NpcChip } from "../../npcs/NpcChip";
 import {
   getRoomThreatHints,

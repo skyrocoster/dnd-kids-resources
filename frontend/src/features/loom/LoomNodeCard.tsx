@@ -1,7 +1,7 @@
 import { memo, forwardRef, useCallback } from "react";
 import type { LoomNode } from "../../api/types";
 import { PencilIcon, BanknoteIcon, TrashIcon } from "../../components/icons";
-import { IconButton } from "../../components/IconButton";
+import { IconButton } from "../../components/actions/IconButton";
 
 interface LoomNodeCardProps {
   node: LoomNode;

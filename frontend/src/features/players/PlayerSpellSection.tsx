@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { Player, Spell } from "../../api/types";
-import { Accordion } from "../../components/Accordion";
-import { DiceText } from "../../components/DiceText";
-import { ReferenceText, spellValueReferenceRegistry } from "../../components/referenceText";
+import { Accordion } from "../../components/content/Accordion";
+import { DiceText } from "../../components/content/DiceText";
+import { ReferenceText, spellValueReferenceRegistry } from "../../components/content/referenceText";
 import { levelLabel } from "../spells/constants";
 import "./PlayerSpellSection.css";
 

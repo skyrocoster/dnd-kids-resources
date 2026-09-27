@@ -28,8 +28,8 @@ import { useMapDensity, useMapLayerVisibility } from "./mapLabToolbarState";
 import { resolveMapDensity } from "../../../map/mapDensity";
 import { PROP_KIND_OPTIONS } from "./fixtureTypes";
 import { SelectionActions } from "./SelectionActions";
-import { Button } from "../../../components/Button";
-import { ConfirmDialog } from "../../../components/ConfirmDialog";
+import { Button } from "../../../components/actions/Button";
+import { ConfirmDialog } from "../../../components/overlays/ConfirmDialog";
 import {
   absoluteCells,
   canPaintCell,

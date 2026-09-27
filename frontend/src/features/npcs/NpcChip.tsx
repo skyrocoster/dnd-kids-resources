@@ -1,5 +1,5 @@
 import { UserIcon } from "../../components/icons";
-import { Button } from "../../components/Button";
+import { Button } from "../../components/actions/Button";
 import "./NpcChip.css";
 
 export interface NpcChipProps {

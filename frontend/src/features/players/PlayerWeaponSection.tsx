@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { Weapon } from "../../api/types";
-import { Accordion } from "../../components/Accordion";
-import { DiceText } from "../../components/DiceText";
-import { ReferenceText, weaponValueReferenceRegistry } from "../../components/referenceText";
+import { Accordion } from "../../components/content/Accordion";
+import { DiceText } from "../../components/content/DiceText";
+import { ReferenceText, weaponValueReferenceRegistry } from "../../components/content/referenceText";
 import { describeAttack } from "../weapons/weaponPresentation";
 import "./PlayerWeaponSection.css";
 

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import * as api from "../../api/client";
 import type { Monster } from "../../api/types";
-import { IconButton } from "../../components/IconButton";
-import { SearchList } from "../../components/SearchList";
+import { IconButton } from "../../components/actions/IconButton";
+import { SearchList } from "../../components/layout/SearchList";
 import "./AddMonsterPanel.css";
 
 interface AddMonsterPanelProps {

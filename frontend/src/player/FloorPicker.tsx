@@ -1,5 +1,5 @@
 import type { MapFloor } from "../model/maplabModel";
-import { ToggleGroup } from "../components/form/ToggleGroup";
+import { ToggleGroup } from "../components/forms/ToggleGroup";
 
 interface FloorPickerProps {
   floors: MapFloor[];

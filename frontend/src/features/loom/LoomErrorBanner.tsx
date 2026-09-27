@@ -1,5 +1,5 @@
 import { CloseIcon } from "../../components/icons";
-import { IconButton } from "../../components/IconButton";
+import { IconButton } from "../../components/actions/IconButton";
 import "./LoomEditor.css";
 
 interface LoomErrorBannerProps {

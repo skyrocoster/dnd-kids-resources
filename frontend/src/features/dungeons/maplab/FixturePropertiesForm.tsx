@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { listDungeons, listEncounters, listLootBundles, listNPCs } from "../../../api/client";
 import type { Dungeon, Encounter, LootBundle, NPC } from "../../../api/types";
-import { CheckboxField } from "../../../components/form/CheckboxField";
-import { SelectField } from "../../../components/form/SelectField";
-import { TextField } from "../../../components/form/TextField";
+import { CheckboxField } from "../../../components/forms/CheckboxField";
+import { SelectField } from "../../../components/forms/SelectField";
+import { TextField } from "../../../components/forms/TextField";
 import type { FieldSpec, FixtureTypeSpec } from "./fixtureTypes";
 import {
   absoluteCells,

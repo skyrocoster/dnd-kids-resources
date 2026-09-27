@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
 import type { Condition } from "../../api/types";
-import { MultiSelectField } from "../../components/form/MultiSelectField";
+import { MultiSelectField } from "../../components/forms/MultiSelectField";
 import { ChevronDownIcon, ChevronUpIcon } from "../../components/icons";
-import { Popover } from "../../components/Popover";
+import { Popover } from "../../components/overlays/Popover";
 import { isConditionSelected, mergeConditionOptions, toggleCondition } from "./encounterForm";
 import "./ConditionPicker.css";
 

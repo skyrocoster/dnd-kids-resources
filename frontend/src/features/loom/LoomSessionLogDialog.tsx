@@ -2,10 +2,10 @@ import { useId, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { logLoomSession } from "../../api/client";
 import type { LoomSessionLogOutcome, LoomTapestry } from "../../api/types";
-import { Button } from "../../components/Button";
-import { Dialog } from "../../components/Dialog";
-import { SelectField } from "../../components/form/SelectField";
-import { TextField } from "../../components/form/TextField";
+import { Button } from "../../components/actions/Button";
+import { Dialog } from "../../components/overlays/Dialog";
+import { SelectField } from "../../components/forms/SelectField";
+import { TextField } from "../../components/forms/TextField";
 import { liveThreads, nextBeat } from "./loomGraph";
 import "./LoomEditor.css";
 

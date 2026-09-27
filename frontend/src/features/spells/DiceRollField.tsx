@@ -1,6 +1,6 @@
 import { useId } from "react";
-import { Select } from "../../components/form/Select";
-import { TextInput } from "../../components/form/TextInput";
+import { Select } from "../../components/forms/Select";
+import { TextInput } from "../../components/forms/TextInput";
 import { DICE_COUNT_OPTIONS, DICE_TYPE_OPTIONS } from "./constants";
 import { formatDiceString, parseDiceString } from "./dice";
 import "./DiceRollField.css";

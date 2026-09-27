@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { LoomNode, LoomTapestryThread } from "../../api/types";
-import { Button } from "../../components/Button";
+import { Button } from "../../components/actions/Button";
 import { Menu } from "../../components/menus/Menu";
 import type { MenuItemDefinition } from "../../components/menus/menuTypes";
 import { LoomBeatBankTray } from "./LoomBeatBankTray";

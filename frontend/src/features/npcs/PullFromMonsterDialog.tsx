@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import * as api from "../../api/client";
 import type { Monster, NPC, NPCInput } from "../../api/types";
-import { Button } from "../../components/Button";
-import { Dialog } from "../../components/Dialog";
-import { CheckboxGroup } from "../../components/form/CheckboxGroup";
-import { SearchList } from "../../components/SearchList";
-import { StatePanel } from "../../components/StatePanel";
+import { Button } from "../../components/actions/Button";
+import { Dialog } from "../../components/overlays/Dialog";
+import { CheckboxGroup } from "../../components/forms/CheckboxGroup";
+import { SearchList } from "../../components/layout/SearchList";
+import { StatePanel } from "../../components/state/StatePanel";
 import { applyPull, getPullableRows } from "./npcPull";
 import type { PullRow } from "./npcPull";
 import "./PullFromMonsterDialog.css";

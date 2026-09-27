@@ -1,4 +1,4 @@
-import { FloatingWindow } from "../../components/FloatingWindow";
+import { FloatingWindow } from "../../components/layout/FloatingWindow";
 import { useEncounterRunner } from "./useEncounterRunner";
 import { EncounterRunnerBoard } from "./EncounterRunnerBoard";
 

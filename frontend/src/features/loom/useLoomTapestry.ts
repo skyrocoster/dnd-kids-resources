@@ -8,7 +8,7 @@ import {
   remoteLoading,
   remoteSuccess,
   type RemoteState,
-} from "../../components/remoteState";
+} from "../../components/state/remoteState";
 
 export interface UseLoomTapestryResult {
   tapestry: RemoteState<LoomTapestry>;

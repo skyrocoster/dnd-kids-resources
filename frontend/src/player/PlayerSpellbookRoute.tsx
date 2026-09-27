@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 
-import { ToggleGroup } from "../components/form/ToggleGroup";
+import { ToggleGroup } from "../components/forms/ToggleGroup";
 import { usePlayerSpellbook } from "./usePlayerSpellbook";
 import { usePlayerSpellbookSession } from "./playerSpellbookSessionContext";
 import "./PlayerSpellbookRoute.css";

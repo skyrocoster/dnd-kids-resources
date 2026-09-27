@@ -1,9 +1,9 @@
 import type { Condition, Monster } from "../../api/types";
-import { Disclosure } from "../../components/Disclosure";
-import { SelectField } from "../../components/form/SelectField";
-import { TextField } from "../../components/form/TextField";
-import { ToggleGroup } from "../../components/form/ToggleGroup";
-import { IconButton } from "../../components/IconButton";
+import { Disclosure } from "../../components/content/Disclosure";
+import { SelectField } from "../../components/forms/SelectField";
+import { TextField } from "../../components/forms/TextField";
+import { ToggleGroup } from "../../components/forms/ToggleGroup";
+import { IconButton } from "../../components/actions/IconButton";
 import { ChevronDownIcon, ChevronUpIcon, ShieldIcon, TrashIcon } from "../../components/icons";
 import { ConditionPicker } from "./ConditionPicker";
 import type { EncounterCreatureRow } from "./encounterForm";

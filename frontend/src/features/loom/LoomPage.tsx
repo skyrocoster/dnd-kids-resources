@@ -11,11 +11,11 @@ import { LoomThreadManager } from "./LoomThreadManager";
 import { LoomBeatReorderDialog } from "./LoomBeatReorderDialog";
 import { LoomErrorBanner } from "./LoomErrorBanner";
 import { LoomSessionLogDialog } from "./LoomSessionLogDialog";
-import { StatePanel } from "../../components/StatePanel";
-import { Button } from "../../components/Button";
-import { ConfirmDialog } from "../../components/ConfirmDialog";
-import { PageHeader } from "../../components/PageHeader";
-import { IconButton } from "../../components/IconButton";
+import { StatePanel } from "../../components/state/StatePanel";
+import { Button } from "../../components/actions/Button";
+import { ConfirmDialog } from "../../components/overlays/ConfirmDialog";
+import { PageHeader } from "../../components/navigation/PageHeader";
+import { IconButton } from "../../components/actions/IconButton";
 import {
   MapPinIcon,
   PlusIcon,

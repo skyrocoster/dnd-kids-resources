@@ -1,11 +1,11 @@
 import { useId } from "react";
 import { completeMonsterFeatures, type Feature, type Monster } from "../../api/types";
-import { DiceText } from "../../components/DiceText";
-import { MonsterAbilityScores } from "./MonsterAbilityScores";
-import { MonsterDetailRegions, type MonsterDetailRegionPanel } from "./MonsterDetailRegions";
-import { MonsterIdentity } from "./MonsterIdentity";
-import { MonsterProficiencies } from "./MonsterProficiencies";
-import { MonsterVitals } from "./MonsterVitals";
+import { DiceText } from "../../components/content/DiceText";
+import { DetailRegionGrid, type DetailRegionGridItem } from "../../components/layout/DetailRegionGrid";
+import { StatBlockAbilityScores } from "../../components/stat-block/StatBlockAbilityScores";
+import { StatBlockIdentity } from "../../components/stat-block/StatBlockIdentity";
+import { StatBlockProficiencies } from "../../components/stat-block/StatBlockProficiencies";
+import { StatBlockVitals, type StatBlockVital } from "../../components/stat-block/StatBlockVitals";
 import {
   describeFeature,
   formatAc,
@@ -96,15 +96,31 @@ export function MonsterStatBlock({
       ...ability,
       modifier: formatModifier(ability.modifier),
     }));
-    const detailPanels: MonsterDetailRegionPanel[] = [];
+    const detailRegions: DetailRegionGridItem[] = [];
+    const vitalItems: StatBlockVital[] = [];
+
+    if (ac) vitalItems.push({ label: "AC", value: ac });
+    if (hp) {
+      vitalItems.push({
+        label: "HP",
+        value: (
+          <>
+            <span>{monster.hp?.average}</span>
+            {monster.hp?.formula && <small>({monster.hp.formula})</small>}
+          </>
+        ),
+        emphasis: true,
+      });
+    }
+    if (speed) vitalItems.push({ label: "Speed", value: speed });
 
     if (hasActions) {
-      detailPanels.push({
+      detailRegions.push({
         title: "Actions",
         subtitle: features.actions.length > 0 && features.spellcasting.length === 0
           ? "Attacks & Actions"
           : null,
-        text: (
+        content: (
           <>
             {features.spellcasting.map((block, i) => (
               <div key={`spellcasting-${i}`} className="monster-stat-block-spellcasting">
@@ -174,9 +190,9 @@ export function MonsterStatBlock({
     }
 
     if (hasDefenses) {
-      detailPanels.push({
+      detailRegions.push({
         title: "Defenses",
-        text: (
+        content: (
           <>
             {resist && (
               <p className="monster-stat-block-def-row">
@@ -214,9 +230,9 @@ export function MonsterStatBlock({
     }
 
     if (hasLore) {
-      detailPanels.push({
+      detailRegions.push({
         title: "Lore",
-        text: (
+        content: (
           <>
             {features.traits.map((trait, i) => (
               <FeatureBlock key={`trait-${i}`} feature={trait} />
@@ -244,21 +260,21 @@ export function MonsterStatBlock({
         aria-labelledby={showIdentity ? unifiedHeadingId : undefined}
       >
         {showIdentity && (
-          <MonsterIdentity
-            category={categoryLabel}
+          <StatBlockIdentity
+            eyebrow={categoryLabel}
             name={monster.name}
-            descriptor={identity}
-            challengeRating={challengeRating}
+            description={identity}
+            accessory={
+              challengeRating ? (
+                <span className="monster-stat-block-cr-badge">CR {challengeRating}</span>
+              ) : null
+            }
             headingId={unifiedHeadingId}
           />
         )}
 
         {showStrip && (
-          <MonsterVitals
-            armorClass={monster.ac}
-            hitPoints={monster.hp}
-            speed={speed}
-          />
+          <StatBlockVitals items={vitalItems} ariaLabel="Combat statistics" />
         )}
 
         {(abilityScores.length > 0 || saves.length > 0 || skills.length > 0) && (
@@ -269,15 +285,18 @@ export function MonsterStatBlock({
             <h3 id={`${unifiedHeadingId}-abilities`} className="monster-stat-block-heading">
               Abilities
             </h3>
-            <MonsterAbilityScores abilities={abilityValues} />
-            <MonsterProficiencies
-              savingThrows={savingThrows || null}
-              skills={formattedSkills || null}
+            <StatBlockAbilityScores abilities={abilityValues} />
+            <StatBlockProficiencies
+              items={[
+                ...(savingThrows ? [{ label: "Saving Throws", value: savingThrows }] : []),
+                ...(formattedSkills ? [{ label: "Skills", value: formattedSkills }] : []),
+              ]}
+              ariaLabel="Saving throws and skills"
             />
           </section>
         )}
 
-        <MonsterDetailRegions panels={detailPanels} />
+        <DetailRegionGrid regions={detailRegions} />
       </article>
     );
   }

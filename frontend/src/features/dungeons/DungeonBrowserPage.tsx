@@ -2,19 +2,19 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as api from "../../api/client";
 import type { Dungeon } from "../../api/types";
-import { BrowserLayout } from "../../components/BrowserLayout";
-import { Button } from "../../components/Button";
-import { Card } from "../../components/Card";
-import { ConfirmDialog } from "../../components/ConfirmDialog";
-import { SearchList } from "../../components/SearchList";
-import { StatePanel } from "../../components/StatePanel";
+import { BrowserLayout } from "../../components/layout/BrowserLayout";
+import { Button } from "../../components/actions/Button";
+import { Card } from "../../components/content/Card";
+import { ConfirmDialog } from "../../components/overlays/ConfirmDialog";
+import { SearchList } from "../../components/layout/SearchList";
+import { StatePanel } from "../../components/state/StatePanel";
 import {
   initialRemoteState,
   remoteError,
   remoteLoading,
   remoteSuccess,
-} from "../../components/remoteState";
-import type { RemoteState } from "../../components/remoteState";
+} from "../../components/state/remoteState";
+import type { RemoteState } from "../../components/state/remoteState";
 import { DoorIcon } from "../../components/icons";
 import "./DungeonBrowserPage.css";
 

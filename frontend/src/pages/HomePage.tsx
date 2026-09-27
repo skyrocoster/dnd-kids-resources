@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { PageHeader } from "../components/PageHeader";
+import { PageHeader } from "../components/navigation/PageHeader";
 import { navSections } from "../layout/navSections";
 import "./HomePage.css";
 

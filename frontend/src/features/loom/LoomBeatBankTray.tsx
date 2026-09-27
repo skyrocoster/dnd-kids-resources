@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { LoomNode, LoomThread } from "../../api/types";
 import { ChevronDownIcon, ChevronUpIcon } from "../../components/icons";
-import { Button } from "../../components/Button";
-import { Disclosure } from "../../components/Disclosure";
+import { Button } from "../../components/actions/Button";
+import { Disclosure } from "../../components/content/Disclosure";
 
 interface LoomBeatBankTrayProps {
   nodes: LoomNode[];

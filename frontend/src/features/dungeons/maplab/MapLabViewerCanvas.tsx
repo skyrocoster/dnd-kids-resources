@@ -1,6 +1,6 @@
 import type { ComponentProps, ReactNode } from "react";
 import { MapCanvas } from "../../../map/MapCanvas";
-import { Button } from "../../../components/Button";
+import { Button } from "../../../components/actions/Button";
 import { FitIcon, ZoomInIcon, ZoomOutIcon } from "../../../components/icons";
 import { DoorBadgeLayer, DoorMarker } from "./DoorMarker";
 import { PortalMarker } from "./PortalMarker";

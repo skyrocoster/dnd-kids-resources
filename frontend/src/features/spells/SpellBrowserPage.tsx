@@ -1,24 +1,24 @@
 import { useCallback, useEffect, useState } from "react";
 import * as api from "../../api/client";
 import type { Player, Spell } from "../../api/types";
-import { Card } from "../../components/Card";
-import { BrowserLayout } from "../../components/BrowserLayout";
-import { Button } from "../../components/Button";
-import { ConfirmDialog } from "../../components/ConfirmDialog";
-import { Dialog } from "../../components/Dialog";
-import { DiceText } from "../../components/DiceText";
-import { CheckboxField } from "../../components/form/CheckboxField";
-import { TextInput } from "../../components/form/TextInput";
-import { ReferenceText, spellValueReferenceRegistry } from "../../components/referenceText";
-import { SearchList } from "../../components/SearchList";
-import { StatePanel } from "../../components/StatePanel";
+import { Card } from "../../components/content/Card";
+import { BrowserLayout } from "../../components/layout/BrowserLayout";
+import { Button } from "../../components/actions/Button";
+import { ConfirmDialog } from "../../components/overlays/ConfirmDialog";
+import { Dialog } from "../../components/overlays/Dialog";
+import { DiceText } from "../../components/content/DiceText";
+import { CheckboxField } from "../../components/forms/CheckboxField";
+import { TextInput } from "../../components/forms/TextInput";
+import { ReferenceText, spellValueReferenceRegistry } from "../../components/content/referenceText";
+import { SearchList } from "../../components/layout/SearchList";
+import { StatePanel } from "../../components/state/StatePanel";
 import {
   initialRemoteState,
   remoteError,
   remoteLoading,
   remoteSuccess,
-} from "../../components/remoteState";
-import type { RemoteState } from "../../components/remoteState";
+} from "../../components/state/remoteState";
+import type { RemoteState } from "../../components/state/remoteState";
 import { WandIcon } from "../../components/icons";
 import { levelLabel } from "./constants";
 import { SpellEditor } from "./SpellEditor";

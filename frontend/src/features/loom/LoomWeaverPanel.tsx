@@ -1,5 +1,5 @@
 import type { LoomNode, LoomThread } from "../../api/types";
-import { Button } from "../../components/Button";
+import { Button } from "../../components/actions/Button";
 
 export interface LoomWeaverPanelProps {
   selectedNode: LoomNode | null;

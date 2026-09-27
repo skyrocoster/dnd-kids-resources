@@ -1,9 +1,9 @@
 import type { ComponentProps } from "react";
-import { ConfirmDialog } from "../../../components/ConfirmDialog";
-import { FloatingWindow } from "../../../components/FloatingWindow";
+import { ConfirmDialog } from "../../../components/overlays/ConfirmDialog";
+import { FloatingWindow } from "../../../components/layout/FloatingWindow";
 import { EncounterDock } from "../../encounters/EncounterDock";
 import { NPCStatCard } from "../../npcs/NPCStatCard";
-import { StatePanel } from "../../../components/StatePanel";
+import { StatePanel } from "../../../components/state/StatePanel";
 import { useNpc } from "../../npcs/useNpc";
 import { InspectorPanel, type ObstacleInspectorAdapter } from "./InspectorPanel";
 import { RoomDetailsPanel } from "./RoomDetailsPanel";

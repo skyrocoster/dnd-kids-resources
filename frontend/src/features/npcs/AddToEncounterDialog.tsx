@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import * as api from "../../api/client";
 import type { Encounter, NPC } from "../../api/types";
-import { Button } from "../../components/Button";
-import { Dialog } from "../../components/Dialog";
-import { SearchList } from "../../components/SearchList";
-import { StatePanel } from "../../components/StatePanel";
+import { Button } from "../../components/actions/Button";
+import { Dialog } from "../../components/overlays/Dialog";
+import { SearchList } from "../../components/layout/SearchList";
+import { StatePanel } from "../../components/state/StatePanel";
 import { combatantFromNpc, appendCreatureToEncounter } from "./addToEncounter";
 import "./AddToEncounterDialog.css";
 

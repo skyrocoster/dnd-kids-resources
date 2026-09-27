@@ -2,10 +2,10 @@ import { useId, useState } from "react";
 import type { FormEvent } from "react";
 import { createLoomNode, updateLoomNode } from "../../api/client";
 import type { LoomNode, LoomNodeInput, LoomNodeKind } from "../../api/types";
-import { Button } from "../../components/Button";
-import { Dialog } from "../../components/Dialog";
-import { SelectField } from "../../components/form/SelectField";
-import { TextField } from "../../components/form/TextField";
+import { Button } from "../../components/actions/Button";
+import { Dialog } from "../../components/overlays/Dialog";
+import { SelectField } from "../../components/forms/SelectField";
+import { TextField } from "../../components/forms/TextField";
 import "./LoomEditor.css";
 
 interface LoomNodeEditorProps {

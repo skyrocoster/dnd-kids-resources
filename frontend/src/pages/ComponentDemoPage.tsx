@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Card } from "../components/Card";
-import { DiceText } from "../components/DiceText";
-import { CheckboxField } from "../components/form/CheckboxField";
-import { MultiSelectField } from "../components/form/MultiSelectField";
-import { SelectField } from "../components/form/SelectField";
-import { TextField } from "../components/form/TextField";
-import { SearchList } from "../components/SearchList";
-import { SplitPane } from "../components/SplitPane";
+import { Card } from "../components/content/Card";
+import { DiceText } from "../components/content/DiceText";
+import { CheckboxField } from "../components/forms/CheckboxField";
+import { MultiSelectField } from "../components/forms/MultiSelectField";
+import { SelectField } from "../components/forms/SelectField";
+import { TextField } from "../components/forms/TextField";
+import { SearchList } from "../components/layout/SearchList";
+import { SplitPane } from "../components/layout/SplitPane";
 
 const spells = [
   {

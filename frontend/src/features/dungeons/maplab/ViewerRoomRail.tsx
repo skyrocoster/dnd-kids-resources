@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "../../../components/Button";
-import { Popover } from "../../../components/Popover";
+import { Button } from "../../../components/actions/Button";
+import { Popover } from "../../../components/overlays/Popover";
 import { getRoomById, getRoomThreatHints, type DungeonData } from "../dungeonModel";
 import { floorsInLayout, getNpcUnion, roomsOnZ, type MapLayout } from "../../../model/maplabModel";
 

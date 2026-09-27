@@ -2,18 +2,18 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import * as api from "../../api/client";
 import type { Monster } from "../../api/types";
-import { BrowserLayout } from "../../components/BrowserLayout";
-import { Button } from "../../components/Button";
-import { SearchList } from "../../components/SearchList";
-import { StatePanel } from "../../components/StatePanel";
-import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { BrowserLayout } from "../../components/layout/BrowserLayout";
+import { Button } from "../../components/actions/Button";
+import { SearchList } from "../../components/layout/SearchList";
+import { StatePanel } from "../../components/state/StatePanel";
+import { ConfirmDialog } from "../../components/overlays/ConfirmDialog";
 import {
   initialRemoteState,
   remoteError,
   remoteLoading,
   remoteSuccess,
-} from "../../components/remoteState";
-import type { RemoteState } from "../../components/remoteState";
+} from "../../components/state/remoteState";
+import type { RemoteState } from "../../components/state/remoteState";
 import { SkullIcon } from "../../components/icons";
 import { MonsterStatBlock } from "./MonsterStatBlock";
 import "./MonsterBrowserPage.css";

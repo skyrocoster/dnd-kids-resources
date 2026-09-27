@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from "react";
 import { CoinsIcon, SwordsIcon } from "../../../components/icons";
-import { Button } from "../../../components/Button";
+import { Button } from "../../../components/actions/Button";
 import { ApiError, getLootBundle } from "../../../api/client";
 import type { LootBundle, LootEntry } from "../../../api/types";
 import { categoryIcon } from "../../loot/itemCategories";

@@ -1,6 +1,6 @@
 import type { Dungeon, IncomingGateway } from "../../../api/types";
-import { Button } from "../../../components/Button";
-import { StatePanel } from "../../../components/StatePanel";
+import { Button } from "../../../components/actions/Button";
+import { StatePanel } from "../../../components/state/StatePanel";
 import { floorsInLayout, type MapLayout, type MapPortal } from "../../../model/maplabModel";
 
 interface ConnectionsResolveListProps {

@@ -1,0 +1,105 @@
+.detail-region-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.detail-region-grid-playground {
+  box-sizing: border-box;
+  width: min(620px, 100%);
+  margin-inline: auto;
+  padding: var(--space-3) var(--space-4) var(--space-5);
+  color: var(--md-on-surface);
+  font-family: var(--type-face);
+  container-type: inline-size;
+}
+
+.detail-region-grid-playground__surface {
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-lg);
+  background: var(--md-surface-2);
+}
+
+.detail-region-grid__item {
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-md);
+  background: var(--md-surface-3);
+}
+
+.detail-region-grid__title {
+  margin: 0 0 var(--space-2);
+  color: var(--md-tertiary);
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  line-height: var(--type-label-line);
+}
+
+.detail-region-grid__subtitle {
+  margin: 0 0 var(--space-1);
+  color: var(--md-on-surface);
+  font-size: var(--type-body-sm-size);
+  font-weight: 600;
+  line-height: var(--type-body-sm-line);
+}
+
+.detail-region-grid__content {
+  color: var(--md-on-surface);
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  overflow-wrap: anywhere;
+}
+
+.detail-region-grid__content p {
+  margin: var(--space-2) 0 0;
+}
+
+.detail-region-grid__content strong {
+  font-weight: 600;
+}
+
+.detail-region-grid-playground-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.detail-region-grid-playground-controls button {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-md);
+  background: var(--md-surface-3);
+  color: var(--md-on-surface);
+  font: inherit;
+  cursor: pointer;
+}
+
+.detail-region-grid-playground-controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.detail-region-grid-playground-controls output {
+  min-width: 5.5rem;
+  color: var(--md-on-surface-variant);
+  font-size: var(--type-body-sm-size);
+  text-align: center;
+}
+
+@container (max-width: 500px) {
+  .detail-region-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 500px) {
+  .detail-region-grid-playground .detail-region-grid {
+    grid-template-columns: 1fr;
+  }
+}

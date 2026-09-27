@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 import * as api from "../../api/client";
 import type { NPC } from "../../api/types";
-import { BrowserLayout } from "../../components/BrowserLayout";
-import { Button } from "../../components/Button";
-import { ConfirmDialog } from "../../components/ConfirmDialog";
-import { SearchList } from "../../components/SearchList";
-import { StatePanel } from "../../components/StatePanel";
+import { BrowserLayout } from "../../components/layout/BrowserLayout";
+import { Button } from "../../components/actions/Button";
+import { ConfirmDialog } from "../../components/overlays/ConfirmDialog";
+import { SearchList } from "../../components/layout/SearchList";
+import { StatePanel } from "../../components/state/StatePanel";
 import {
   initialRemoteState,
   remoteError,
   remoteLoading,
   remoteSuccess,
-} from "../../components/remoteState";
-import type { RemoteState } from "../../components/remoteState";
+} from "../../components/state/remoteState";
+import type { RemoteState } from "../../components/state/remoteState";
 import { MasksIcon } from "../../components/icons";
 import { NPCEditor } from "./NPCEditor";
 import { NPCStatCard } from "./NPCStatCard";

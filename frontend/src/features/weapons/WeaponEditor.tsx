@@ -2,15 +2,15 @@ import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
 import * as api from "../../api/client";
 import type { Weapon } from "../../api/types";
-import { Button } from "../../components/Button";
-import { Dialog } from "../../components/Dialog";
-import { MultiSelectField } from "../../components/form/MultiSelectField";
-import { SelectField } from "../../components/form/SelectField";
-import { TextField } from "../../components/form/TextField";
+import { Button } from "../../components/actions/Button";
+import { Dialog } from "../../components/overlays/Dialog";
+import { MultiSelectField } from "../../components/forms/MultiSelectField";
+import { SelectField } from "../../components/forms/SelectField";
+import { TextField } from "../../components/forms/TextField";
 import {
   weaponValueReferenceRegistry,
   validateReferenceText,
-} from "../../components/referenceText";
+} from "../../components/content/referenceText";
 import { CLASS_OPTIONS } from "../spells/constants";
 import type { WeaponAttackRow, WeaponFormState } from "./weaponForm";
 import {

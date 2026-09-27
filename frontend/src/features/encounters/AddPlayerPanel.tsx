@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { Condition } from "../../api/types";
-import { Button } from "../../components/Button";
-import { IconButton } from "../../components/IconButton";
-import { TextField } from "../../components/form/TextField";
+import { Button } from "../../components/actions/Button";
+import { IconButton } from "../../components/actions/IconButton";
+import { TextField } from "../../components/forms/TextField";
 import { CloseIcon, UserPlusIcon } from "../../components/icons";
 import { ConditionPicker } from "./ConditionPicker";
 import "./AddPlayerPanel.css";

@@ -1,8 +1,8 @@
 import { useId, useMemo, useState } from "react";
-import { Button } from "../../components/Button";
-import { Dialog } from "../../components/Dialog";
-import { CheckboxField } from "../../components/form/CheckboxField";
-import { TextInput } from "../../components/form/TextInput";
+import { Button } from "../../components/actions/Button";
+import { Dialog } from "../../components/overlays/Dialog";
+import { CheckboxField } from "../../components/forms/CheckboxField";
+import { TextInput } from "../../components/forms/TextInput";
 import "./PlayerAssignments.css";
 
 export interface ManageAssignmentsDialogProps<T> {

@@ -20,11 +20,11 @@ import {
   Trees,
   Waves,
 } from "../../../components/icons";
-import { Button } from "../../../components/Button";
-import { Toggle } from "../../../components/form/Toggle";
-import { ToggleGroup } from "../../../components/form/ToggleGroup";
-import { TextInput } from "../../../components/form/TextInput";
-import { Popover } from "../../../components/Popover";
+import { Button } from "../../../components/actions/Button";
+import { Toggle } from "../../../components/forms/Toggle";
+import { ToggleGroup } from "../../../components/forms/ToggleGroup";
+import { TextInput } from "../../../components/forms/TextInput";
+import { Popover } from "../../../components/overlays/Popover";
 import { ConnectionsResolveList } from "./ConnectionsResolveList";
 import { ToolbarTray } from "./MapLabToolbar";
 import { PROP_KIND_ICONS, PROP_KIND_OPTIONS } from "./fixtureTypes";

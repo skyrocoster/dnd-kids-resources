@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import type { Monster } from "../../api/types";
-import { Button } from "../../components/Button";
+import { Button } from "../../components/actions/Button";
 import { NextTurnIcon, PlusIcon } from "../../components/icons";
 import type { UseEncounterRunnerResult } from "./useEncounterRunner";
 import { CombatantCard } from "./CombatantCard";
