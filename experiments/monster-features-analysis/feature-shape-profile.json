@@ -1,0 +1,153 @@
+{
+  "actions": {
+    "attack_field_presence_counts": {
+      "attack_bonus": 3586,
+      "automatic_hit": 3586,
+      "damage": 3586,
+      "kind": 3586,
+      "long_range_ft": 3586,
+      "range_ft": 3586,
+      "targets": 3586
+    },
+    "attack_kind_value_counts": {
+      "\"melee_or_ranged_spell\"": 3,
+      "\"melee_spell\"": 2,
+      "\"melee_weapon\"": 2872,
+      "\"ranged_spell\"": 10,
+      "\"ranged_weapon\"": 699
+    },
+    "attack_object_count": 3586,
+    "attack_value_type_counts": {
+      "null": 2752,
+      "object": 3586
+    },
+    "damage_component_count_per_action": {
+      "0": 19,
+      "1": 2772,
+      "2": 795
+    },
+    "damage_component_field_presence_counts": {
+      "bonus": 4362,
+      "damage_types": 4362,
+      "formula": 4362
+    },
+    "occurrence_count": 6338,
+    "root_field_presence_counts": {
+      "attack": 6338,
+      "description": 6338,
+      "name": 6338
+    },
+    "root_field_value_type_counts": {
+      "attack": {
+        "null": 2752,
+        "object": 3586
+      },
+      "description": {
+        "null": 1971,
+        "string": 4367
+      },
+      "name": {
+        "string": 6338
+      }
+    }
+  },
+  "feature_fields": {
+    "actions": {
+      "array_item_count": 6338,
+      "monster_records_with_field": 2276,
+      "monster_records_without_field": 0,
+      "nonempty_array_monster_records": 2276,
+      "value_type_counts": {
+        "array": 2276
+      }
+    },
+    "bonus_actions": {
+      "array_item_count": 380,
+      "monster_records_with_field": 2276,
+      "monster_records_without_field": 0,
+      "nonempty_array_monster_records": 321,
+      "value_type_counts": {
+        "array": 2276
+      }
+    },
+    "legendary_actions": {
+      "array_item_count": 736,
+      "monster_records_with_field": 2276,
+      "monster_records_without_field": 0,
+      "nonempty_array_monster_records": 255,
+      "value_type_counts": {
+        "array": 2276
+      }
+    },
+    "legendary_actions_per_round": {
+      "array_item_count": 0,
+      "monster_records_with_field": 2276,
+      "monster_records_without_field": 0,
+      "nonempty_array_monster_records": 0,
+      "value_type_counts": {
+        "null": 2021,
+        "number": 255
+      }
+    },
+    "legendary_intro": {
+      "array_item_count": 0,
+      "monster_records_with_field": 2276,
+      "monster_records_without_field": 0,
+      "nonempty_array_monster_records": 0,
+      "value_type_counts": {
+        "null": 2273,
+        "string": 3
+      }
+    },
+    "mythic_actions": {
+      "array_item_count": 35,
+      "monster_records_with_field": 2276,
+      "monster_records_without_field": 0,
+      "nonempty_array_monster_records": 17,
+      "value_type_counts": {
+        "array": 2276
+      }
+    },
+    "reaction_intro": {
+      "array_item_count": 0,
+      "monster_records_with_field": 2276,
+      "monster_records_without_field": 0,
+      "nonempty_array_monster_records": 0,
+      "value_type_counts": {
+        "null": 2261,
+        "string": 15
+      }
+    },
+    "reactions": {
+      "array_item_count": 309,
+      "monster_records_with_field": 2276,
+      "monster_records_without_field": 0,
+      "nonempty_array_monster_records": 288,
+      "value_type_counts": {
+        "array": 2276
+      }
+    },
+    "spellcasting": {
+      "array_item_count": 712,
+      "monster_records_with_field": 2276,
+      "monster_records_without_field": 0,
+      "nonempty_array_monster_records": 682,
+      "value_type_counts": {
+        "array": 2276
+      }
+    },
+    "traits": {
+      "array_item_count": 4735,
+      "monster_records_with_field": 2276,
+      "monster_records_without_field": 0,
+      "nonempty_array_monster_records": 1934,
+      "value_type_counts": {
+        "array": 2276
+      }
+    }
+  },
+  "monster_count": 2276,
+  "monster_records_with_object_features": 2276,
+  "monster_records_without_object_features": 0,
+  "source": "data/seeds/seed_monsters.json"
+}

@@ -1,0 +1,1102 @@
+{
+  "rows": [
+    {
+      "action_description": null,
+      "action_name": "Talon",
+      "attack_fields": {
+        "attack_bonus": 4,
+        "automatic_hit": false,
+        "kind": "melee_weapon",
+        "long_range_ft": null,
+        "range_ft": 5,
+        "targets": 1
+      },
+      "attack_is_null": false,
+      "attack_present": true,
+      "damage_present": true,
+      "damage_value": [
+        {
+          "bonus": 2,
+          "damage_types": [
+            "slashing"
+          ],
+          "formula": "1d4"
+        }
+      ],
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 0,
+        "monster_id": 1,
+        "monster_name": "Aarakocra"
+      },
+      "source_action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "slashing"
+              ],
+              "formula": "1d4"
+            }
+          ],
+          "kind": "melee_weapon",
+          "long_range_ft": null,
+          "range_ft": 5,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Talon"
+      }
+    },
+    {
+      "action_description": "piercing damage.",
+      "action_name": "Javelin",
+      "attack_fields": {
+        "attack_bonus": 4,
+        "automatic_hit": false,
+        "kind": "ranged_weapon",
+        "long_range_ft": 120,
+        "range_ft": 30,
+        "targets": 1
+      },
+      "attack_is_null": false,
+      "attack_present": true,
+      "damage_present": true,
+      "damage_value": [
+        {
+          "bonus": 2,
+          "damage_types": [
+            "piercing"
+          ],
+          "formula": "1d6"
+        }
+      ],
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 1,
+        "monster_id": 1,
+        "monster_name": "Aarakocra"
+      },
+      "source_action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      }
+    },
+    {
+      "action_description": "Five aarakocra within 30 feet of each other can magically summon an air elemental. Each of the five must use its action and movement on three consecutive turns to perform an aerial dance and must maintain concentration while doing so (as if concentrating on a spell). When all five have finished their third turn of the dance, the elemental appears in an unoccupied space within 60 feet of them. It is friendly toward them and obeys their spoken commands. It remains for 1 hour, until it or all its summoners die, or until any of its summoners dismisses it as a bonus action. A summoner can't perform the dance again until it finishes a short rest. When the elemental returns to the Elemental Plane of Air, any aarakocra within 5 feet of it can return with it.",
+      "action_name": "Summon Air Elemental",
+      "attack_fields": null,
+      "attack_is_null": true,
+      "attack_present": true,
+      "damage_present": false,
+      "damage_value": null,
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 2,
+        "monster_id": 1,
+        "monster_name": "Aarakocra"
+      },
+      "source_action": {
+        "attack": null,
+        "description": "Five aarakocra within 30 feet of each other can magically summon an air elemental. Each of the five must use its action and movement on three consecutive turns to perform an aerial dance and must maintain concentration while doing so (as if concentrating on a spell). When all five have finished their third turn of the dance, the elemental appears in an unoccupied space within 60 feet of them. It is friendly toward them and obeys their spoken commands. It remains for 1 hour, until it or all its summoners die, or until any of its summoners dismisses it as a bonus action. A summoner can't perform the dance again until it finishes a short rest. When the elemental returns to the Elemental Plane of Air, any aarakocra within 5 feet of it can return with it.",
+        "name": "Summon Air Elemental"
+      }
+    },
+    {
+      "action_description": "The aartuk makes two Branch attacks, two Radiant Pellet attacks, or one of each.",
+      "action_name": "Multiattack",
+      "attack_fields": null,
+      "attack_is_null": true,
+      "attack_present": true,
+      "damage_present": false,
+      "damage_value": null,
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 0,
+        "monster_id": 4,
+        "monster_name": "Aartuk Elder"
+      },
+      "source_action": {
+        "attack": null,
+        "description": "The aartuk makes two Branch attacks, two Radiant Pellet attacks, or one of each.",
+        "name": "Multiattack"
+      }
+    },
+    {
+      "action_description": null,
+      "action_name": "Branch",
+      "attack_fields": {
+        "attack_bonus": 6,
+        "automatic_hit": false,
+        "kind": "melee_weapon",
+        "long_range_ft": null,
+        "range_ft": 10,
+        "targets": 1
+      },
+      "attack_is_null": false,
+      "attack_present": true,
+      "damage_present": true,
+      "damage_value": [
+        {
+          "bonus": 4,
+          "damage_types": [
+            "bludgeoning"
+          ],
+          "formula": "2d6"
+        }
+      ],
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 1,
+        "monster_id": 4,
+        "monster_name": "Aartuk Elder"
+      },
+      "source_action": {
+        "attack": {
+          "attack_bonus": 6,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 4,
+              "damage_types": [
+                "bludgeoning"
+              ],
+              "formula": "2d6"
+            }
+          ],
+          "kind": "melee_weapon",
+          "long_range_ft": null,
+          "range_ft": 10,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Branch"
+      }
+    },
+    {
+      "action_description": "radiant damage.",
+      "action_name": "Radiant Pellet",
+      "attack_fields": {
+        "attack_bonus": 4,
+        "automatic_hit": false,
+        "kind": "ranged_weapon",
+        "long_range_ft": null,
+        "range_ft": 60,
+        "targets": 1
+      },
+      "attack_is_null": false,
+      "attack_present": true,
+      "damage_present": true,
+      "damage_value": [
+        {
+          "bonus": 0,
+          "damage_types": [
+            "radiant"
+          ],
+          "formula": "4d4"
+        }
+      ],
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 2,
+        "monster_id": 4,
+        "monster_name": "Aartuk Elder"
+      },
+      "source_action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 0,
+              "damage_types": [
+                "radiant"
+              ],
+              "formula": "4d4"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": null,
+          "range_ft": 60,
+          "targets": 1
+        },
+        "description": "radiant damage.",
+        "name": "Radiant Pellet"
+      }
+    },
+    {
+      "action_description": "The abjurer makes three Arcane Burst attacks.",
+      "action_name": "Multiattack",
+      "attack_fields": null,
+      "attack_is_null": true,
+      "attack_present": true,
+      "damage_present": false,
+      "damage_value": null,
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 0,
+        "monster_id": 12,
+        "monster_name": "Abjurer Wizard"
+      },
+      "source_action": {
+        "attack": null,
+        "description": "The abjurer makes three Arcane Burst attacks.",
+        "name": "Multiattack"
+      }
+    },
+    {
+      "action_description": "force damage.",
+      "action_name": "Arcane Burst",
+      "attack_fields": {
+        "attack_bonus": 6,
+        "automatic_hit": false,
+        "kind": "ranged_weapon",
+        "long_range_ft": null,
+        "range_ft": 120,
+        "targets": 1
+      },
+      "attack_is_null": false,
+      "attack_present": true,
+      "damage_present": true,
+      "damage_value": [
+        {
+          "bonus": 4,
+          "damage_types": [
+            "force"
+          ],
+          "formula": "3d10"
+        }
+      ],
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 1,
+        "monster_id": 12,
+        "monster_name": "Abjurer Wizard"
+      },
+      "source_action": {
+        "attack": {
+          "attack_bonus": 6,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 4,
+              "damage_types": [
+                "force"
+              ],
+              "formula": "3d10"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": null,
+          "range_ft": 120,
+          "targets": 1
+        },
+        "description": "force damage.",
+        "name": "Arcane Burst"
+      }
+    },
+    {
+      "action_description": "Each creature in a 20-foot cube originating from the abjurer must make a DC 16 Constitution saving throw. On a failed save, a creature takes 8d8 force damage and is pushed up to 10 feet away from the abjurer. On a successful save, a creature takes half as much damage and isn't pushed.",
+      "action_name": "Force Blast",
+      "attack_fields": null,
+      "attack_is_null": true,
+      "attack_present": true,
+      "damage_present": false,
+      "damage_value": null,
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 2,
+        "monster_id": 12,
+        "monster_name": "Abjurer Wizard"
+      },
+      "source_action": {
+        "attack": null,
+        "description": "Each creature in a 20-foot cube originating from the abjurer must make a DC 16 Constitution saving throw. On a failed save, a creature takes 8d8 force damage and is pushed up to 10 feet away from the abjurer. On a successful save, a creature takes half as much damage and isn't pushed.",
+        "name": "Force Blast"
+      }
+    },
+    {
+      "action_description": "The dragon can use its Frightful Presence. It then makes three attacks: one with its bite and two with its claws.",
+      "action_name": "Multiattack",
+      "attack_fields": null,
+      "attack_is_null": true,
+      "attack_present": true,
+      "damage_present": false,
+      "damage_value": null,
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 0,
+        "monster_id": 39,
+        "monster_name": "Adult Red Dragon"
+      },
+      "source_action": {
+        "attack": null,
+        "description": "The dragon can use its Frightful Presence. It then makes three attacks: one with its bite and two with its claws.",
+        "name": "Multiattack"
+      }
+    },
+    {
+      "action_description": null,
+      "action_name": "Bite",
+      "attack_fields": {
+        "attack_bonus": 14,
+        "automatic_hit": false,
+        "kind": "melee_weapon",
+        "long_range_ft": null,
+        "range_ft": 10,
+        "targets": 1
+      },
+      "attack_is_null": false,
+      "attack_present": true,
+      "damage_present": true,
+      "damage_value": [
+        {
+          "bonus": 8,
+          "damage_types": [
+            "piercing"
+          ],
+          "formula": "2d10"
+        },
+        {
+          "bonus": 0,
+          "damage_types": [
+            "fire"
+          ],
+          "formula": "2d6"
+        }
+      ],
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 1,
+        "monster_id": 39,
+        "monster_name": "Adult Red Dragon"
+      },
+      "source_action": {
+        "attack": {
+          "attack_bonus": 14,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 8,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "2d10"
+            },
+            {
+              "bonus": 0,
+              "damage_types": [
+                "fire"
+              ],
+              "formula": "2d6"
+            }
+          ],
+          "kind": "melee_weapon",
+          "long_range_ft": null,
+          "range_ft": 10,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Bite"
+      }
+    },
+    {
+      "action_description": null,
+      "action_name": "Claw",
+      "attack_fields": {
+        "attack_bonus": 14,
+        "automatic_hit": false,
+        "kind": "melee_weapon",
+        "long_range_ft": null,
+        "range_ft": 5,
+        "targets": 1
+      },
+      "attack_is_null": false,
+      "attack_present": true,
+      "damage_present": true,
+      "damage_value": [
+        {
+          "bonus": 8,
+          "damage_types": [
+            "slashing"
+          ],
+          "formula": "2d6"
+        }
+      ],
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 2,
+        "monster_id": 39,
+        "monster_name": "Adult Red Dragon"
+      },
+      "source_action": {
+        "attack": {
+          "attack_bonus": 14,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 8,
+              "damage_types": [
+                "slashing"
+              ],
+              "formula": "2d6"
+            }
+          ],
+          "kind": "melee_weapon",
+          "long_range_ft": null,
+          "range_ft": 5,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Claw"
+      }
+    },
+    {
+      "action_description": null,
+      "action_name": "Tail",
+      "attack_fields": {
+        "attack_bonus": 14,
+        "automatic_hit": false,
+        "kind": "melee_weapon",
+        "long_range_ft": null,
+        "range_ft": 15,
+        "targets": 1
+      },
+      "attack_is_null": false,
+      "attack_present": true,
+      "damage_present": true,
+      "damage_value": [
+        {
+          "bonus": 8,
+          "damage_types": [
+            "bludgeoning"
+          ],
+          "formula": "2d8"
+        }
+      ],
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 3,
+        "monster_id": 39,
+        "monster_name": "Adult Red Dragon"
+      },
+      "source_action": {
+        "attack": {
+          "attack_bonus": 14,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 8,
+              "damage_types": [
+                "bludgeoning"
+              ],
+              "formula": "2d8"
+            }
+          ],
+          "kind": "melee_weapon",
+          "long_range_ft": null,
+          "range_ft": 15,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Tail"
+      }
+    },
+    {
+      "action_description": "Each creature of the dragon's choice that is within 120 feet of the dragon and aware of it must succeed on a DC 19 Wisdom saving throw or become frightened for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success. If a creature's saving throw is successful or the effect ends for it, the creature is immune to the dragon's Frightful Presence for the next 24 hours.",
+      "action_name": "Frightful Presence",
+      "attack_fields": null,
+      "attack_is_null": true,
+      "attack_present": true,
+      "damage_present": false,
+      "damage_value": null,
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 4,
+        "monster_id": 39,
+        "monster_name": "Adult Red Dragon"
+      },
+      "source_action": {
+        "attack": null,
+        "description": "Each creature of the dragon's choice that is within 120 feet of the dragon and aware of it must succeed on a DC 19 Wisdom saving throw or become frightened for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success. If a creature's saving throw is successful or the effect ends for it, the creature is immune to the dragon's Frightful Presence for the next 24 hours.",
+        "name": "Frightful Presence"
+      }
+    },
+    {
+      "action_description": "The dragon exhales fire in a 60-foot cone. Each creature in that area must make a DC 21 Dexterity saving throw, taking 18d6 fire damage on a failed save, or half as much damage on a successful one.",
+      "action_name": "Fire Breath (Recharge 5-6)",
+      "attack_fields": null,
+      "attack_is_null": true,
+      "attack_present": true,
+      "damage_present": false,
+      "damage_value": null,
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 5,
+        "monster_id": 39,
+        "monster_name": "Adult Red Dragon"
+      },
+      "source_action": {
+        "attack": null,
+        "description": "The dragon exhales fire in a 60-foot cone. Each creature in that area must make a DC 21 Dexterity saving throw, taking 18d6 fire damage on a failed save, or half as much damage on a successful one.",
+        "name": "Fire Breath (Recharge 5-6)"
+      }
+    },
+    {
+      "action_description": "The dragon turtle makes one Bite or Tail attack and two Claw attacks.",
+      "action_name": "Multiattack",
+      "attack_fields": null,
+      "attack_is_null": true,
+      "attack_present": true,
+      "damage_present": false,
+      "damage_value": null,
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 0,
+        "monster_id": 106,
+        "monster_name": "Ancient Dragon Turtle"
+      },
+      "source_action": {
+        "attack": null,
+        "description": "The dragon turtle makes one Bite or Tail attack and two Claw attacks.",
+        "name": "Multiattack"
+      }
+    },
+    {
+      "action_description": null,
+      "action_name": "Bite",
+      "attack_fields": {
+        "attack_bonus": 16,
+        "automatic_hit": false,
+        "kind": "melee_weapon",
+        "long_range_ft": null,
+        "range_ft": 15,
+        "targets": 1
+      },
+      "attack_is_null": false,
+      "attack_present": true,
+      "damage_present": true,
+      "damage_value": [
+        {
+          "bonus": 9,
+          "damage_types": [
+            "piercing"
+          ],
+          "formula": "1d12"
+        },
+        {
+          "bonus": 0,
+          "damage_types": [
+            "lightning"
+          ],
+          "formula": "2d12"
+        }
+      ],
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 1,
+        "monster_id": 106,
+        "monster_name": "Ancient Dragon Turtle"
+      },
+      "source_action": {
+        "attack": {
+          "attack_bonus": 16,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 9,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d12"
+            },
+            {
+              "bonus": 0,
+              "damage_types": [
+                "lightning"
+              ],
+              "formula": "2d12"
+            }
+          ],
+          "kind": "melee_weapon",
+          "long_range_ft": null,
+          "range_ft": 15,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Bite"
+      }
+    },
+    {
+      "action_description": null,
+      "action_name": "Claw",
+      "attack_fields": {
+        "attack_bonus": 16,
+        "automatic_hit": false,
+        "kind": "melee_weapon",
+        "long_range_ft": null,
+        "range_ft": 15,
+        "targets": 1
+      },
+      "attack_is_null": false,
+      "attack_present": true,
+      "damage_present": true,
+      "damage_value": [
+        {
+          "bonus": 9,
+          "damage_types": [
+            "slashing"
+          ],
+          "formula": "2d8"
+        }
+      ],
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 2,
+        "monster_id": 106,
+        "monster_name": "Ancient Dragon Turtle"
+      },
+      "source_action": {
+        "attack": {
+          "attack_bonus": 16,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 9,
+              "damage_types": [
+                "slashing"
+              ],
+              "formula": "2d8"
+            }
+          ],
+          "kind": "melee_weapon",
+          "long_range_ft": null,
+          "range_ft": 15,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Claw"
+      }
+    },
+    {
+      "action_description": "If the target is a creature, it must succeed on a DC 24 Strength saving throw or be knocked prone.",
+      "action_name": "Tail",
+      "attack_fields": {
+        "attack_bonus": 16,
+        "automatic_hit": false,
+        "kind": "melee_weapon",
+        "long_range_ft": null,
+        "range_ft": 15,
+        "targets": 1
+      },
+      "attack_is_null": false,
+      "attack_present": true,
+      "damage_present": true,
+      "damage_value": [
+        {
+          "bonus": 9,
+          "damage_types": [
+            "bludgeoning"
+          ],
+          "formula": "2d10"
+        }
+      ],
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 3,
+        "monster_id": 106,
+        "monster_name": "Ancient Dragon Turtle"
+      },
+      "source_action": {
+        "attack": {
+          "attack_bonus": 16,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 9,
+              "damage_types": [
+                "bludgeoning"
+              ],
+              "formula": "2d10"
+            }
+          ],
+          "kind": "melee_weapon",
+          "long_range_ft": null,
+          "range_ft": 15,
+          "targets": 1
+        },
+        "description": "If the target is a creature, it must succeed on a DC 24 Strength saving throw or be knocked prone.",
+        "name": "Tail"
+      }
+    },
+    {
+      "action_description": "The dragon turtle exhales steam in a 90-foot cone. Each creature in that area must make a DC 24 Constitution saving throw, taking 15d8 fire damage on a failed save, or half as much damage on a successful one. Being underwater doesn't grant resistance against this damage.",
+      "action_name": "Steam Breath (Recharge 5-6)",
+      "attack_fields": null,
+      "attack_is_null": true,
+      "attack_present": true,
+      "damage_present": false,
+      "damage_value": null,
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 4,
+        "monster_id": 106,
+        "monster_name": "Ancient Dragon Turtle"
+      },
+      "source_action": {
+        "attack": null,
+        "description": "The dragon turtle exhales steam in a 90-foot cone. Each creature in that area must make a DC 24 Constitution saving throw, taking 15d8 fire damage on a failed save, or half as much damage on a successful one. Being underwater doesn't grant resistance against this damage.",
+        "name": "Steam Breath (Recharge 5-6)"
+      }
+    },
+    {
+      "action_description": null,
+      "action_name": "Morningstar",
+      "attack_fields": {
+        "attack_bonus": 4,
+        "automatic_hit": false,
+        "kind": "melee_weapon",
+        "long_range_ft": null,
+        "range_ft": 5,
+        "targets": 1
+      },
+      "attack_is_null": false,
+      "attack_present": true,
+      "damage_present": true,
+      "damage_value": [
+        {
+          "bonus": 2,
+          "damage_types": [
+            "piercing"
+          ],
+          "formula": "2d8"
+        }
+      ],
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 0,
+        "monster_id": 402,
+        "monster_name": "Bugbear"
+      },
+      "source_action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "2d8"
+            }
+          ],
+          "kind": "melee_weapon",
+          "long_range_ft": null,
+          "range_ft": 5,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Morningstar"
+      }
+    },
+    {
+      "action_description": "piercing damage in melee or 1d6 + 2 piercing damage at range.",
+      "action_name": "Javelin",
+      "attack_fields": {
+        "attack_bonus": 4,
+        "automatic_hit": false,
+        "kind": "ranged_weapon",
+        "long_range_ft": 120,
+        "range_ft": 30,
+        "targets": 1
+      },
+      "attack_is_null": false,
+      "attack_present": true,
+      "damage_present": true,
+      "damage_value": [
+        {
+          "bonus": 2,
+          "damage_types": [
+            "piercing"
+          ],
+          "formula": "2d6"
+        }
+      ],
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 1,
+        "monster_id": 402,
+        "monster_name": "Bugbear"
+      },
+      "source_action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "2d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage in melee or 1d6 + 2 piercing damage at range.",
+        "name": "Javelin"
+      }
+    },
+    {
+      "action_description": "The bugbear makes two melee attacks.",
+      "action_name": "Multiattack",
+      "attack_fields": null,
+      "attack_is_null": true,
+      "attack_present": true,
+      "damage_present": false,
+      "damage_value": null,
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 0,
+        "monster_id": 403,
+        "monster_name": "Bugbear Chief"
+      },
+      "source_action": {
+        "attack": null,
+        "description": "The bugbear makes two melee attacks.",
+        "name": "Multiattack"
+      }
+    },
+    {
+      "action_description": null,
+      "action_name": "Morningstar",
+      "attack_fields": {
+        "attack_bonus": 5,
+        "automatic_hit": false,
+        "kind": "melee_weapon",
+        "long_range_ft": null,
+        "range_ft": 5,
+        "targets": 1
+      },
+      "attack_is_null": false,
+      "attack_present": true,
+      "damage_present": true,
+      "damage_value": [
+        {
+          "bonus": 3,
+          "damage_types": [
+            "piercing"
+          ],
+          "formula": "2d8"
+        }
+      ],
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 1,
+        "monster_id": 403,
+        "monster_name": "Bugbear Chief"
+      },
+      "source_action": {
+        "attack": {
+          "attack_bonus": 5,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 3,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "2d8"
+            }
+          ],
+          "kind": "melee_weapon",
+          "long_range_ft": null,
+          "range_ft": 5,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Morningstar"
+      }
+    },
+    {
+      "action_description": "piercing damage in melee or 1d6 + 3 piercing damage at range.",
+      "action_name": "Javelin",
+      "attack_fields": {
+        "attack_bonus": 5,
+        "automatic_hit": false,
+        "kind": "ranged_weapon",
+        "long_range_ft": 120,
+        "range_ft": 30,
+        "targets": 1
+      },
+      "attack_is_null": false,
+      "attack_present": true,
+      "damage_present": true,
+      "damage_value": [
+        {
+          "bonus": 3,
+          "damage_types": [
+            "piercing"
+          ],
+          "formula": "2d6"
+        }
+      ],
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 2,
+        "monster_id": 403,
+        "monster_name": "Bugbear Chief"
+      },
+      "source_action": {
+        "attack": {
+          "attack_bonus": 5,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 3,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "2d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage in melee or 1d6 + 3 piercing damage at range.",
+        "name": "Javelin"
+      }
+    },
+    {
+      "action_description": null,
+      "action_name": "Javelin",
+      "attack_fields": {
+        "attack_bonus": 1,
+        "automatic_hit": false,
+        "kind": "melee_weapon",
+        "long_range_ft": null,
+        "range_ft": 5,
+        "targets": 1
+      },
+      "attack_is_null": false,
+      "attack_present": true,
+      "damage_present": true,
+      "damage_value": [
+        {
+          "bonus": -1,
+          "damage_types": [
+            "piercing"
+          ],
+          "formula": "1d6"
+        }
+      ],
+      "description_present": true,
+      "name_present": true,
+      "source": {
+        "feature_category": "actions",
+        "feature_index": 0,
+        "monster_id": 1372,
+        "monster_name": "Icewind Kobold Zombie"
+      },
+      "source_action": {
+        "attack": {
+          "attack_bonus": 1,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": -1,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "melee_weapon",
+          "long_range_ft": null,
+          "range_ft": 5,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Javelin"
+      }
+    }
+  ],
+  "scope": "Every curated-sample features.actions occurrence.",
+  "source": "data/seeds/seed_monsters.json"
+}

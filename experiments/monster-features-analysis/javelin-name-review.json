@@ -1,0 +1,1941 @@
+{
+  "equality": "Whole parsed action JSON value; object-key order ignored, all values and array order retained. This grouping does not establish equivalence.",
+  "occurrence_count": 40,
+  "occurrences": [
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 1,
+      "monster_id": 1,
+      "monster_name": "Aarakocra"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 1,
+      "monster_id": 2,
+      "monster_name": "Aarakocra Simulacrum"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "2d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage in melee or 1d6 + 2 piercing damage at range.",
+        "name": "Javelin"
+      },
+      "action_index": 1,
+      "monster_id": 402,
+      "monster_name": "Bugbear"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 5,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 3,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "2d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage in melee or 1d6 + 3 piercing damage at range.",
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 403,
+      "monster_name": "Bugbear Chief"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 1,
+      "monster_id": 562,
+      "monster_name": "Crushing Wave Reaver"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            },
+            {
+              "bonus": 0,
+              "damage_types": [
+                "fire"
+              ],
+              "formula": "1d4"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 699,
+      "monster_name": "Dragon Army Soldier"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 724,
+      "monster_name": "Dread Warrior"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage, or 2d6 + 2 piercing damage while enlarged.",
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 765,
+      "monster_name": "Duergar"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage, or 2d6 + 2 piercing damage while enlarged.",
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 767,
+      "monster_name": "Duergar Darkhaft"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage, or 2d6 + 2 piercing damage while enlarged.",
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 774,
+      "monster_name": "Duergar Keeper of the Flame"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 6,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 4,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage, or 2d6 + 4 piercing damage while under the effect of Enlarge.",
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 783,
+      "monster_name": "Duergar Stone Guard (MPMM)"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 6,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 4,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage, or 2d6 + 4 piercing damage while enlarged.",
+        "name": "Javelin"
+      },
+      "action_index": 1,
+      "monster_id": 784,
+      "monster_name": "Duergar Stone Guard (MTF)"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 7,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 4,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage, or 2d6 + 4 piercing damage while under the effect of Enlarge.",
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 785,
+      "monster_name": "Duergar Warlord (MPMM)"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 7,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 4,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage, or 2d6 + 4 piercing damage while enlarged.",
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 786,
+      "monster_name": "Duergar Warlord (MTF)"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 3,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 1,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 792,
+      "monster_name": "Duodrone"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 2,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 0,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 1166,
+      "monster_name": "Goblin Boss"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 6,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 4,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 1178,
+      "monster_name": "Goliath Warrior"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 5,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 3,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "2d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 1,
+      "monster_id": 1253,
+      "monster_name": "Half-Ogre (Ogrillon)"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 1309,
+      "monster_name": "Hobgoblin Captain"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 9,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 3,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 3,
+      "monster_id": 1314,
+      "monster_name": "Hobgoblin Warlord"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 5,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 3,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 1,
+      "monster_id": 1352,
+      "monster_name": "Hybrid Flier"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 0,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": -2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 1,
+      "monster_id": 1371,
+      "monster_name": "Icewind Kobold"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 1,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": -1,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "melee_weapon",
+          "long_range_ft": null,
+          "range_ft": 5,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Javelin"
+      },
+      "action_index": 0,
+      "monster_id": 1372,
+      "monster_name": "Icewind Kobold Zombie"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 3,
+      "monster_id": 1531,
+      "monster_name": "Lizardfolk"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 2,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 0,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 1,
+      "monster_id": 1658,
+      "monster_name": "Monodrone"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 6,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 4,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "2d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 1,
+      "monster_id": 1757,
+      "monster_name": "Ogre"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 5,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 3,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 1,
+      "monster_id": 1781,
+      "monster_name": "Orc"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 5,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 3,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 1782,
+      "monster_name": "Orc Blade of Ilneval"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 6,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 4,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 1795,
+      "monster_name": "Orog"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 3,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 1,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 1845,
+      "monster_name": "Plasmoid Explorer"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "2d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 3,
+      "monster_id": 1869,
+      "monster_name": "Pterafolk"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 3,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 1,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            },
+            {
+              "bonus": 0,
+              "damage_types": [
+                "poison"
+              ],
+              "formula": "1d8"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 2220,
+      "monster_name": "Ssurran Poisoner"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 5,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 3,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": null,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 2333,
+      "monster_name": "Tasloi"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 6,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 4,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": null,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 2334,
+      "monster_name": "Tasloi Sniper"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 5,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 3,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 2343,
+      "monster_name": "Thayan Warrior"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 3,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 1,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 2418,
+      "monster_name": "Tridrone"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 5,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 3,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 2533,
+      "monster_name": "Warforged Soldier"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 5,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 3,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 2535,
+      "monster_name": "Warforged Warrior"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 7,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 4,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 2712,
+      "monster_name": "Zakya Rakshasa"
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 16,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 8,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "2d6"
+            },
+            {
+              "bonus": 0,
+              "damage_types": [
+                "fire"
+              ],
+              "formula": "8d8"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Javelin"
+      },
+      "action_index": 2,
+      "monster_id": 2717,
+      "monster_name": "Zariel (MTF)"
+    }
+  ],
+  "selection": "Action name exactly equals the string 'Javelin'.",
+  "source": "data/seeds/seed_monsters.json",
+  "strict_variant_count": 24,
+  "strict_variants": [
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "occurrence_count": 6,
+      "occurrences": [
+        {
+          "action_index": 1,
+          "monster_id": 1,
+          "monster_name": "Aarakocra"
+        },
+        {
+          "action_index": 1,
+          "monster_id": 2,
+          "monster_name": "Aarakocra Simulacrum"
+        },
+        {
+          "action_index": 1,
+          "monster_id": 562,
+          "monster_name": "Crushing Wave Reaver"
+        },
+        {
+          "action_index": 2,
+          "monster_id": 724,
+          "monster_name": "Dread Warrior"
+        },
+        {
+          "action_index": 2,
+          "monster_id": 1309,
+          "monster_name": "Hobgoblin Captain"
+        },
+        {
+          "action_index": 3,
+          "monster_id": 1531,
+          "monster_name": "Lizardfolk"
+        }
+      ],
+      "variant_index": 1
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "2d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage in melee or 1d6 + 2 piercing damage at range.",
+        "name": "Javelin"
+      },
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "action_index": 1,
+          "monster_id": 402,
+          "monster_name": "Bugbear"
+        }
+      ],
+      "variant_index": 2
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 5,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 3,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "2d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage in melee or 1d6 + 3 piercing damage at range.",
+        "name": "Javelin"
+      },
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "action_index": 2,
+          "monster_id": 403,
+          "monster_name": "Bugbear Chief"
+        }
+      ],
+      "variant_index": 3
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            },
+            {
+              "bonus": 0,
+              "damage_types": [
+                "fire"
+              ],
+              "formula": "1d4"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Javelin"
+      },
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "action_index": 2,
+          "monster_id": 699,
+          "monster_name": "Dragon Army Soldier"
+        }
+      ],
+      "variant_index": 4
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage, or 2d6 + 2 piercing damage while enlarged.",
+        "name": "Javelin"
+      },
+      "occurrence_count": 3,
+      "occurrences": [
+        {
+          "action_index": 2,
+          "monster_id": 765,
+          "monster_name": "Duergar"
+        },
+        {
+          "action_index": 2,
+          "monster_id": 767,
+          "monster_name": "Duergar Darkhaft"
+        },
+        {
+          "action_index": 2,
+          "monster_id": 774,
+          "monster_name": "Duergar Keeper of the Flame"
+        }
+      ],
+      "variant_index": 5
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 6,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 4,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage, or 2d6 + 4 piercing damage while under the effect of Enlarge.",
+        "name": "Javelin"
+      },
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "action_index": 2,
+          "monster_id": 783,
+          "monster_name": "Duergar Stone Guard (MPMM)"
+        }
+      ],
+      "variant_index": 6
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 6,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 4,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage, or 2d6 + 4 piercing damage while enlarged.",
+        "name": "Javelin"
+      },
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "action_index": 1,
+          "monster_id": 784,
+          "monster_name": "Duergar Stone Guard (MTF)"
+        }
+      ],
+      "variant_index": 7
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 7,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 4,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage, or 2d6 + 4 piercing damage while under the effect of Enlarge.",
+        "name": "Javelin"
+      },
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "action_index": 2,
+          "monster_id": 785,
+          "monster_name": "Duergar Warlord (MPMM)"
+        }
+      ],
+      "variant_index": 8
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 7,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 4,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage, or 2d6 + 4 piercing damage while enlarged.",
+        "name": "Javelin"
+      },
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "action_index": 2,
+          "monster_id": 786,
+          "monster_name": "Duergar Warlord (MTF)"
+        }
+      ],
+      "variant_index": 9
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 3,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 1,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "occurrence_count": 3,
+      "occurrences": [
+        {
+          "action_index": 2,
+          "monster_id": 792,
+          "monster_name": "Duodrone"
+        },
+        {
+          "action_index": 2,
+          "monster_id": 1845,
+          "monster_name": "Plasmoid Explorer"
+        },
+        {
+          "action_index": 2,
+          "monster_id": 2418,
+          "monster_name": "Tridrone"
+        }
+      ],
+      "variant_index": 10
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 2,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 0,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "occurrence_count": 2,
+      "occurrences": [
+        {
+          "action_index": 2,
+          "monster_id": 1166,
+          "monster_name": "Goblin Boss"
+        },
+        {
+          "action_index": 1,
+          "monster_id": 1658,
+          "monster_name": "Monodrone"
+        }
+      ],
+      "variant_index": 11
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 6,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 4,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "occurrence_count": 2,
+      "occurrences": [
+        {
+          "action_index": 2,
+          "monster_id": 1178,
+          "monster_name": "Goliath Warrior"
+        },
+        {
+          "action_index": 2,
+          "monster_id": 1795,
+          "monster_name": "Orog"
+        }
+      ],
+      "variant_index": 12
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 5,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 3,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "2d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "action_index": 1,
+          "monster_id": 1253,
+          "monster_name": "Half-Ogre (Ogrillon)"
+        }
+      ],
+      "variant_index": 13
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 9,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 3,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "action_index": 3,
+          "monster_id": 1314,
+          "monster_name": "Hobgoblin Warlord"
+        }
+      ],
+      "variant_index": 14
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 5,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 3,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "occurrence_count": 6,
+      "occurrences": [
+        {
+          "action_index": 1,
+          "monster_id": 1352,
+          "monster_name": "Hybrid Flier"
+        },
+        {
+          "action_index": 1,
+          "monster_id": 1781,
+          "monster_name": "Orc"
+        },
+        {
+          "action_index": 2,
+          "monster_id": 1782,
+          "monster_name": "Orc Blade of Ilneval"
+        },
+        {
+          "action_index": 2,
+          "monster_id": 2343,
+          "monster_name": "Thayan Warrior"
+        },
+        {
+          "action_index": 2,
+          "monster_id": 2533,
+          "monster_name": "Warforged Soldier"
+        },
+        {
+          "action_index": 2,
+          "monster_id": 2535,
+          "monster_name": "Warforged Warrior"
+        }
+      ],
+      "variant_index": 15
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 0,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": -2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "action_index": 1,
+          "monster_id": 1371,
+          "monster_name": "Icewind Kobold"
+        }
+      ],
+      "variant_index": 16
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 1,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": -1,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "melee_weapon",
+          "long_range_ft": null,
+          "range_ft": 5,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Javelin"
+      },
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "action_index": 0,
+          "monster_id": 1372,
+          "monster_name": "Icewind Kobold Zombie"
+        }
+      ],
+      "variant_index": 17
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 6,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 4,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "2d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "action_index": 1,
+          "monster_id": 1757,
+          "monster_name": "Ogre"
+        }
+      ],
+      "variant_index": 18
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "2d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "action_index": 3,
+          "monster_id": 1869,
+          "monster_name": "Pterafolk"
+        }
+      ],
+      "variant_index": 19
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 3,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 1,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            },
+            {
+              "bonus": 0,
+              "damage_types": [
+                "poison"
+              ],
+              "formula": "1d8"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Javelin"
+      },
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "action_index": 2,
+          "monster_id": 2220,
+          "monster_name": "Ssurran Poisoner"
+        }
+      ],
+      "variant_index": 20
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 5,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 3,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": null,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Javelin"
+      },
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "action_index": 2,
+          "monster_id": 2333,
+          "monster_name": "Tasloi"
+        }
+      ],
+      "variant_index": 21
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 6,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 4,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": null,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Javelin"
+      },
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "action_index": 2,
+          "monster_id": 2334,
+          "monster_name": "Tasloi Sniper"
+        }
+      ],
+      "variant_index": 22
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 7,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 4,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      },
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "action_index": 2,
+          "monster_id": 2712,
+          "monster_name": "Zakya Rakshasa"
+        }
+      ],
+      "variant_index": 23
+    },
+    {
+      "action": {
+        "attack": {
+          "attack_bonus": 16,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 8,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "2d6"
+            },
+            {
+              "bonus": 0,
+              "damage_types": [
+                "fire"
+              ],
+              "formula": "8d8"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Javelin"
+      },
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "action_index": 2,
+          "monster_id": 2717,
+          "monster_name": "Zariel (MTF)"
+        }
+      ],
+      "variant_index": 24
+    }
+  ]
+}

@@ -1,0 +1,1049 @@
+{
+  "attack_profiles": {
+    "attack_entry_count": 313,
+    "field_presence_counts": {
+      "attack_mod": 182,
+      "damage": 313,
+      "damage_mod": 182,
+      "damage_type": 313,
+      "hands": 313,
+      "range": 74,
+      "special": 1,
+      "type": 313
+    },
+    "profiles_per_weapon_record": {
+      "1": 123,
+      "2": 95
+    },
+    "range_value_types": {
+      "object": 74
+    },
+    "type_value_counts": {
+      "\"melee\"": 293,
+      "\"ranged\"": 20
+    },
+    "weapon_records_with_multiple_profiles": 95
+  },
+  "base_weapon": {
+    "distinct_label_count": 27,
+    "non_null_record_count": 131,
+    "record_count_by_label": {
+      "Battleaxe": 6,
+      "Club": 1,
+      "Dagger": 16,
+      "Dart": 1,
+      "Flail": 3,
+      "Greataxe": 8,
+      "Greatclub": 1,
+      "Greatsword": 7,
+      "Javelin": 2,
+      "Longbow": 2,
+      "Longsword": 25,
+      "Mace": 9,
+      "Maul": 1,
+      "Morningstar": 2,
+      "Pike": 1,
+      "Quarterstaff": 3,
+      "Rapier": 1,
+      "Scimitar": 1,
+      "Shortbow": 1,
+      "Shortsword": 3,
+      "Sickle": 3,
+      "Sling": 2,
+      "Spear": 7,
+      "Trident": 6,
+      "War Pick": 4,
+      "Warhammer": 9,
+      "Whip": 6
+    }
+  },
+  "baseitems_value_counts": {
+    "0": 218
+  },
+  "database_schema_source": "backend/database/init_database.py: weapons table",
+  "exact_action_name_candidate_summary": {
+    "action_names_also_seen_as_base_weapon_labels": 26,
+    "distinct_base_weapon_labels_in_weapon_seed": 27,
+    "groups": [
+      {
+        "action_name": "Javelin",
+        "action_occurrence_count": 40,
+        "attack_value_type_counts": {
+          "object": 40
+        },
+        "base_weapon_record_ids": [
+          83,
+          84
+        ],
+        "strict_full_action_variant_count": 24,
+        "weapon_name_record_ids": [
+          82
+        ]
+      },
+      {
+        "action_name": "Shortsword",
+        "action_occurrence_count": 65,
+        "attack_value_type_counts": {
+          "null": 1,
+          "object": 64
+        },
+        "base_weapon_record_ids": [
+          26,
+          53,
+          119
+        ],
+        "strict_full_action_variant_count": 29,
+        "weapon_name_record_ids": [
+          140
+        ]
+      },
+      {
+        "action_name": "Quarterstaff",
+        "action_occurrence_count": 37,
+        "attack_value_type_counts": {
+          "null": 1,
+          "object": 36
+        },
+        "base_weapon_record_ids": [
+          9,
+          128,
+          157
+        ],
+        "strict_full_action_variant_count": 21,
+        "weapon_name_record_ids": [
+          121
+        ]
+      },
+      {
+        "action_name": "Spear",
+        "action_occurrence_count": 48,
+        "attack_value_type_counts": {
+          "object": 48
+        },
+        "base_weapon_record_ids": [
+          16,
+          39,
+          47,
+          86,
+          129,
+          149,
+          212
+        ],
+        "strict_full_action_variant_count": 29,
+        "weapon_name_record_ids": [
+          148
+        ]
+      },
+      {
+        "action_name": "Club",
+        "action_occurrence_count": 19,
+        "attack_value_type_counts": {
+          "object": 19
+        },
+        "base_weapon_record_ids": [
+          88
+        ],
+        "strict_full_action_variant_count": 10,
+        "weapon_name_record_ids": [
+          25
+        ]
+      },
+      {
+        "action_name": "Flail",
+        "action_occurrence_count": 7,
+        "attack_value_type_counts": {
+          "object": 7
+        },
+        "base_weapon_record_ids": [
+          34,
+          52,
+          131
+        ],
+        "strict_full_action_variant_count": 6,
+        "weapon_name_record_ids": [
+          51
+        ]
+      },
+      {
+        "action_name": "Handaxe",
+        "action_occurrence_count": 6,
+        "attack_value_type_counts": {
+          "object": 6
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 5,
+        "weapon_name_record_ids": [
+          72
+        ]
+      },
+      {
+        "action_name": "Dagger",
+        "action_occurrence_count": 75,
+        "attack_value_type_counts": {
+          "object": 75
+        },
+        "base_weapon_record_ids": [
+          10,
+          15,
+          22,
+          28,
+          29,
+          30,
+          41,
+          50,
+          85,
+          87,
+          112,
+          122,
+          126,
+          127,
+          197,
+          200
+        ],
+        "strict_full_action_variant_count": 36,
+        "weapon_name_record_ids": [
+          27
+        ]
+      },
+      {
+        "action_name": "Staff",
+        "action_occurrence_count": 8,
+        "attack_value_type_counts": {
+          "object": 8
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 8,
+        "weapon_name_record_ids": [
+          151
+        ]
+      },
+      {
+        "action_name": "Scimitar",
+        "action_occurrence_count": 35,
+        "attack_value_type_counts": {
+          "object": 35
+        },
+        "base_weapon_record_ids": [
+          134
+        ],
+        "strict_full_action_variant_count": 23,
+        "weapon_name_record_ids": [
+          133
+        ]
+      },
+      {
+        "action_name": "Longbow",
+        "action_occurrence_count": 42,
+        "attack_value_type_counts": {
+          "null": 1,
+          "object": 41
+        },
+        "base_weapon_record_ids": [
+          97,
+          115
+        ],
+        "strict_full_action_variant_count": 26,
+        "weapon_name_record_ids": [
+          96
+        ]
+      },
+      {
+        "action_name": "Light Crossbow",
+        "action_occurrence_count": 14,
+        "attack_value_type_counts": {
+          "object": 14
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 10,
+        "weapon_name_record_ids": [
+          92
+        ]
+      },
+      {
+        "action_name": "Longsword",
+        "action_occurrence_count": 76,
+        "attack_value_type_counts": {
+          "null": 1,
+          "object": 75
+        },
+        "base_weapon_record_ids": [
+          14,
+          32,
+          36,
+          37,
+          75,
+          105,
+          110,
+          137,
+          138,
+          175,
+          178,
+          181,
+          182,
+          183,
+          184,
+          185,
+          186,
+          187,
+          188,
+          189,
+          190,
+          191,
+          192,
+          193,
+          194
+        ],
+        "strict_full_action_variant_count": 54,
+        "weapon_name_record_ids": [
+          98
+        ]
+      },
+      {
+        "action_name": "Morningstar",
+        "action_occurrence_count": 15,
+        "attack_value_type_counts": {
+          "object": 15
+        },
+        "base_weapon_record_ids": [
+          125,
+          195
+        ],
+        "strict_full_action_variant_count": 13,
+        "weapon_name_record_ids": [
+          111
+        ]
+      },
+      {
+        "action_name": "Greataxe",
+        "action_occurrence_count": 21,
+        "attack_value_type_counts": {
+          "object": 21
+        },
+        "base_weapon_record_ids": [
+          4,
+          17,
+          18,
+          54,
+          67,
+          116,
+          118,
+          214
+        ],
+        "strict_full_action_variant_count": 14,
+        "weapon_name_record_ids": [
+          61
+        ]
+      },
+      {
+        "action_name": "Warhammer",
+        "action_occurrence_count": 3,
+        "attack_value_type_counts": {
+          "object": 3
+        },
+        "base_weapon_record_ids": [
+          5,
+          43,
+          44,
+          65,
+          69,
+          107,
+          180,
+          209,
+          216
+        ],
+        "strict_full_action_variant_count": 3,
+        "weapon_name_record_ids": [
+          206
+        ]
+      },
+      {
+        "action_name": "Whip",
+        "action_occurrence_count": 4,
+        "attack_value_type_counts": {
+          "object": 4
+        },
+        "base_weapon_record_ids": [
+          45,
+          60,
+          90,
+          91,
+          106,
+          135
+        ],
+        "strict_full_action_variant_count": 4,
+        "weapon_name_record_ids": [
+          210
+        ]
+      },
+      {
+        "action_name": "Shortbow",
+        "action_occurrence_count": 35,
+        "attack_value_type_counts": {
+          "object": 35
+        },
+        "base_weapon_record_ids": [
+          48
+        ],
+        "strict_full_action_variant_count": 20,
+        "weapon_name_record_ids": [
+          139
+        ]
+      },
+      {
+        "action_name": "Glaive",
+        "action_occurrence_count": 10,
+        "attack_value_type_counts": {
+          "object": 10
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 9,
+        "weapon_name_record_ids": [
+          59
+        ]
+      },
+      {
+        "action_name": "Greatsword",
+        "action_occurrence_count": 34,
+        "attack_value_type_counts": {
+          "object": 34
+        },
+        "base_weapon_record_ids": [
+          12,
+          63,
+          73,
+          130,
+          147,
+          208,
+          213
+        ],
+        "strict_full_action_variant_count": 26,
+        "weapon_name_record_ids": [
+          64
+        ]
+      },
+      {
+        "action_name": "Ranseur of Torture",
+        "action_occurrence_count": 1,
+        "attack_value_type_counts": {
+          "object": 1
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 1,
+        "weapon_name_record_ids": [
+          123
+        ]
+      },
+      {
+        "action_name": "Mace",
+        "action_occurrence_count": 18,
+        "attack_value_type_counts": {
+          "object": 18
+        },
+        "base_weapon_record_ids": [
+          21,
+          23,
+          95,
+          101,
+          102,
+          103,
+          104,
+          114,
+          204
+        ],
+        "strict_full_action_variant_count": 15,
+        "weapon_name_record_ids": [
+          100
+        ]
+      },
+      {
+        "action_name": "Rapier",
+        "action_occurrence_count": 8,
+        "attack_value_type_counts": {
+          "object": 8
+        },
+        "base_weapon_record_ids": [
+          142
+        ],
+        "strict_full_action_variant_count": 6,
+        "weapon_name_record_ids": [
+          124
+        ]
+      },
+      {
+        "action_name": "Heavy Crossbow",
+        "action_occurrence_count": 22,
+        "attack_value_type_counts": {
+          "object": 22
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 13,
+        "weapon_name_record_ids": [
+          74
+        ]
+      },
+      {
+        "action_name": "Maul",
+        "action_occurrence_count": 8,
+        "attack_value_type_counts": {
+          "object": 8
+        },
+        "base_weapon_record_ids": [
+          70
+        ],
+        "strict_full_action_variant_count": 8,
+        "weapon_name_record_ids": [
+          108
+        ]
+      },
+      {
+        "action_name": "Trident",
+        "action_occurrence_count": 15,
+        "attack_value_type_counts": {
+          "object": 15
+        },
+        "base_weapon_record_ids": [
+          24,
+          33,
+          42,
+          196,
+          199,
+          207
+        ],
+        "strict_full_action_variant_count": 12,
+        "weapon_name_record_ids": [
+          198
+        ]
+      },
+      {
+        "action_name": "Greatclub",
+        "action_occurrence_count": 14,
+        "attack_value_type_counts": {
+          "object": 14
+        },
+        "base_weapon_record_ids": [
+          38
+        ],
+        "strict_full_action_variant_count": 12,
+        "weapon_name_record_ids": [
+          62
+        ]
+      },
+      {
+        "action_name": "Pike",
+        "action_occurrence_count": 2,
+        "attack_value_type_counts": {
+          "object": 2
+        },
+        "base_weapon_record_ids": [
+          123
+        ],
+        "strict_full_action_variant_count": 2,
+        "weapon_name_record_ids": [
+          120
+        ]
+      },
+      {
+        "action_name": "Storm Boomerang",
+        "action_occurrence_count": 1,
+        "attack_value_type_counts": {
+          "object": 1
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 1,
+        "weapon_name_record_ids": [
+          177
+        ]
+      },
+      {
+        "action_name": "War Pick",
+        "action_occurrence_count": 9,
+        "attack_value_type_counts": {
+          "object": 9
+        },
+        "base_weapon_record_ids": [
+          81,
+          99,
+          176,
+          211
+        ],
+        "strict_full_action_variant_count": 5,
+        "weapon_name_record_ids": [
+          205
+        ]
+      },
+      {
+        "action_name": "Lance",
+        "action_occurrence_count": 3,
+        "attack_value_type_counts": {
+          "object": 3
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 3,
+        "weapon_name_record_ids": [
+          89
+        ]
+      },
+      {
+        "action_name": "Battleaxe",
+        "action_occurrence_count": 10,
+        "attack_value_type_counts": {
+          "object": 10
+        },
+        "base_weapon_record_ids": [
+          7,
+          8,
+          20,
+          49,
+          76,
+          217
+        ],
+        "strict_full_action_variant_count": 9,
+        "weapon_name_record_ids": [
+          11
+        ]
+      },
+      {
+        "action_name": "Hooked Shortspear",
+        "action_occurrence_count": 1,
+        "attack_value_type_counts": {
+          "object": 1
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 1,
+        "weapon_name_record_ids": [
+          78
+        ]
+      },
+      {
+        "action_name": "Light Repeating Crossbow",
+        "action_occurrence_count": 1,
+        "attack_value_type_counts": {
+          "object": 1
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 1,
+        "weapon_name_record_ids": [
+          94
+        ]
+      },
+      {
+        "action_name": "Wrought-Iron Tower",
+        "action_occurrence_count": 1,
+        "attack_value_type_counts": {
+          "object": 1
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 1,
+        "weapon_name_record_ids": [
+          216
+        ]
+      },
+      {
+        "action_name": "Hand Crossbow",
+        "action_occurrence_count": 16,
+        "attack_value_type_counts": {
+          "object": 16
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 10,
+        "weapon_name_record_ids": [
+          71
+        ]
+      },
+      {
+        "action_name": "Sling",
+        "action_occurrence_count": 14,
+        "attack_value_type_counts": {
+          "object": 14
+        },
+        "base_weapon_record_ids": [
+          146,
+          202
+        ],
+        "strict_full_action_variant_count": 4,
+        "weapon_name_record_ids": [
+          145
+        ]
+      },
+      {
+        "action_name": "Staff of Power",
+        "action_occurrence_count": 1,
+        "attack_value_type_counts": {
+          "object": 1
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 1,
+        "weapon_name_record_ids": [
+          162
+        ]
+      },
+      {
+        "action_name": "Staff of the Woodlands",
+        "action_occurrence_count": 1,
+        "attack_value_type_counts": {
+          "object": 1
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 1,
+        "weapon_name_record_ids": [
+          174
+        ]
+      },
+      {
+        "action_name": "Scourge of Shadow",
+        "action_occurrence_count": 1,
+        "attack_value_type_counts": {
+          "object": 1
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 1,
+        "weapon_name_record_ids": [
+          135
+        ]
+      },
+      {
+        "action_name": "Dart",
+        "action_occurrence_count": 10,
+        "attack_value_type_counts": {
+          "object": 10
+        },
+        "base_weapon_record_ids": [
+          136
+        ],
+        "strict_full_action_variant_count": 6,
+        "weapon_name_record_ids": [
+          31
+        ]
+      },
+      {
+        "action_name": "Hoopak",
+        "action_occurrence_count": 1,
+        "attack_value_type_counts": {
+          "object": 1
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 1,
+        "weapon_name_record_ids": [
+          79
+        ]
+      },
+      {
+        "action_name": "Net",
+        "action_occurrence_count": 2,
+        "attack_value_type_counts": {
+          "object": 2
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 2,
+        "weapon_name_record_ids": [
+          113
+        ]
+      },
+      {
+        "action_name": "Halberd",
+        "action_occurrence_count": 3,
+        "attack_value_type_counts": {
+          "object": 3
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 2,
+        "weapon_name_record_ids": [
+          68
+        ]
+      },
+      {
+        "action_name": "Wand of Orcus",
+        "action_occurrence_count": 2,
+        "attack_value_type_counts": {
+          "object": 2
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 2,
+        "weapon_name_record_ids": [
+          204
+        ]
+      },
+      {
+        "action_name": "Light Hammer",
+        "action_occurrence_count": 2,
+        "attack_value_type_counts": {
+          "object": 2
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 2,
+        "weapon_name_record_ids": [
+          93
+        ]
+      },
+      {
+        "action_name": "Blowgun",
+        "action_occurrence_count": 1,
+        "attack_value_type_counts": {
+          "object": 1
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 1,
+        "weapon_name_record_ids": [
+          19
+        ]
+      },
+      {
+        "action_name": "Silver Sword",
+        "action_occurrence_count": 2,
+        "attack_value_type_counts": {
+          "object": 2
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 2,
+        "weapon_name_record_ids": [
+          143
+        ]
+      },
+      {
+        "action_name": "Nightbringer",
+        "action_occurrence_count": 1,
+        "attack_value_type_counts": {
+          "object": 1
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 1,
+        "weapon_name_record_ids": [
+          114
+        ]
+      },
+      {
+        "action_name": "Sun Blade",
+        "action_occurrence_count": 1,
+        "attack_value_type_counts": {
+          "object": 1
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 1,
+        "weapon_name_record_ids": [
+          178
+        ]
+      },
+      {
+        "action_name": "Moonblade",
+        "action_occurrence_count": 1,
+        "attack_value_type_counts": {
+          "object": 1
+        },
+        "base_weapon_record_ids": [],
+        "strict_full_action_variant_count": 1,
+        "weapon_name_record_ids": [
+          110
+        ]
+      }
+    ],
+    "matching_action_name_group_count": 51,
+    "matching_action_occurrence_count": 767,
+    "occurrences_whose_names_equal_a_base_weapon_label": 664
+  },
+  "rarity_value_counts": {
+    "\"artifact\"": 27,
+    "\"common\"": 3,
+    "\"legendary\"": 43,
+    "\"rare\"": 37,
+    "\"uncommon\"": 15,
+    "\"unknown (magic)\"": 15,
+    "\"unknown\"": 8,
+    "\"very rare\"": 28,
+    "null": 42
+  },
+  "root_field_names": [
+    "ability",
+    "ammo_type",
+    "attack",
+    "base_weapon",
+    "baseitems",
+    "bonus_ac",
+    "bonus_saving_throw",
+    "bonus_spell_attack",
+    "bonus_spell_save_dc",
+    "created_at",
+    "crit_threshold",
+    "curse",
+    "entries",
+    "focus",
+    "grants_language",
+    "grants_proficiency",
+    "id",
+    "light",
+    "modify_speed",
+    "name",
+    "property",
+    "quick_rules",
+    "rarity",
+    "recharge",
+    "req_attune",
+    "resist",
+    "sentient",
+    "spells",
+    "tier",
+    "updated_at",
+    "weapon_attack_bonus",
+    "weapon_category",
+    "weapon_damage_bonus",
+    "weight"
+  ],
+  "root_field_presence_counts": {
+    "ability": 218,
+    "ammo_type": 218,
+    "attack": 218,
+    "base_weapon": 218,
+    "baseitems": 218,
+    "bonus_ac": 218,
+    "bonus_saving_throw": 218,
+    "bonus_spell_attack": 218,
+    "bonus_spell_save_dc": 218,
+    "created_at": 218,
+    "crit_threshold": 218,
+    "curse": 218,
+    "entries": 218,
+    "focus": 218,
+    "grants_language": 218,
+    "grants_proficiency": 218,
+    "id": 218,
+    "light": 218,
+    "modify_speed": 218,
+    "name": 218,
+    "property": 218,
+    "quick_rules": 218,
+    "rarity": 218,
+    "recharge": 218,
+    "req_attune": 218,
+    "resist": 218,
+    "sentient": 218,
+    "spells": 218,
+    "tier": 218,
+    "updated_at": 218,
+    "weapon_attack_bonus": 218,
+    "weapon_category": 218,
+    "weapon_damage_bonus": 218,
+    "weight": 218
+  },
+  "root_field_value_type_counts": {
+    "ability": {
+      "object": 218
+    },
+    "ammo_type": {
+      "null": 203,
+      "string": 15
+    },
+    "attack": {
+      "array": 218
+    },
+    "base_weapon": {
+      "null": 87,
+      "string": 131
+    },
+    "baseitems": {
+      "number": 218
+    },
+    "bonus_ac": {
+      "null": 212,
+      "number": 6
+    },
+    "bonus_saving_throw": {
+      "null": 215,
+      "number": 3
+    },
+    "bonus_spell_attack": {
+      "null": 208,
+      "number": 10
+    },
+    "bonus_spell_save_dc": {
+      "null": 215,
+      "number": 3
+    },
+    "created_at": {
+      "string": 218
+    },
+    "crit_threshold": {
+      "null": 214,
+      "number": 4
+    },
+    "curse": {
+      "number": 218
+    },
+    "entries": {
+      "array": 218
+    },
+    "focus": {
+      "array": 218
+    },
+    "grants_language": {
+      "number": 218
+    },
+    "grants_proficiency": {
+      "number": 218
+    },
+    "id": {
+      "number": 218
+    },
+    "light": {
+      "array": 218
+    },
+    "modify_speed": {
+      "object": 218
+    },
+    "name": {
+      "string": 218
+    },
+    "property": {
+      "array": 218
+    },
+    "quick_rules": {
+      "string": 218
+    },
+    "rarity": {
+      "null": 42,
+      "string": 176
+    },
+    "recharge": {
+      "object": 218
+    },
+    "req_attune": {
+      "null": 86,
+      "string": 132
+    },
+    "resist": {
+      "array": 218
+    },
+    "sentient": {
+      "number": 218
+    },
+    "spells": {
+      "array": 218
+    },
+    "tier": {
+      "null": 181,
+      "string": 37
+    },
+    "updated_at": {
+      "string": 218
+    },
+    "weapon_attack_bonus": {
+      "null": 218
+    },
+    "weapon_category": {
+      "null": 7,
+      "string": 211
+    },
+    "weapon_damage_bonus": {
+      "null": 218
+    },
+    "weight": {
+      "null": 12,
+      "number": 206
+    }
+  },
+  "seed_weapon_record_count": 218,
+  "source": "data/seeds/seed_weapons.json",
+  "weapon_category_value_counts": {
+    "\"martial\"": 114,
+    "\"simple\"": 97,
+    "null": 7
+  }
+}

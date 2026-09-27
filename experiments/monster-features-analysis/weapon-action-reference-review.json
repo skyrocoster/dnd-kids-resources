@@ -1,0 +1,649 @@
+{
+  "candidate_name_groups": [
+    {
+      "action_name": "Javelin",
+      "candidate_records": [
+        {
+          "candidate_basis": [
+            "exact weapons.name string"
+          ],
+          "source_weapon_record": {
+            "ability": {},
+            "ammo_type": null,
+            "attack": [
+              {
+                "damage": "1d6",
+                "damage_type": "piercing",
+                "hands": 1,
+                "range": {
+                  "max": 120,
+                  "min": 30
+                },
+                "type": "melee"
+              }
+            ],
+            "base_weapon": null,
+            "baseitems": 0,
+            "bonus_ac": null,
+            "bonus_saving_throw": null,
+            "bonus_spell_attack": null,
+            "bonus_spell_save_dc": null,
+            "created_at": "2026-07-24 15:04:50",
+            "crit_threshold": null,
+            "curse": 0,
+            "entries": [],
+            "focus": [],
+            "grants_language": 0,
+            "grants_proficiency": 0,
+            "id": 82,
+            "light": [],
+            "modify_speed": {},
+            "name": "Javelin",
+            "property": [
+              "T"
+            ],
+            "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d6 piercing damage +{weapon_damage_bonus} (range 30/120 ft).",
+            "rarity": null,
+            "recharge": {},
+            "req_attune": null,
+            "resist": [],
+            "sentient": 0,
+            "spells": [],
+            "tier": null,
+            "updated_at": "2026-07-24 15:04:50",
+            "weapon_attack_bonus": null,
+            "weapon_category": "simple",
+            "weapon_damage_bonus": null,
+            "weight": 2.0
+          }
+        },
+        {
+          "candidate_basis": [
+            "exact weapons.base_weapon string"
+          ],
+          "source_weapon_record": {
+            "ability": {},
+            "ammo_type": null,
+            "attack": [
+              {
+                "attack_mod": 2,
+                "damage": "1d6",
+                "damage_mod": 2,
+                "damage_type": "piercing",
+                "hands": 1,
+                "range": {
+                  "max": 120,
+                  "min": 30
+                },
+                "type": "melee"
+              }
+            ],
+            "base_weapon": "Javelin",
+            "baseitems": 0,
+            "bonus_ac": null,
+            "bonus_saving_throw": null,
+            "bonus_spell_attack": null,
+            "bonus_spell_save_dc": null,
+            "created_at": "2026-07-24 15:04:50",
+            "crit_threshold": null,
+            "curse": 1,
+            "entries": [
+              "You gain a +2 bonus to attack and damage rolls made with this magic weapon. When you throw it, its normal and long ranges both increase by 30 feet, and it deals one extra die of damage on a hit. After you throw it and it hits or misses, it flies back to your hand immediately.",
+              {
+                "entries": [
+                  "This weapon is cursed, and becoming attuned to it extends the curse to you. Until the curse is broken with Remove Curse or similar magic, you are unwilling to part with the weapon, keeping it within reach at all times. In addition, you have disadvantage on attack rolls made with weapons other than this one."
+                ],
+                "name": "Curse",
+                "type": "entries"
+              },
+              "Whenever you roll a 1 on an attack roll using this weapon, the weapon bends or flies to hit you in the back. Make a new attack roll with advantage against your own AC. If the result is a hit, you take damage as if you had attacked yourself with the javelin."
+            ],
+            "focus": [],
+            "grants_language": 0,
+            "grants_proficiency": 0,
+            "id": 83,
+            "light": [],
+            "modify_speed": {},
+            "name": "Javelin of Backbiting",
+            "property": [
+              "T"
+            ],
+            "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d6 piercing damage +{weapon_damage_bonus} (range 30/120 ft).",
+            "rarity": "very rare",
+            "recharge": {},
+            "req_attune": "True",
+            "resist": [],
+            "sentient": 0,
+            "spells": [],
+            "tier": null,
+            "updated_at": "2026-07-24 15:04:50",
+            "weapon_attack_bonus": null,
+            "weapon_category": "simple",
+            "weapon_damage_bonus": null,
+            "weight": 2.0
+          }
+        },
+        {
+          "candidate_basis": [
+            "exact weapons.base_weapon string"
+          ],
+          "source_weapon_record": {
+            "ability": {},
+            "ammo_type": null,
+            "attack": [
+              {
+                "damage": "1d6",
+                "damage_type": "piercing",
+                "hands": 1,
+                "range": {
+                  "max": 120,
+                  "min": 30
+                },
+                "type": "melee"
+              }
+            ],
+            "base_weapon": "Javelin",
+            "baseitems": 0,
+            "bonus_ac": null,
+            "bonus_saving_throw": null,
+            "bonus_spell_attack": null,
+            "bonus_spell_save_dc": null,
+            "created_at": "2026-07-24 15:04:50",
+            "crit_threshold": null,
+            "curse": 0,
+            "entries": [
+              "This javelin is a magic weapon. When you hurl it and speak its command word, it transforms into a bolt of lightning, forming a line 5 feet wide that extends out from you to a target within 120 feet. Each creature in the line excluding you and the target must make a DC13 Dexterity saving throw, taking {@damage 4d6} lightning damage on a failed save, and half as much damage on a successful one. The lightning bolt turns back into a javelin when it reaches the target. Make a ranged weapon attack against the target. On a hit, the target takes damage from the javelin plus {@damage 4d6} lightning damage.",
+              "The javelin's property can't be used again until the next dawn. In the meantime, the javelin can still be used as a magic weapon."
+            ],
+            "focus": [],
+            "grants_language": 0,
+            "grants_proficiency": 0,
+            "id": 84,
+            "light": [],
+            "modify_speed": {},
+            "name": "Javelin of Lightning",
+            "property": [
+              "T"
+            ],
+            "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d6 piercing damage +{weapon_damage_bonus} (range 30/120 ft).",
+            "rarity": "uncommon",
+            "recharge": {},
+            "req_attune": null,
+            "resist": [],
+            "sentient": 0,
+            "spells": [],
+            "tier": "major",
+            "updated_at": "2026-07-24 15:04:50",
+            "weapon_attack_bonus": null,
+            "weapon_category": "simple",
+            "weapon_damage_bonus": null,
+            "weight": 2.0
+          }
+        }
+      ]
+    },
+    {
+      "action_name": "Morningstar",
+      "candidate_records": [
+        {
+          "candidate_basis": [
+            "exact weapons.name string"
+          ],
+          "source_weapon_record": {
+            "ability": {},
+            "ammo_type": null,
+            "attack": [
+              {
+                "damage": "1d8",
+                "damage_type": "piercing",
+                "hands": 1,
+                "type": "melee"
+              }
+            ],
+            "base_weapon": null,
+            "baseitems": 0,
+            "bonus_ac": null,
+            "bonus_saving_throw": null,
+            "bonus_spell_attack": null,
+            "bonus_spell_save_dc": null,
+            "created_at": "2026-07-24 15:04:50",
+            "crit_threshold": null,
+            "curse": 0,
+            "entries": [],
+            "focus": [],
+            "grants_language": 0,
+            "grants_proficiency": 0,
+            "id": 111,
+            "light": [],
+            "modify_speed": {},
+            "name": "Morningstar",
+            "property": [],
+            "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 piercing damage +{weapon_damage_bonus}.",
+            "rarity": null,
+            "recharge": {},
+            "req_attune": null,
+            "resist": [],
+            "sentient": 0,
+            "spells": [],
+            "tier": null,
+            "updated_at": "2026-07-24 15:04:50",
+            "weapon_attack_bonus": null,
+            "weapon_category": "martial",
+            "weapon_damage_bonus": null,
+            "weight": 4.0
+          }
+        },
+        {
+          "candidate_basis": [
+            "exact weapons.base_weapon string"
+          ],
+          "source_weapon_record": {
+            "ability": {},
+            "ammo_type": null,
+            "attack": [
+              {
+                "attack_mod": 2,
+                "damage": "1d8",
+                "damage_mod": 2,
+                "damage_type": "piercing",
+                "hands": 1,
+                "type": "melee"
+              }
+            ],
+            "base_weapon": "Morningstar",
+            "baseitems": 0,
+            "bonus_ac": null,
+            "bonus_saving_throw": null,
+            "bonus_spell_attack": null,
+            "bonus_spell_save_dc": null,
+            "created_at": "2026-07-24 15:04:50",
+            "crit_threshold": null,
+            "curse": 0,
+            "entries": [
+              "The spikes of this iron morningstar glow with sickly, pale light. The death rune is inscribed on its shaft and inlaid with pearl.",
+              "You gain a +2 bonus to attack and damage rolls made with this weapon, and attacks with this weapon deal necrotic damage instead of piercing damage.",
+              "When you attack a creature with this weapon and roll a 20 on the attack roll, you gain 10 temporary hit points. Any creature that hits you with a melee attack while you have 1 or more of these temporary hit points takes 10 necrotic damage.",
+              {
+                "entries": [
+                  "As a bonus action, you can invoke the weapon's rune, unleashing the screams of every creature slain by the weapon in one cacophonous burst. Each creature of your choice within 60 feet of you must succeed on a DC15 Wisdom saving throw or have the stunned condition until the start of your next turn.",
+                  "Once the rune has been invoked, it can't be invoked again until the next dawn."
+                ],
+                "name": "Invoking the Rune",
+                "type": "entries"
+              }
+            ],
+            "focus": [],
+            "grants_language": 0,
+            "grants_proficiency": 0,
+            "id": 125,
+            "light": [],
+            "modify_speed": {},
+            "name": "Reaper's Scream",
+            "property": [],
+            "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 piercing damage +{weapon_damage_bonus}.",
+            "rarity": "legendary",
+            "recharge": {},
+            "req_attune": "True",
+            "resist": [],
+            "sentient": 0,
+            "spells": [],
+            "tier": null,
+            "updated_at": "2026-07-24 15:04:50",
+            "weapon_attack_bonus": null,
+            "weapon_category": "martial",
+            "weapon_damage_bonus": null,
+            "weight": 4.0
+          }
+        },
+        {
+          "candidate_basis": [
+            "exact weapons.base_weapon string"
+          ],
+          "source_weapon_record": {
+            "ability": {},
+            "ammo_type": null,
+            "attack": [
+              {
+                "attack_mod": 1,
+                "damage": "1d8",
+                "damage_mod": 1,
+                "damage_type": "piercing",
+                "hands": 1,
+                "type": "melee"
+              }
+            ],
+            "base_weapon": "Morningstar",
+            "baseitems": 0,
+            "bonus_ac": null,
+            "bonus_saving_throw": null,
+            "bonus_spell_attack": null,
+            "bonus_spell_save_dc": null,
+            "created_at": "2026-07-24 15:04:50",
+            "crit_threshold": null,
+            "curse": 0,
+            "entries": [
+              "Carrying the power of Bane, this adamantine morningstar sports foot-long spikes and has a jagged blade on its pommel.",
+              {
+                "entries": [
+                  "The Bloody End is a sentient lawful evil weapon with an Intelligence of 22, a Wisdom of 18, and a Charisma of 24. It has hearing and {@sense darkvision} out to a range of 120 feet.",
+                  "The weapon communicates telepathically with its wielder and can speak, read, and understand Common and Infernal."
+                ],
+                "name": "Sentience",
+                "type": "entries"
+              },
+              {
+                "entries": [
+                  "A tyrannical {@creature pit fiend} named Izeelzee lives within The Bloody End. The weapon boisterously pushes its wielder to subjugate others and to never back down from a challenge. If the wielder doesn't demand fealty from others, the weapon is happy to demand it on their behalf."
+                ],
+                "name": "Personality",
+                "type": "entries"
+              },
+              {
+                "entries": [
+                  "The morningstar grants the following benefits in its dormant state:",
+                  {
+                    "items": [
+                      "You can speak, read, and write Infernal.",
+                      "You gain a +1 bonus to attack and damage rolls made with this magic weapon.",
+                      "While holding the morningstar, you can use an action to cast one of the following spells from it (save DC13): Charm Person, Dominate Person, or Fear. Once a spell has been cast using the morningstar, that spell can't be cast from it again until the next dawn.",
+                      "While holding the morningstar, you have advantage on Charisma ({@skill Intimidation}) checks."
+                    ],
+                    "type": "list"
+                  }
+                ],
+                "name": "Dormant",
+                "type": "entries"
+              },
+              {
+                "entries": [
+                  "The Arms of the Betrayers advance in power in the same manner as the Vestiges of Divergence. In its dormant state, each of these artifacts has one {@table Artifact Properties; Minor Beneficial Properties|dmg|minor beneficial} property and one {@table Artifact Properties; Minor Detrimental Properties|dmg|minor detrimental} property. When the artifact attains an awakened state, it gains an additional {@table Artifact Properties; Minor Beneficial Properties|dmg|minor beneficial} property and an additional {@table Artifact Properties; Minor Detrimental Properties|dmg|minor detrimental} property. When the item reaches its exalted state, it gains a {@table Artifact Properties; Major Beneficial Properties|dmg|major beneficial} property. See \"Artifact Properties\" in chapter 7 of the Dungeon Master's Guide for more information."
+                ],
+                "name": "Betrayer Artifact Properties",
+                "type": "inset"
+              }
+            ],
+            "focus": [],
+            "grants_language": 1,
+            "grants_proficiency": 0,
+            "id": 195,
+            "light": [],
+            "modify_speed": {},
+            "name": "The Bloody End (Dormant)",
+            "property": [
+              "Vst|EGW"
+            ],
+            "quick_rules": "Attack +{weapon_attack_bonus}, deal 1d8 piercing damage +{weapon_damage_bonus}.",
+            "rarity": "artifact",
+            "recharge": {},
+            "req_attune": "True",
+            "resist": [],
+            "sentient": 1,
+            "spells": [
+              {
+                "charge_uses": 1,
+                "name": "charm person",
+                "recharge_time": "daily"
+              },
+              {
+                "charge_uses": 1,
+                "name": "dominate person",
+                "recharge_time": "daily"
+              },
+              {
+                "charge_uses": 1,
+                "name": "fear",
+                "recharge_time": "daily"
+              }
+            ],
+            "tier": null,
+            "updated_at": "2026-07-24 15:04:50",
+            "weapon_attack_bonus": null,
+            "weapon_category": "martial",
+            "weapon_damage_bonus": null,
+            "weight": 4.0
+          }
+        }
+      ]
+    }
+  ],
+  "monster_source": "data/seeds/seed_monsters.json",
+  "sample_action_occurrence_count_with_candidate_name": 6,
+  "sample_action_occurrences": [
+    {
+      "action_name": "Javelin",
+      "candidate_base_weapon_ids": [
+        83,
+        84
+      ],
+      "candidate_basis": [
+        "exact weapons.name string",
+        "exact weapons.base_weapon string"
+      ],
+      "candidate_weapon_name_ids": [
+        82
+      ],
+      "feature_category": "actions",
+      "feature_index": 1,
+      "monster_id": 1,
+      "monster_name": "Aarakocra",
+      "source_action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage.",
+        "name": "Javelin"
+      }
+    },
+    {
+      "action_name": "Morningstar",
+      "candidate_base_weapon_ids": [
+        125,
+        195
+      ],
+      "candidate_basis": [
+        "exact weapons.name string",
+        "exact weapons.base_weapon string"
+      ],
+      "candidate_weapon_name_ids": [
+        111
+      ],
+      "feature_category": "actions",
+      "feature_index": 0,
+      "monster_id": 402,
+      "monster_name": "Bugbear",
+      "source_action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "2d8"
+            }
+          ],
+          "kind": "melee_weapon",
+          "long_range_ft": null,
+          "range_ft": 5,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Morningstar"
+      }
+    },
+    {
+      "action_name": "Javelin",
+      "candidate_base_weapon_ids": [
+        83,
+        84
+      ],
+      "candidate_basis": [
+        "exact weapons.name string",
+        "exact weapons.base_weapon string"
+      ],
+      "candidate_weapon_name_ids": [
+        82
+      ],
+      "feature_category": "actions",
+      "feature_index": 1,
+      "monster_id": 402,
+      "monster_name": "Bugbear",
+      "source_action": {
+        "attack": {
+          "attack_bonus": 4,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 2,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "2d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage in melee or 1d6 + 2 piercing damage at range.",
+        "name": "Javelin"
+      }
+    },
+    {
+      "action_name": "Morningstar",
+      "candidate_base_weapon_ids": [
+        125,
+        195
+      ],
+      "candidate_basis": [
+        "exact weapons.name string",
+        "exact weapons.base_weapon string"
+      ],
+      "candidate_weapon_name_ids": [
+        111
+      ],
+      "feature_category": "actions",
+      "feature_index": 1,
+      "monster_id": 403,
+      "monster_name": "Bugbear Chief",
+      "source_action": {
+        "attack": {
+          "attack_bonus": 5,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 3,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "2d8"
+            }
+          ],
+          "kind": "melee_weapon",
+          "long_range_ft": null,
+          "range_ft": 5,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Morningstar"
+      }
+    },
+    {
+      "action_name": "Javelin",
+      "candidate_base_weapon_ids": [
+        83,
+        84
+      ],
+      "candidate_basis": [
+        "exact weapons.name string",
+        "exact weapons.base_weapon string"
+      ],
+      "candidate_weapon_name_ids": [
+        82
+      ],
+      "feature_category": "actions",
+      "feature_index": 2,
+      "monster_id": 403,
+      "monster_name": "Bugbear Chief",
+      "source_action": {
+        "attack": {
+          "attack_bonus": 5,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": 3,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "2d6"
+            }
+          ],
+          "kind": "ranged_weapon",
+          "long_range_ft": 120,
+          "range_ft": 30,
+          "targets": 1
+        },
+        "description": "piercing damage in melee or 1d6 + 3 piercing damage at range.",
+        "name": "Javelin"
+      }
+    },
+    {
+      "action_name": "Javelin",
+      "candidate_base_weapon_ids": [
+        83,
+        84
+      ],
+      "candidate_basis": [
+        "exact weapons.name string",
+        "exact weapons.base_weapon string"
+      ],
+      "candidate_weapon_name_ids": [
+        82
+      ],
+      "feature_category": "actions",
+      "feature_index": 0,
+      "monster_id": 1372,
+      "monster_name": "Icewind Kobold Zombie",
+      "source_action": {
+        "attack": {
+          "attack_bonus": 1,
+          "automatic_hit": false,
+          "damage": [
+            {
+              "bonus": -1,
+              "damage_types": [
+                "piercing"
+              ],
+              "formula": "1d6"
+            }
+          ],
+          "kind": "melee_weapon",
+          "long_range_ft": null,
+          "range_ft": 5,
+          "targets": 1
+        },
+        "description": null,
+        "name": "Javelin"
+      }
+    }
+  ],
+  "selection_rule": "Candidate rows are included only when a sample action name exactly equals weapons.name or weapons.base_weapon. This is a string-match review aid, not an asserted weapon/action relationship.",
+  "weapon_source": "data/seeds/seed_weapons.json"
+}
