@@ -10,7 +10,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "A general-purpose responsive grid for an arbitrary number of titled content regions. It does not define section types or depend on a specific page or data model.",
+          "A general-purpose responsive grid for an arbitrary number of titled content regions. Choose a column count or auto to wrap regions before text columns get too narrow.",
       },
     },
   },
@@ -27,6 +27,7 @@ interface RegionArgs {
 interface DetailRegionGridArgs {
   regions: RegionArgs[];
   regionCount: number;
+  columns: number | "auto";
 }
 
 const maxRegionCount = 12;
@@ -35,9 +36,18 @@ export const ArbitraryRegions: StoryObj<DetailRegionGridArgs> = {
   name: "Detail regions — change the count",
   args: {
     regionCount: 3,
+    columns: 3,
     regions: [
-      { title: "Project notes", subtitle: "Recent updates", text: "The first draft is ready for review." },
-      { title: "Open questions", subtitle: "Decisions to make", text: "Choose a date for the next check-in." },
+      {
+        title: "Project notes",
+        subtitle: "Recent updates",
+        text: "The first draft is ready for review. Add notes about what changed and what still needs a closer look before the next meeting.",
+      },
+      {
+        title: "Open questions",
+        subtitle: "Decisions to make",
+        text: "Choose a date for the next check-in.",
+      },
       { title: "References", subtitle: "Useful links", text: "Design brief and meeting notes." },
     ],
   },
@@ -45,6 +55,12 @@ export const ArbitraryRegions: StoryObj<DetailRegionGridArgs> = {
     regionCount: {
       control: { type: "range", min: 0, max: maxRegionCount, step: 1 },
       description: "Try zero through twelve regions. The preview buttons adjust this count too.",
+    },
+    columns: {
+      control: "select",
+      options: ["auto", 1, 2, 3, 4, 5, 6],
+      description:
+        "Choose a column count, or auto for columns that wrap when text would be too narrow.",
     },
     regions: {
       control: "object",
@@ -55,16 +71,20 @@ export const ArbitraryRegions: StoryObj<DetailRegionGridArgs> = {
     docs: {
       description: {
         story:
-          "Change the number of regions and their content with Controls or the preview buttons. The grid accepts any count without predefined section names.",
+          "Change the number of regions and their content with Controls or the preview buttons. Try one column for long text, or auto to fit as many readable columns as space allows.",
       },
     },
   },
-  render: ({ regions, regionCount }) => {
+  render: function DetailRegionGridPlayground({ regions, regionCount, columns }) {
     const [, updateArgs] = useArgs<DetailRegionGridArgs>();
     const visibleRegions = Array.from({ length: regionCount }, (_, index) => {
       const region = regions[index];
       return region
-        ? { title: region.title, subtitle: region.subtitle || undefined, content: <p>{region.text}</p> }
+        ? {
+            title: region.title,
+            subtitle: region.subtitle || undefined,
+            content: <p>{region.text}</p>,
+          }
         : {
             title: `Extra region ${index + 1}`,
             subtitle: "Custom content",
@@ -74,7 +94,11 @@ export const ArbitraryRegions: StoryObj<DetailRegionGridArgs> = {
 
     return (
       <div className="detail-region-grid-playground">
-        <div className="detail-region-grid-playground-controls" role="group" aria-label="Adjust region count">
+        <div
+          className="detail-region-grid-playground-controls"
+          role="group"
+          aria-label="Adjust region count"
+        >
           <button
             type="button"
             onClick={() => updateArgs({ regionCount: Math.max(0, regionCount - 1) })}
@@ -94,7 +118,7 @@ export const ArbitraryRegions: StoryObj<DetailRegionGridArgs> = {
           </button>
         </div>
         <div className="detail-region-grid-playground__surface">
-          <DetailRegionGrid regions={visibleRegions} />
+          <DetailRegionGrid regions={visibleRegions} columns={columns} />
         </div>
       </div>
     );

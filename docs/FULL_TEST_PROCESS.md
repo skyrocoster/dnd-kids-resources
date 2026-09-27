@@ -57,7 +57,7 @@ The `--list` output is authoritative. The process currently covers:
 10. TypeScript project checking (`npm run typecheck` from `frontend/`).
 11. All Python tests under `backend/tests` with `.venv/Scripts/python.exe -m pytest`, including the read-only
     integration tests against the frozen `data/seeds/*.json`, with Python warnings converted to errors, pytest
-    stopping at its first failure, and the 97% coverage gate from `pyproject.toml`.
+    stopping at its first failure.
 12. Frontend Vitest unit tests (`npm test` from `frontend/`), stopping at the first failure.
 13. Shared development-service health through `dev.ps1 status`.
 14. Frontend real-backend API tests (`npm run test:api -- --bail 1` from `frontend/`). This entrypoint creates a

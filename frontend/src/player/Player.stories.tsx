@@ -22,7 +22,12 @@ function sampleMap() {
     room_id: 1,
     z: 0,
     origin: [1, 1],
-    cells: [[0, 0], [1, 0], [0, 1], [1, 1]],
+    cells: [
+      [0, 0],
+      [1, 0],
+      [0, 1],
+      [1, 1],
+    ],
     title: "Library",
   });
   layout.doors.push({
@@ -72,7 +77,11 @@ export const FloorPickerOptions: Story = {
   name: "Floor picker — three levels",
   render: () => (
     <FloorPicker
-      floors={[{ z: -1, title: "Basement" }, { z: 0, title: "Ground" }, { z: 1, title: "Tower" }]}
+      floors={[
+        { z: -1, title: "Basement" },
+        { z: 0, title: "Ground" },
+        { z: 1, title: "Tower" },
+      ]}
       selectedZ={0}
       onSelectFloor={() => {}}
     />

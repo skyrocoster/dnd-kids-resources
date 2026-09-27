@@ -13,5 +13,9 @@ type Story = StoryObj<typeof meta>;
 
 export const DungeonBrowserEmpty: Story = {
   name: "Dungeon browser — empty collection",
-  render: () => <MemoryRouter><DungeonBrowserPage /></MemoryRouter>,
+  render: () => (
+    <MemoryRouter>
+      <DungeonBrowserPage />
+    </MemoryRouter>
+  ),
 };

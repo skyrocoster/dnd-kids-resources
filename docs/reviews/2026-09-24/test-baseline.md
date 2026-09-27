@@ -13,7 +13,7 @@ The commands, environment, and results below are historical evidence. They were 
 
 | Surface | Entry point and configuration | Coverage |
 | --- | --- | --- |
-| Backend | From the repository root: `.venv/Scripts/python.exe -m pytest`. Discovery is `backend/tests/`; pytest's configured options include quiet output, strict markers/config, coverage for `backend/app`, and a 97% coverage minimum (`pyproject.toml`). | 27 test modules. The suite includes app boot and error contracts, database helpers and cache behavior, schema/persistence/seeding, reference text and parsing, migrations, and router/API behavior. `backend/tests/test_integration_real_data.py` is marked `integration` but remains in the default run. Its fixture builds a temporary database from the frozen seeds and checks read-only real-data serialization, including collection rows and details. |
+| Backend | From the repository root: `.venv/Scripts/python.exe -m pytest`. Discovery is `backend/tests/`; pytest's configured options include quiet output and strict markers/config. | 27 test modules. The suite includes app boot and error contracts, database helpers and cache behavior, schema/persistence/seeding, reference text and parsing, migrations, and router/API behavior. `backend/tests/test_integration_real_data.py` is marked `integration` but remains in the default run. Its fixture builds a temporary database from the frozen seeds and checks read-only real-data serialization, including collection rows and details. |
 | Frontend default Vitest suite | From `frontend/`: `npm run test:check` applies the known-failure comparison to the default `vitest run` suite. `npm test` is the direct Vitest entrypoint. `frontend/vitest.config.ts` defines a jsdom `unit` project and a headless Chromium `storybook` project; both are in the default config. The unit project uses up to six workers and excludes only `src/api/__tests__/healthClient.test.ts`. | 153 source test files matching the configured `*.test.ts`, `*.test.tsx`, and `*.test.mjs` patterns. Tests span feature models/forms/pages, shared components, routing, and client-side state. The Storybook project supplies browser-based story tests. |
 | Dedicated API-client suite | From `frontend/`: `npm run test:api`. `frontend/vitest.api.config.ts` selects `src/api/**/*.test.ts` in the Node environment. | Five API test files cover the generated-client facade, query invalidation, static contract checks, and `healthClient.test.ts`, which creates a temporary database and starts a bounded Uvicorn process for a real API call. This entrypoint overlaps some client tests in the default Vitest suite. |
 | Isolated Storybook suite | From `frontend/`: `npm run test:storybook`. | Runs only the Storybook Vitest project in headless Chromium. It is already included in the default Vitest project configuration, so it was not run separately for this baseline. |
@@ -32,7 +32,7 @@ The backend test modules are:
 
 ## Dependencies and preconditions
 
-- Python test runtime: Python 3.12.7; pytest 9.1.1, pytest-cov 7.0.0, FastAPI 0.141.1, httpx 0.28.1, and
+- Python test runtime: Python 3.12.7; pytest 9.1.1, FastAPI 0.141.1, httpx 0.28.1, and
   Uvicorn were importable from `.venv`. `pyproject.toml` requires Python `>=3.12,<3.13`.
 - Frontend runtime: Node v24.19.0 and npm 11.17.0. Vitest and its Storybook/browser plugins were resolvable
   from `frontend/`.
@@ -46,8 +46,7 @@ The backend test modules are:
   They were checked again after E2E and remained free. E2E started its own short-lived backend; no existing
   service was stopped or replaced.
 - The frontend package includes `@vitest/coverage-v8`, but the inspected Vitest config and scripts do not
-  configure a frontend coverage report or threshold. The 97% threshold applies to the backend `backend/app`
-  coverage target only.
+  configure a frontend coverage report or threshold.
 
 ## Measured finite run
 
@@ -58,7 +57,7 @@ stable performance benchmark.
 
 | Surface | Exact command (working directory) | Command timeout | Bash tool timeout | Result and elapsed time |
 | --- | --- | ---: | ---: | --- |
-| Backend pytest | `time timeout --kill-after=10s 900s .venv/Scripts/python.exe -m pytest` (repository root) | 900s + 10s kill grace | 915000 ms | **PASS** — 333 passed; pytest reported 65.51s, Bash wall time 67.389s. Coverage: 97.20% (2,711 statements; 76 missed), above the 97% minimum. |
+| Backend pytest | `time timeout --kill-after=10s 900s .venv/Scripts/python.exe -m pytest` (repository root) | 900s + 10s kill grace | 915000 ms | **PASS** — 333 passed; pytest reported 65.51s, Bash wall time 67.389s. |
 | Frontend default projects and known-failure comparison | `time timeout --kill-after=10s 1800s npm run test:check` (`frontend/`) | 1800s + 10s kill grace | 1815000 ms | **PASS** — 1,701 tests, 0 failing, 0 known failures; Bash wall time 175.833s. |
 | Dedicated API-client suite | `time timeout --kill-after=10s 300s npm run test:api -- --bail 1` (`frontend/`) | 300s + 10s kill grace | 315000 ms | **PASS** — 5 files and 15 tests passed; Vitest duration 4.95s, Bash wall time 6.738s. |
 | Playwright E2E | `time timeout --kill-after=10s 1800s npm run test:e2e -- --max-failures 1` (`frontend/`) | 1800s + 10s kill grace | 1815000 ms | **PASS** — 7 tests passed; Playwright reported 22.4s, Bash wall time 24.814s. |
@@ -79,4 +78,4 @@ a stable performance claim.
 
 No isolated Storybook run was needed because the default Vitest run included that project. No aggregate full-test run was performed: it includes checks outside this baseline's test-only scope. The [documentation finding](findings-and-next-actions.md#full-test-guide-drift) records the guide's stale runner and inventory claims; neither that guide nor the runner was changed here.
 
-Dependency resolution was demonstrated only in the existing checkout, not through a fresh install. The recorded backend coverage threshold does not apply to the frontend. Future measurements should answer a specific question and use the bounded approach in [findings and next actions](findings-and-next-actions.md#5-measure-performance-only-for-a-defined-decision), rather than treating these single-run times as targets.
+Dependency resolution was demonstrated only in the existing checkout, not through a fresh install. Future measurements should answer a specific question and use the bounded approach in [findings and next actions](findings-and-next-actions.md#5-measure-performance-only-for-a-defined-decision), rather than treating these single-run times as targets.

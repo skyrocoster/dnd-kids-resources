@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("opens a reference chapter from the field guide", async ({ page }) => {
-  await page.route("**/api/spells", (route) =>
+  await page.route("**/api/spells*", (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",

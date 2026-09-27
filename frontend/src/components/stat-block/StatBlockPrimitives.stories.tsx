@@ -76,7 +76,10 @@ export const Vitals: StoryObj<VitalArgs> = {
     ],
   },
   argTypes: {
-    items: { control: "object", description: "Any labeled values; no game-specific fields are built in." },
+    items: {
+      control: "object",
+      description: "Any labeled values; no game-specific fields are built in.",
+    },
   },
   render: ({ items }) => (
     <StatBlockPreview>
@@ -102,7 +105,10 @@ export const AbilityScores: StoryObj<AbilityScoresArgs> = {
     ],
   },
   argTypes: {
-    abilities: { control: "object", description: "A list of scores with optional display modifiers." },
+    abilities: {
+      control: "object",
+      description: "A list of scores with optional display modifiers.",
+    },
   },
   render: ({ abilities }) => (
     <StatBlockPreview>

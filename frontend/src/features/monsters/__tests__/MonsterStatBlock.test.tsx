@@ -90,14 +90,29 @@ describe("MonsterStatBlock", () => {
 
     const statBlock = screen.getByTestId("monster-stat-block");
     expect(statBlock).toHaveAttribute("data-layout", "unified");
+    expect(statBlock.querySelector(".detail-region-grid")).toHaveStyle({
+      "--detail-region-columns": "1",
+    });
     expect(screen.getByText("Dragon")).toBeInTheDocument();
     expect(screen.getByText("medium, dragon, chaotic evil")).toBeInTheDocument();
     expect(screen.getByText("(10d12 + 40)")).toBeInTheDocument();
 
-    const regions = within(statBlock).getAllByRole("region");
+    const regions = within(statBlock)
+      .getAllByRole("region")
+      .filter((region) => region.querySelector(":scope > h3"));
     expect(
       regions.map((region) => within(region).getByRole("heading", { level: 3 }).textContent),
     ).toEqual(["Abilities", "Actions", "Defenses", "Lore"]);
+    const actions = within(statBlock).getByRole("region", { name: "Actions" });
+    const bite = within(actions).getByRole("region", { name: "Bite" });
+    expect(within(bite).getByRole("heading", { level: 5, name: "Bite" })).toBeInTheDocument();
+    expect(within(bite).getByText("Melee Weapon Attack.")).toBeInTheDocument();
+    expect(within(actions).getByRole("region", { name: "Tail Swipe" })).toHaveTextContent(
+      "Reaction to a nearby hit.",
+    );
+    expect(within(actions).getByRole("region", { name: "Wing Attack" })).toHaveTextContent(
+      "Beats wings.",
+    );
     expect(screen.getByText(/Str \+5, Con \+4/)).toBeInTheDocument();
     expect(screen.getByText(/Perception \+6, Stealth \+3/)).toBeInTheDocument();
   });

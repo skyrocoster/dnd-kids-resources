@@ -31,7 +31,13 @@ function parse(filePath: string): ts.SourceFile {
 
 function resolveRelativeModule(filePath: string, moduleName: string): string | null {
   const base = resolve(dirname(filePath), moduleName);
-  const candidates = [base, `${base}.ts`, `${base}.tsx`, join(base, "index.ts"), join(base, "index.tsx")];
+  const candidates = [
+    base,
+    `${base}.ts`,
+    `${base}.tsx`,
+    join(base, "index.ts"),
+    join(base, "index.tsx"),
+  ];
   return candidates.find((path) => existsSync(path) && statSync(path).isFile()) ?? null;
 }
 
@@ -54,7 +60,9 @@ function reachableFromStories(storyFiles: string[]): Set<string> {
 }
 
 function unwrap(expression: ts.Expression): ts.Expression {
-  return ts.isAsExpression(expression) || ts.isParenthesizedExpression(expression) || ts.isSatisfiesExpression(expression)
+  return ts.isAsExpression(expression) ||
+    ts.isParenthesizedExpression(expression) ||
+    ts.isSatisfiesExpression(expression)
     ? unwrap(expression.expression)
     : expression;
 }
@@ -64,7 +72,10 @@ function propertyName(property: ts.ObjectLiteralElementLike): string | undefined
   return name && (ts.isIdentifier(name) || ts.isStringLiteral(name)) ? name.text : undefined;
 }
 
-function propertyValue(object: ts.ObjectLiteralExpression, name: string): ts.Expression | undefined {
+function propertyValue(
+  object: ts.ObjectLiteralExpression,
+  name: string,
+): ts.Expression | undefined {
   const property = object.properties.find(
     (candidate) => ts.isPropertyAssignment(candidate) && propertyName(candidate) === name,
   );
@@ -72,7 +83,8 @@ function propertyValue(object: ts.ObjectLiteralExpression, name: string): ts.Exp
 }
 
 function literalString(expression: ts.Expression | undefined): string | undefined {
-  return expression && (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression))
+  return expression &&
+    (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression))
     ? expression.text
     : undefined;
 }
@@ -125,7 +137,11 @@ function collectViewportReferences(source: ts.SourceFile): string[] {
       const value = literalString(unwrap(node.initializer));
       if (value) references.push(value);
     }
-    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "storyViewport") {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === "storyViewport"
+    ) {
       const value = node.arguments[0] && literalString(unwrap(node.arguments[0]));
       if (value) references.push(value);
     }
@@ -148,7 +164,10 @@ describe("Storybook conventions", () => {
     const reached = reachableFromStories(storyFiles);
     const componentFiles = filesUnder(sourceRoot, (name) => name.endsWith(".tsx"))
       .filter((path) => !/(?:\.test|\.stories)\.tsx$/.test(path))
-      .filter((path) => !path.includes(`${join("src", "test")}${process.platform === "win32" ? "\\" : "/"}`))
+      .filter(
+        (path) =>
+          !path.includes(`${join("src", "test")}${process.platform === "win32" ? "\\" : "/"}`),
+      )
       .filter((path) => !["main.tsx", "router.tsx"].includes(relative(sourceRoot, path)));
     const missing = componentFiles
       .filter((path) => !reached.has(path))
@@ -175,14 +194,16 @@ describe("Storybook conventions", () => {
       }
       const root = title.split("/")[0] as keyof typeof statusTagByRoot;
       const expectedTag = statusTagByRoot[root];
-      if (!expectedTag) errors.push(`${file}: title must begin with Production, In Development, or Reference`);
+      if (!expectedTag)
+        errors.push(`${file}: title must begin with Production, In Development, or Reference`);
       const tagsValue = propertyValue(meta, "tags");
-      const tags = tagsValue && ts.isArrayLiteralExpression(tagsValue)
-        ? tagsValue.elements.flatMap((element) => {
-            const value = literalString(element);
-            return value ? [value] : [];
-          })
-        : [];
+      const tags =
+        tagsValue && ts.isArrayLiteralExpression(tagsValue)
+          ? tagsValue.elements.flatMap((element) => {
+              const value = literalString(element);
+              return value ? [value] : [];
+            })
+          : [];
       const statusTags = tags.filter((tag) => tag.startsWith("status-"));
       if (statusTags.length !== 1 || statusTags[0] !== expectedTag) {
         errors.push(`${file}: ${title} must have exactly the tag ${expectedTag}`);
@@ -195,7 +216,8 @@ describe("Storybook conventions", () => {
         const explicitName = literalString(propertyValue(value, "name"));
         const name = explicitName ?? displayName(exportName);
         if (!name.trim()) errors.push(`${file}: ${exportName} must have a non-empty display name`);
-        if (explicitName?.includes(" - ")) errors.push(`${file}: ${exportName} must use an em dash instead of a spaced hyphen`);
+        if (explicitName?.includes(" - "))
+          errors.push(`${file}: ${exportName} must use an em dash instead of a spaced hyphen`);
         const previous = names.get(name);
         if (previous) errors.push(`${file}: ${exportName} duplicates "${name}" from ${previous}`);
         else names.set(name, `${file}:${exportName}`);
@@ -209,7 +231,12 @@ describe("Storybook conventions", () => {
     const catalogueSource = parse(viewportFile);
     const catalogueNames = new Set<string>();
     function visit(node: ts.Node) {
-      if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === "storybookViewports" && node.initializer) {
+      if (
+        ts.isVariableDeclaration(node) &&
+        ts.isIdentifier(node.name) &&
+        node.name.text === "storybookViewports" &&
+        node.initializer
+      ) {
         const object = unwrap(node.initializer);
         if (ts.isObjectLiteralExpression(object)) {
           for (const property of object.properties) {

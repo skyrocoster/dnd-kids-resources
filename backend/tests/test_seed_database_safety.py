@@ -89,7 +89,8 @@ def test_force_spells_replaces_only_spells(tmp_path, monkeypatch, capsys):
             "VALUES (1, 'Old Spell', 1, 'Old description', 'Self', 'Instantaneous')"
         )
         conn.execute(
-            "INSERT INTO conditions (title, icon, explanation) VALUES ('Preserved', '!', 'Still here')"
+            "INSERT INTO conditions (title, icon, explanation) "
+            "VALUES ('Preserved', '!', 'Still here')"
         )
 
     assert run_seed_main(monkeypatch, db_path, seed_dir, "--spells", "--force") is True
@@ -101,7 +102,9 @@ def test_force_spells_replaces_only_spells(tmp_path, monkeypatch, capsys):
 
 
 @pytest.mark.parametrize("input_problem", ["missing", "malformed"])
-def test_missing_or_malformed_seed_keeps_existing_rows(tmp_path, monkeypatch, capsys, input_problem):
+def test_missing_or_malformed_seed_keeps_existing_rows(
+    tmp_path, monkeypatch, capsys, input_problem
+):
     db_path = tmp_path / f"{input_problem}.db"
     seed_dir = tmp_path / f"{input_problem}-seed-copy"
     initialize_database(db_path)

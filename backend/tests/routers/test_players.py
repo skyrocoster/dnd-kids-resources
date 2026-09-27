@@ -209,9 +209,7 @@ def test_nested_player_spell_routes_return_optional_catalog_fields(test_client, 
 
     catalog_spell = test_client.get("/api/spells/1").json()
     get_spells = test_client.get(f"/api/players/{player_id}/spells")
-    replace_spells = test_client.put(
-        f"/api/players/{player_id}/spells", json={"spell_ids": [1]}
-    )
+    replace_spells = test_client.put(f"/api/players/{player_id}/spells", json={"spell_ids": [1]})
     player_detail = test_client.get(f"/api/players/{player_id}/detail")
 
     assert get_spells.status_code == replace_spells.status_code == player_detail.status_code == 200

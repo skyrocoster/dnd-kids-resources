@@ -1,8 +1,12 @@
 .detail-region-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--detail-region-columns), minmax(0, 1fr));
   gap: var(--space-3);
   margin-top: var(--space-4);
+}
+
+.detail-region-grid[data-columns="auto"] {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
 }
 
 .detail-region-grid-playground {
@@ -93,13 +97,15 @@
 }
 
 @container (max-width: 500px) {
-  .detail-region-grid {
+  .detail-region-grid,
+  .detail-region-grid[data-columns="auto"] {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 500px) {
-  .detail-region-grid-playground .detail-region-grid {
+  .detail-region-grid-playground .detail-region-grid,
+  .detail-region-grid-playground .detail-region-grid[data-columns="auto"] {
     grid-template-columns: 1fr;
   }
 }

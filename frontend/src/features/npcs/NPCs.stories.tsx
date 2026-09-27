@@ -40,7 +40,11 @@ export const NPCBrowserEmpty: Story = {
 
 export const NPCStatCardDetails: Story = {
   name: "NPC stat card — identity and field notes",
-  render: () => <div style={{ maxWidth: 620 }}><NPCStatCard npc={npc} /></div>,
+  render: () => (
+    <div style={{ maxWidth: 620 }}>
+      <NPCStatCard npc={npc} />
+    </div>
+  ),
 };
 
 export const NPCEditorCreate: Story = {

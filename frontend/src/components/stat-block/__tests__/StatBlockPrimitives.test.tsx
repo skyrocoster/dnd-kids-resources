@@ -45,7 +45,10 @@ describe("stat-block primitives", () => {
     render(
       <>
         <StatBlockAbilityScores
-          abilities={[{ key: "STR", score: 16, modifier: "+3" }, { key: "CHA", score: 18, modifier: "+4" }]}
+          abilities={[
+            { key: "STR", score: 16, modifier: "+3" },
+            { key: "CHA", score: 18, modifier: "+4" },
+          ]}
         />
         <StatBlockProficiencies
           items={[

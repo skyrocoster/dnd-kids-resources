@@ -99,12 +99,10 @@ export function LoomSwimlanes({
             <span className="loom-grid-col-name">{s.name}</span>
           </div>
         ))}
-        <div
-          className="loom-grid-col-header loom-grid-col-header--fell"
-        >
+        <div className="loom-grid-col-header loom-grid-col-header--fell">
           <span className="visually-hidden">Current position</span>
         </div>
-        <div className="loom-grid-col-header loom-grid-col-header--warp">
+        <div className="loom-grid-col-header loom-grid-col-header--warp" aria-label="Planned beats">
           Planned beats
         </div>
       </div>

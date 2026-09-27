@@ -8,7 +8,10 @@ import { createEmptyMapLayout } from "../model/maplabModel";
 function fixtureFor(path: string): unknown {
   if (path.endsWith("/api/health")) return { status: "ok" };
   if (path.endsWith("/api/conditions")) {
-    return [{ id: 1, name: "Poisoned" }, { id: 2, name: "Prone" }];
+    return [
+      { id: 1, name: "Poisoned" },
+      { id: 2, name: "Prone" },
+    ];
   }
   if (path.endsWith("/api/at-the-table")) return { dungeon_id: null };
   if (path.endsWith("/api/players/spellbook")) return [];
@@ -45,7 +48,11 @@ function fixtureFor(path: string): unknown {
       room_id: 1,
       z: 0,
       origin: [1, 1],
-      cells: [[0, 0], [1, 0], [0, 1]],
+      cells: [
+        [0, 0],
+        [1, 0],
+        [0, 1],
+      ],
       title: "Storybook Room",
     });
     layout.doors.push({

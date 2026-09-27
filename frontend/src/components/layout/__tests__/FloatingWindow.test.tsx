@@ -215,7 +215,10 @@ describe("FloatingWindow resize", () => {
   it("FloatingWindow.css has no local prefers-reduced-motion block", async () => {
     const { readFileSync } = await import("node:fs");
     const { resolve } = await import("node:path");
-    const css = readFileSync(resolve(process.cwd(), "src/components/layout/FloatingWindow.css"), "utf-8");
+    const css = readFileSync(
+      resolve(process.cwd(), "src/components/layout/FloatingWindow.css"),
+      "utf-8",
+    );
     expect(css).not.toContain("@media (prefers-reduced-motion");
   });
 });

@@ -47,8 +47,16 @@ export const ApplicationMenubar: Story = {
     <Menubar
       aria-label="Map editing commands"
       menus={[
-        { id: "map", label: "Map", items: [{ id: "save", label: "Save layout", textValue: "Save layout" }] },
-        { id: "room", label: "Room", items: [{ id: "new-room", label: "New room", textValue: "New room" }] },
+        {
+          id: "map",
+          label: "Map",
+          items: [{ id: "save", label: "Save layout", textValue: "Save layout" }],
+        },
+        {
+          id: "room",
+          label: "Room",
+          items: [{ id: "new-room", label: "New room", textValue: "New room" }],
+        },
       ]}
     />
   ),

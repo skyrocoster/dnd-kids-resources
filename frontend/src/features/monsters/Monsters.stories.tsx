@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { fn } from "storybook/test";
 import { MemoryRouter } from "react-router-dom";
 import type { Monster } from "../../api/types";
 import { MonsterBrowserPage } from "./MonsterBrowserPage";
@@ -24,7 +23,10 @@ const dragon: Monster = {
   creature_type: { category: "dragon", tags: [], swarm_size: null },
   ac: { value: 18, note: "natural armor", alternatives: [] },
   hp: { average: 178, formula: "17d10 + 85" },
-  speed: [{ mode: "walk", feet: 40, hover: false }, { mode: "fly", feet: 80, hover: false }],
+  speed: [
+    { mode: "walk", feet: 40, hover: false },
+    { mode: "fly", feet: 80, hover: false },
+  ],
   abilities: { str: 23, dex: 10, con: 21, int: 14, wis: 11, cha: 19 },
   saving_throws: { dex: 5, con: 9, wis: 4, cha: 8 },
   skills: { perception: 8, stealth: 4 },
@@ -37,7 +39,9 @@ const dragon: Monster = {
   languages: ["Common", "Draconic"],
   audio_path: null,
   features: {
-    traits: [{ name: "Fire Breath", description: "The dragon exhales fire in a cone.", attack: null }],
+    traits: [
+      { name: "Fire Breath", description: "The dragon exhales fire in a cone.", attack: null },
+    ],
     spellcasting: [],
     actions: [{ name: "Bite", description: "Melee Weapon Attack.", attack: null }],
     bonus_actions: [],
@@ -54,20 +58,36 @@ const dragon: Monster = {
 
 export const MonsterLibraryEmpty: Story = {
   name: "Monster browser — empty library state",
-  render: () => <MemoryRouter><MonsterBrowserPage /></MemoryRouter>,
+  render: () => (
+    <MemoryRouter>
+      <MonsterBrowserPage />
+    </MemoryRouter>
+  ),
 };
 
 export const MonsterStatBlockFull: Story = {
   name: "Monster stat block — complete reference",
-  render: () => <div style={{ maxWidth: 620 }}><MonsterStatBlock monster={dragon} layout="unified" /></div>,
+  render: () => (
+    <div style={{ maxWidth: 620 }}>
+      <MonsterStatBlock monster={dragon} layout="unified" />
+    </div>
+  ),
 };
 
 export const MonsterEditorCreate: Story = {
   name: "Monster editor — create creature",
-  render: () => <MemoryRouter><MonsterEditor /></MemoryRouter>,
+  render: () => (
+    <MemoryRouter>
+      <MonsterEditor />
+    </MemoryRouter>
+  ),
 };
 
 export const MonsterEditorInvalidRoute: Story = {
   name: "Monster editor — invalid route ID",
-  render: () => <MemoryRouter initialEntries={["/monsters/not-a-number/edit"]}><MonsterEditor /></MemoryRouter>,
+  render: () => (
+    <MemoryRouter initialEntries={["/monsters/not-a-number/edit"]}>
+      <MonsterEditor />
+    </MemoryRouter>
+  ),
 };

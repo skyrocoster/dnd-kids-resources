@@ -1,16 +1,37 @@
 #!/usr/bin/env python3
-"""Export current database tables into JSON files under data/seeds.
+"""Export every user table in the live database into JSON files under data/seeds.
 
-This is the backup half of the three-phase workflow: `backend/database/init_database.py` (create schema) →
-`backend/database/seed_database.py` (load JSON) → `src/tools/export_db_seeds.py` (dump the database back to JSON).
-`backend/database/init_database.py` drops every table, so authored content that is not exported here is lost on
-the next rebuild.
+This is the backup half of the two-phase workflow: `backend/database/init_database.py` (create
+schema) → `backend/database/seed_database.py` (load JSON) → this exporter (dump the database back
+to JSON). `backend/database/init_database.py` drops every table, so authored content that is not
+exported here is lost on the next rebuild.
 
-Column lists are **not** written by hand. They come from `data/generated/export_schema.json`,
-generated from `backend/database/init_database.py` by `src/tools/generate_export_schema.py`. What stays hand-declared
-below is policy — which tables are backed up, to which file, in what order — and every table in the
-schema must be classified as either exported or explicitly excluded, so a new table cannot slip
-through unnoticed.
+**Every user table is exported from the live database itself.** The exporter introspects
+`sqlite_master` for the list of tables (system tables such as `sqlite_sequence` are excluded) and
+`PRAGMA table_info` for each table's columns, so a table added by a migration — or any drift
+between `backend/database/init_database.py`, `data/generated/export_schema.json`, and the live
+database — can no longer silently miss the backup. Table/column/value truth comes from the
+database; `src/tools/generate_export_schema.py` is no longer involved in exporting.
+
+Seed-file conventions (kept so `backend/database/seed_database.py` can reload the files):
+- File names: the `SEED_FILENAMES` mapping keeps the historical per-table names (e.g. table
+  `loot_bundle` -> `seed_loot_bundles.json`, plural). Any table without an entry uses
+  `seed_<table>.json`. Unrecognized files already under `data/seeds/` are left untouched.
+- Row order: the `STABLE_ORDER_BY` mapping keeps the historical per-table ordering when its
+  columns still exist; otherwise rows are ordered by the table's primary key columns, which is
+  also stable.
+- JSON-as-text columns: `JSON_COLUMNS` columns are parsed back into JSON so the seed files stay
+  readable and diffable. Parsing is per live table (a listed column that no longer exists in the
+  live database is ignored, not an error). Any other SQLite value is written as-is, so nothing is
+  transformed lossily.
+
+Before a write replaces different existing content, the old file is copied to a dated directory
+under `data/archive/` (e.g. `data/archive/export_db_seeds_20260927T120000Z/`). This preserves
+seed-only historical data — such as the old `spells.categories` field or the loom fixtures — when
+the live database no longer holds it. Empty tables are always exported as empty arrays; the
+pre-overwrite backup makes that safe. Nothing is ever silently skipped or deleted.
+
+The database is opened read-only (`mode=ro`); exporting never writes to it.
 
 Usage:
   docker compose exec backend python src/tools/export_db_seeds.py
@@ -20,8 +41,10 @@ Usage:
 
 import argparse
 import json
+import shutil
 import sqlite3
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -29,43 +52,73 @@ sys.path.insert(0, str(ROOT))
 
 sys.path.insert(0, str(Path(__file__).parent))
 from backend.app.db import DB_PATH  # noqa: E402
-from generate_export_schema import load_manifest  # noqa: E402
 
 SEEDS_DIR = ROOT / "data" / "seeds"
+ARCHIVE_DIR = ROOT / "data" / "archive"
 
-# Policy, not schema: the seed file each table backs up to, and the ORDER BY that keeps the
-# exported file stable between runs so diffs stay reviewable.
-EXPORT_POLICY = {
-    "abilities": {"file": "seed_abilities.json", "order_by": "id"},
-    "conditions": {"file": "seed_conditions.json", "order_by": "title"},
-    "damage_types": {"file": "seed_damage_types.json", "order_by": "id"},
-    "dungeons": {"file": "seed_dungeons.json", "order_by": "id"},
-    "encounter": {"file": "seed_encounters.json", "order_by": "name"},
-    "items": {"file": "seed_items.json", "order_by": "name"},
-    "loom_nodes": {"file": "seed_loom_nodes.json", "order_by": "id"},
-    "loom_sessions": {"file": "seed_loom_sessions.json", "order_by": "id"},
-    "loom_threads": {"file": "seed_loom_threads.json", "order_by": "id"},
-    "loot_bundle": {"file": "seed_loot_bundles.json", "order_by": "name"},
-    "map_layout": {"file": "seed_map_layouts.json", "order_by": "dungeon_id"},
-    "map_session_state": {"file": "seed_map_session_state.json", "order_by": "dungeon_id"},
-    "revealed_cells": {"file": "seed_revealed_cells.json", "order_by": "dungeon_id, x, y"},
-    "at_the_table": {"file": "seed_at_the_table.json", "order_by": "lock"},
-    "monsters": {"file": "seed_monsters.json", "order_by": "name"},
-    "npcs": {"file": "seed_npcs.json", "order_by": "id"},
-    "player_spells": {"file": "seed_player_spells.json", "order_by": "player_id, added_at"},
-    "player_weapons": {"file": "seed_player_weapons.json", "order_by": "player_id, added_at"},
-    "players": {"file": "seed_players.json", "order_by": "name"},
-    "spells": {"file": "seed_spells.json", "order_by": "name"},
-    "weapon_properties": {"file": "seed_weapon_properties.json", "order_by": "code"},
-    "weapons": {"file": "seed_weapons.json", "order_by": "name"},
+# Historical seed-file names per table (seed_database.py loads these exact files). Tables absent
+# from this mapping are exported to `seed_<table>.json`.
+SEED_FILENAMES = {
+    "abilities": "seed_abilities.json",
+    "conditions": "seed_conditions.json",
+    "damage_types": "seed_damage_types.json",
+    "dungeons": "seed_dungeons.json",
+    "encounter": "seed_encounters.json",
+    "items": "seed_items.json",
+    "loom_nodes": "seed_loom_nodes.json",
+    "loom_sessions": "seed_loom_sessions.json",
+    "loom_threads": "seed_loom_threads.json",
+    "loot_bundle": "seed_loot_bundles.json",
+    "map_layout": "seed_map_layouts.json",
+    "map_session_state": "seed_map_session_state.json",
+    "revealed_cells": "seed_revealed_cells.json",
+    "at_the_table": "seed_at_the_table.json",
+    "monsters": "seed_monsters.json",
+    "npcs": "seed_npcs.json",
+    "player_spells": "seed_player_spells.json",
+    "player_weapons": "seed_player_weapons.json",
+    "players": "seed_players.json",
+    "spells": "seed_spells.json",
+    "weapon_properties": "seed_weapon_properties.json",
+    "weapons": "seed_weapons.json",
 }
 
-# Tables deliberately not backed up. Empty today; kept so that excluding a table is a recorded
-# decision with a reason rather than an omission.
-EXPORT_EXCLUSIONS: dict[str, str] = {}
+# Stable row order per table so the exported file stays stable between runs and diffs stay
+# reviewable. Each name must exist in the live table's columns (checked at export time);
+# otherwise the table falls back to primary-key order.
+STABLE_ORDER_BY = {
+    "abilities": "id",
+    "conditions": "title",
+    "damage_types": "id",
+    "dungeons": "id",
+    "encounter": "name",
+    "items": "name",
+    "loom_nodes": "id",
+    "loom_sessions": "id",
+    "loom_threads": "id",
+    "loot_bundle": "name",
+    "map_layout": "dungeon_id",
+    "map_session_state": "dungeon_id",
+    "revealed_cells": "dungeon_id, x, y",
+    "at_the_table": "lock",
+    "monsters": "name",
+    "npcs": "id",
+    "player_spells": "player_id, added_at",
+    "player_weapons": "player_id, added_at",
+    "players": "name",
+    "spells": "name",
+    "weapon_properties": "code",
+    "weapons": "name",
+    "quests": "id",
+    "map_knowledge": "dungeon_id",
+}
 
 # Columns holding JSON documents, which are unpacked so the seed files stay readable and diffable
-# rather than storing escaped JSON inside a string.
+# rather than storing escaped JSON inside a string. Columns are checked against the live table at
+# export time: a listed column that the live database does not have is skipped for that table (the
+# live database is the truth), so a stale entry can never block or corrupt an export. `categories`
+# is kept for the legacy 20-column spells schema in tests; the live spells table has no such
+# column, so the hand-authored category values stay seed-only and are preserved by the archive.
 JSON_COLUMNS = {
     "conditions": ["details"],
     "dungeons": ["data"],
@@ -73,6 +126,7 @@ JSON_COLUMNS = {
     "loot_bundle": ["contents"],
     "map_layout": ["data"],
     "map_session_state": ["data"],
+    "map_knowledge": ["data"],
     "monsters": [
         "aliases", "sizes", "creature_type", "ac", "hp", "speed", "abilities", "saving_throws",
         "skills", "damage_resistances", "damage_immunities", "damage_vulnerabilities",
@@ -89,45 +143,59 @@ JSON_COLUMNS = {
         "damage_vulnerabilities", "condition_immunities", "senses", "languages", "features",
     ],
     "spells": [
-        "categories", "damage", "healing", "higher_levels", "casting_times", "components", "attacks",
-        "area_of_effect",
+        "categories", "damage", "healing", "higher_levels", "casting_times", "components",
+        "attacks", "area_of_effect",
     ],
     "weapons": [
         "resist", "property", "focus", "spells", "attack", "recharge", "light", "entries",
         "modify_speed", "ability",
     ],
+    "quests": ["reward", "objectives", "details"],
 }
 
 
-def validate_policy(schema: dict[str, list[str]]) -> None:
-    """Fail loudly when the schema and the export policy disagree.
+def discover_user_tables(cursor) -> list[str]:
+    """Return every user table in the live database, sorted.
 
-    This is the check that the old hand-written EXPORT_DEFINITIONS could not make: a table added
-    to init_database.py used to be silently absent from every backup.
+    The database is the source of truth for what gets backed up: anything in sqlite_master of
+    type 'table' that is not a SQLite system table is exported. Views are not tables and are
+    skipped.
     """
-    classified = set(EXPORT_POLICY) | set(EXPORT_EXCLUSIONS)
-    unclassified = sorted(set(schema) - classified)
-    if unclassified:
-        raise SystemExit(
-            "Unclassified table(s) in the schema: " + ", ".join(unclassified) + "\n"
-            "Add each to EXPORT_POLICY (backed up) or EXPORT_EXCLUSIONS (with a reason) "
-            "in src/tools/export_db_seeds.py."
-        )
+    cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+    )
+    return sorted(row[0] for row in cursor.fetchall())
 
-    unknown = sorted(classified - set(schema))
-    if unknown:
-        raise SystemExit(
-            "Export policy names table(s) absent from the schema: " + ", ".join(unknown) + "\n"
-            "Regenerate with: python src/tools/generate_export_schema.py --write"
-        )
 
-    for table, columns in JSON_COLUMNS.items():
-        missing = [column for column in columns if column not in schema.get(table, [])]
-        if missing:
-            raise SystemExit(
-                f"JSON_COLUMNS lists column(s) {', '.join(missing)} that {table} does not have. "
-                "Update src/tools/export_db_seeds.py to match the schema."
-            )
+def table_columns(cursor, table_name: str) -> list[str]:
+    """Return the live table's column names, in declared order."""
+    cursor.execute(f'PRAGMA table_info("{table_name}")')
+    return [row[1] for row in cursor.fetchall()]
+
+
+def table_primary_key(cursor, table_name: str) -> list[str]:
+    """Return the live table's primary-key column names in key order (may be empty)."""
+    cursor.execute(f'PRAGMA table_info("{table_name}")')
+    pk = [(row[5], row[1]) for row in cursor.fetchall() if row[5]]
+    return [column for _, column in sorted(pk)]
+
+
+def resolve_order_by(cursor, table_name: str, columns: list[str]) -> str | None:
+    """Pick a stable ORDER BY expression for a table's export.
+
+    STABLE_ORDER_BY is used when every name it references is a live column; otherwise the table's
+    primary key. When neither is available the row order is whatever SQLite returns; nothing is
+    skipped because of a missing sort key.
+    """
+    order_by = STABLE_ORDER_BY.get(table_name)
+    if order_by:
+        names = [part.strip() for part in order_by.split(",")]
+        if all(name in columns for name in names):
+            return order_by
+    pk = table_primary_key(cursor, table_name)
+    if pk:
+        return ", ".join(pk)
+    return None
 
 
 def parse_json_value(value):
@@ -141,121 +209,149 @@ def parse_json_value(value):
     return value
 
 
-def transform_record(record: dict, table_name: str) -> dict:
+def transform_record(record: dict, table_name: str, columns: list[str]) -> dict:
     for column in JSON_COLUMNS.get(table_name, []):
-        record[column] = parse_json_value(record.get(column))
+        if column in columns:
+            record[column] = parse_json_value(record.get(column))
     return record
 
 
-def fetch_rows(cursor, table_name: str, columns: list[str], order_by: str) -> list[dict]:
-    column_list = ", ".join(columns)
+def fetch_rows(cursor, table_name: str, order_by: str | None) -> list[dict]:
+    """Read the whole table, read-only, as dicts keyed by live column names."""
+    statement = f'SELECT * FROM "{table_name}"'
+    if order_by:
+        statement += f" ORDER BY {order_by}"
     try:
-        cursor.execute(f"SELECT {column_list} FROM {table_name} ORDER BY {order_by}")
+        cursor.execute(statement)
     except sqlite3.OperationalError as exc:
-        # Deliberately fatal. This used to print a warning and continue, which meant a renamed
-        # column dropped an entire table from the seeds without failing the run.
-        raise SystemExit(
-            f"Failed to export {table_name}: {exc}\n"
-                "The generated schema and the live database disagree. Diagnose with: "
-                "python src/tools/generate_export_schema.py --check-db"
-        ) from exc
+        # Deliberately fatal: a half-exported backup is worse than a failed one.
+        raise SystemExit(f"Failed to export {table_name}: {exc}") from exc
     names = [description[0] for description in cursor.description]
     return [dict(zip(names, row)) for row in cursor.fetchall()]
 
 
-def would_destroy_existing(file_path: Path, data) -> bool:
-    """True when writing would replace a populated seed file with an empty one.
+def export_table(cursor, table_name: str, schema=None, dry_run=False, allow_empty=False):
+    """Export one live table into its seed file, archiving a differing prior file first.
 
-    The export is a blind overwrite, so exporting from a database that has not loaded a given
-    domain silently destroys that domain's seed file. The loom is the live example: its seeds are
-    a frozen fixture loaded only behind `--loom`, so a routine full export from a database without
-    it would wipe them.
+    `schema` maps table name -> live column names; it is introspected from the database when not
+    supplied. `allow_empty` is kept for backwards compatibility and does nothing: empty tables are
+    always exported, and any seed file whose content changes is archived first.
     """
-    if data:
-        return False
-    if not file_path.exists():
-        return False
-    try:
-        return bool(json.loads(file_path.read_text(encoding="utf-8")))
-    except (json.JSONDecodeError, OSError):
-        return False
+    if schema is None:
+        schema = {table: table_columns(cursor, table) for table in discover_user_tables(cursor)}
+    columns = schema[table_name]
+    order_by = resolve_order_by(cursor, table_name, columns)
+    rows = fetch_rows(cursor, table_name, order_by)
+    transformed = [transform_record(row, table_name, columns) for row in rows]
 
+    filename = SEED_FILENAMES.get(table_name, f"seed_{table_name}.json")
+    file_path = SEEDS_DIR / filename
+    content = json.dumps(transformed, indent=2, ensure_ascii=False) + "\n"
 
-def write_json_file(file_path: Path, data, dry_run=False):
     if dry_run:
-        print(f"[DRY RUN] Would write {file_path} ({len(data)} entries)")
+        note = ""
+        if file_path.exists():
+            try:
+                existing = file_path.read_text(encoding="utf-8")
+            except OSError:
+                existing = None
+            if existing != content:
+                note = " (existing file would be archived first)"
+        print(f"[DRY RUN] Would write {file_path} ({len(transformed)} entries){note}")
         return
+
+    if file_path.exists():
+        try:
+            existing = file_path.read_text(encoding="utf-8")
+        except OSError:
+            existing = None
+        if existing != content:
+            archive_seed_file(file_path)
+
     with file_path.open("w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-        f.write("\n")
-    print(f"Wrote {file_path} ({len(data)} entries)")
+        f.write(content)
+    print(f"Wrote {file_path} ({len(transformed)} entries)")
 
 
-def export_table(
-    cursor,
-    table_name: str,
-    dry_run=False,
-    schema: dict[str, list[str]] | None = None,
-    allow_empty=False,
-):
-    schema = schema if schema is not None else load_manifest()
-    policy = EXPORT_POLICY[table_name]
-    rows = fetch_rows(cursor, table_name, schema[table_name], policy["order_by"])
-    transformed = [transform_record(row, table_name) for row in rows]
+def archive_seed_file(file_path: Path) -> None:
+    """Copy a seed file into a dated archive directory before its content is replaced.
 
-    file_path = SEEDS_DIR / policy["file"]
-    if not allow_empty and would_destroy_existing(file_path, transformed):
-        print(
-            f"[SKIP] {policy['file']} kept: {table_name} is empty in the database but the seed "
-            "file has data. Load it first, or pass --allow-empty to overwrite."
-        )
-        return
-    write_json_file(file_path, transformed, dry_run=dry_run)
+    Only called for files whose content is about to change, so nothing is duplicated for no
+    reason. The copy is the pre-overwrite record of any seed-only historical data.
+
+    A seed file can be archived twice within the same UTC second (repeated exports, or two
+    content changes of one file). `mkdir` without `exist_ok` claims a fresh timestamped
+    directory (or a `_2`, `_3`, ... sibling when the first is already claimed), so the copy
+    target never exists yet and no earlier archived copy can ever be overwritten.
+    """
+    base = datetime.now(timezone.utc).strftime("export_db_seeds_%Y%m%dT%H%M%SZ")
+    archive_dir = ARCHIVE_DIR / base
+    counter = 1
+    while True:
+        try:
+            archive_dir.mkdir(parents=True)
+            break
+        except FileExistsError:
+            counter += 1
+            archive_dir = ARCHIVE_DIR / f"{base}_{counter}"
+    target = archive_dir / file_path.name
+    shutil.copy2(file_path, target)
+    print(f"[ARCHIVED] {file_path} -> {target}")
 
 
 def parse_table_list(value):
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
+def open_readonly_db():
+    """Open the database read-only; the exporter must never write to it."""
+    path = DB_PATH.as_posix()
+    return sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Export database tables to data/seeds")
-    parser.add_argument("--tables", type=parse_table_list, help="Comma-separated list of tables to export")
+    parser = argparse.ArgumentParser(description="Export every user table in the database to data/seeds")
+    parser.add_argument(
+        "--tables",
+        type=parse_table_list,
+        help="Comma-separated subset of live tables to export (default: all of them)",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Show actions without writing files")
     parser.add_argument(
         "--allow-empty",
         action="store_true",
-        help="Permit an empty table to overwrite a populated seed file (destructive)",
+        help="Accepted for backwards compatibility; empty tables are now always exported, and any "
+        "seed file whose content changes is archived under data/archive/ before the overwrite",
     )
     args = parser.parse_args()
 
     if not DB_PATH.exists():
         raise FileNotFoundError(f"Database not found: {DB_PATH}")
 
-    schema = load_manifest()
-    validate_policy(schema)
-
-    SEEDS_DIR.mkdir(parents=True, exist_ok=True)
-
-    with sqlite3.connect(str(DB_PATH)) as conn:
+    with open_readonly_db() as conn:
         cursor = conn.cursor()
-        requested = args.tables or list(EXPORT_POLICY.keys())
+        live_tables = discover_user_tables(cursor)
+        schema = {table: table_columns(cursor, table) for table in live_tables}
+
+        if args.tables:
+            unknown = [table for table in args.tables if table not in live_tables]
+            if unknown:
+                raise SystemExit(
+                    "Requested table(s) not present in the live database: "
+                    + ", ".join(unknown) + "\n"
+                    "Live user tables: " + ", ".join(live_tables)
+                )
+        requested = args.tables or live_tables
 
         for table_name in requested:
-            if table_name not in EXPORT_POLICY:
-                raise ValueError(
-                    f"Unknown or non-exported table: {table_name}. "
-                    f"Known: {', '.join(sorted(EXPORT_POLICY))}"
-                )
-            export_table(
-                cursor,
-                table_name,
-                dry_run=args.dry_run,
-                schema=schema,
-                allow_empty=args.allow_empty,
-            )
+            export_table(cursor, table_name, schema, dry_run=args.dry_run,
+                         allow_empty=args.allow_empty)
 
-    print("\nExport complete.")
-    print(f"Seed files are written to: {SEEDS_DIR}")
+    if args.dry_run:
+        print("\nDry run complete. No files were written or archived.")
+    else:
+        print("\nExport complete.")
+        print(f"Seed files are written to: {SEEDS_DIR}")
 
 
 if __name__ == "__main__":

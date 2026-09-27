@@ -26,9 +26,7 @@ export function StatBlockIdentity({
         <h2 id={headingId} className="stat-block-identity__name">
           {name}
         </h2>
-        {description != null && (
-          <p className="stat-block-identity__description">{description}</p>
-        )}
+        {description != null && <p className="stat-block-identity__description">{description}</p>}
       </div>
       {accessory != null && <div className="stat-block-identity__accessory">{accessory}</div>}
     </header>

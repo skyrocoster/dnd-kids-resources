@@ -1298,7 +1298,9 @@ def populate_revealed_cells(cursor, conn, force=False):
     cursor.execute("SELECT COUNT(*) FROM revealed_cells")
     count = cursor.fetchone()[0]
     if count > 0 and not force:
-        print(f"  [INFO] revealed_cells already has {count} records. Skip (use --force to override)")
+        print(
+            f"  [INFO] revealed_cells already has {count} records. Skip (use --force to override)"
+        )
         return
     if force:
         cursor.execute("DELETE FROM revealed_cells")
@@ -1422,8 +1424,7 @@ def main():
         conn = sqlite3.connect(str(DB_PATH))
         cursor = conn.cursor()
         existing_tables = {
-            row[0]
-            for row in cursor.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
+            row[0] for row in cursor.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
         }
         missing_tables = [table for table in selected_tables if table not in existing_tables]
         if missing_tables:
@@ -1490,10 +1491,14 @@ def main():
         print("=" * 60)
         print("\nNext Steps:")
         print("  1. Edit seed files in data/seeds/ to add more data")
-        print("  2. Force-reload only the intended groups against a disposable or backed-up database")
+        print(
+            "  2. Force-reload only the intended groups against a disposable or backed-up database"
+        )
         print("  3. Build frontend and run FastAPI server")
         print("\nSeed files are read from data/seeds/.")
-        print("The optional Loom demo group is excluded from the default load; select it with --loom.")
+        print(
+            "The optional Loom demo group is excluded from the default load; select it with --loom."
+        )
 
         return True
 

@@ -69,7 +69,12 @@ export const ComboboxSelection: Story = {
   name: "Combobox — searchable selection",
   render: () => (
     <div style={{ width: 360 }}>
-      <Combobox ariaLabel="Choose a damage type" options={damageOptions} value="arcane" onValueChange={fn()} />
+      <Combobox
+        ariaLabel="Choose a damage type"
+        options={damageOptions}
+        value="arcane"
+        onValueChange={fn()}
+      />
     </div>
   ),
 };
@@ -85,7 +90,12 @@ export const DropdownOptionAnatomy: Story = {
           content: { leading: "🧪", secondary: "Restores hit points", trailing: "50 gp" },
         }}
       />
-      <DropdownOptionContent leading="✦" primary="Magic missile" secondary="Evocation · level 1" trailing="1 action" />
+      <DropdownOptionContent
+        leading="✦"
+        primary="Magic missile"
+        secondary="Evocation · level 1"
+        trailing="1 action"
+      />
       <DropdownMessage>No matching references.</DropdownMessage>
     </div>
   ),
@@ -113,7 +123,10 @@ export const MultiSelectValues: Story = {
   render: () => (
     <MultiSelectField
       label="Proficiencies"
-      options={[{ value: "arcana", label: "Arcana" }, { value: "nature", label: "Nature" }]}
+      options={[
+        { value: "arcana", label: "Arcana" },
+        { value: "nature", label: "Nature" },
+      ]}
       selected={["arcana"]}
       onChange={fn()}
     />
@@ -125,7 +138,10 @@ export const RadioGroupSegmented: Story = {
   render: () => (
     <RadioGroup
       ariaLabel="Current turn belongs to"
-      options={[{ value: "party", label: "Party" }, { value: "creatures", label: "Creatures" }]}
+      options={[
+        { value: "party", label: "Party" },
+        { value: "creatures", label: "Creatures" },
+      ]}
       value="party"
       onValueChange={fn()}
     />
@@ -147,7 +163,10 @@ export const SelectFieldNative: Story = {
     <div style={{ maxWidth: 360 }}>
       <SelectField
         label="Spell level"
-        options={[{ value: "1", label: "Level 1" }, { value: "2", label: "Level 2" }]}
+        options={[
+          { value: "1", label: "Level 1" },
+          { value: "2", label: "Level 2" },
+        ]}
         defaultValue="1"
       />
     </div>
@@ -156,12 +175,25 @@ export const SelectFieldNative: Story = {
 
 export const TextFieldInput: Story = {
   name: "Text field — single line",
-  render: () => <div style={{ maxWidth: 360 }}><TextField label="Spell name" defaultValue="Guiding bolt" /></div>,
+  render: () => (
+    <div style={{ maxWidth: 360 }}>
+      <TextField label="Spell name" defaultValue="Guiding bolt" />
+    </div>
+  ),
 };
 
 export const TextFieldMultiline: Story = {
   name: "Text field — multiline description",
-  render: () => <div style={{ maxWidth: 360 }}><TextField label="Description" multiline rows={4} defaultValue="A streak of light streaks toward a creature." /></div>,
+  render: () => (
+    <div style={{ maxWidth: 360 }}>
+      <TextField
+        label="Description"
+        multiline
+        rows={4}
+        defaultValue="A streak of light streaks toward a creature."
+      />
+    </div>
+  ),
 };
 
 export const TextInputSlots: Story = {
@@ -169,7 +201,13 @@ export const TextInputSlots: Story = {
   render: () => (
     <div style={{ maxWidth: 360 }}>
       <label htmlFor="story-search-input">Search references</label>
-      <TextInput id="story-search-input" type="search" leading={<span aria-hidden="true">⌕</span>} trailing={<span>⌘K</span>} placeholder="Spell, item, or creature" />
+      <TextInput
+        id="story-search-input"
+        type="search"
+        leading={<span aria-hidden="true">⌕</span>}
+        trailing={<span>⌘K</span>}
+        placeholder="Spell, item, or creature"
+      />
     </div>
   ),
 };

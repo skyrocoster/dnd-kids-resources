@@ -22,10 +22,7 @@ def test_every_api_get_has_an_explicit_cache_policy():
         and isinstance(getattr(candidate, "router", None), APIRouter)
     ]
     api_routes = [
-        route
-        for router in routers
-        for route in router.routes
-        if isinstance(route, APIRoute)
+        route for router in routers for route in router.routes if isinstance(route, APIRoute)
     ]
     get_routes = [route for route in api_routes if route.methods == {"GET"}]
 
@@ -37,9 +34,7 @@ def test_every_api_get_has_an_explicit_cache_policy():
     assert uncached_gets == {"getHealth"}
 
     write_routes = [
-        route
-        for route in api_routes
-        if route.methods & {"POST", "PUT", "PATCH", "DELETE"}
+        route for route in api_routes if route.methods & {"POST", "PUT", "PATCH", "DELETE"}
     ]
     assert all(not hasattr(route.endpoint, "__cache_namespace__") for route in write_routes)
 

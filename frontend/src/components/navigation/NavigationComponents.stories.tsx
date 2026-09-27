@@ -21,7 +21,12 @@ export const NavigationMenuGrouped: Story = {
           id: "library",
           label: "Library",
           links: [
-            { id: "spells", label: "Spells", href: "#spells", description: "Browse spell references" },
+            {
+              id: "spells",
+              label: "Spells",
+              href: "#spells",
+              description: "Browse spell references",
+            },
             { id: "items", label: "Items", href: "#items", description: "Manage adventuring gear" },
           ],
         },
@@ -39,8 +44,18 @@ export const PageHeaderWithActions: Story = {
       subtitle="Choose a spell to review its table-ready details."
       actions={<button type="button">Create spell</button>}
       chapterTabs={[
-        { key: "known", label: "Known", icon: <span aria-hidden="true">✦</span>, content: <p>Known spells</p> },
-        { key: "all", label: "All spells", icon: <span aria-hidden="true">⌕</span>, content: <p>All spells</p> },
+        {
+          key: "known",
+          label: "Known",
+          icon: <span aria-hidden="true">✦</span>,
+          content: <p>Known spells</p>,
+        },
+        {
+          key: "all",
+          label: "All spells",
+          icon: <span aria-hidden="true">⌕</span>,
+          content: <p>All spells</p>,
+        },
       ]}
       activeTab="known"
     />
@@ -54,7 +69,11 @@ export const TabsWithSections: Story = {
       ariaLabel="Spell details sections"
       defaultSelectedId="overview"
       tabs={[
-        { id: "overview", label: "Overview", content: <p>Range: 120 feet · Casting time: one action.</p> },
+        {
+          id: "overview",
+          label: "Overview",
+          content: <p>Range: 120 feet · Casting time: one action.</p>,
+        },
         { id: "components", label: "Components", content: <p>Verbal and somatic.</p> },
         { id: "notes", label: "Notes", content: <p>Keep this spell ready for the next turn.</p> },
       ]}

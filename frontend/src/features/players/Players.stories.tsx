@@ -67,7 +67,11 @@ export const PlayerEditorCreate: Story = {
 
 export const PlayerCombatSummaryFull: Story = {
   name: "Combat summary — armor, hit points, and profile",
-  render: () => <div style={{ maxWidth: 640 }}><PlayerCombatSummary player={player} /></div>,
+  render: () => (
+    <div style={{ maxWidth: 640 }}>
+      <PlayerCombatSummary player={player} />
+    </div>
+  ),
 };
 
 export const PlayerSpellSectionAssigned: Story = {
@@ -85,7 +89,10 @@ export const PlayerAssignmentsDialog: Story = {
   render: () => (
     <ManageAssignmentsDialog
       title="Manage spells"
-      items={[{ id: 10, name: "Magic Missile" }, { id: 11, name: "Shield" }]}
+      items={[
+        { id: 10, name: "Magic Missile" },
+        { id: 11, name: "Shield" },
+      ]}
       assignedIds={[10]}
       getId={(item) => item.id}
       getLabel={(item) => item.name}

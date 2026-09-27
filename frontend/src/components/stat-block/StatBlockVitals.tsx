@@ -12,10 +12,7 @@ export interface StatBlockVitalsProps {
   ariaLabel?: string;
 }
 
-export function StatBlockVitals({
-  items,
-  ariaLabel = "Statistics",
-}: StatBlockVitalsProps) {
+export function StatBlockVitals({ items, ariaLabel = "Statistics" }: StatBlockVitalsProps) {
   if (items.length === 0) return null;
 
   return (

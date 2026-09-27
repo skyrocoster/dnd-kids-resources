@@ -1,6 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
-import type { LoomNode, LoomSession, LoomTapestry, LoomTapestryThread, LoomThread } from "../../api/types";
+import type {
+  LoomNode,
+  LoomSession,
+  LoomTapestry,
+  LoomTapestryThread,
+  LoomThread,
+} from "../../api/types";
 import { LoomBeatBankTray } from "./LoomBeatBankTray";
 import { LoomBeatReorderDialog } from "./LoomBeatReorderDialog";
 import { LoomErrorBanner } from "./LoomErrorBanner";
@@ -37,11 +43,49 @@ const session: LoomSession = {
   notes: "A map points north.",
 };
 const nodes: LoomNode[] = [
-  { id: 1, thread_id: 1, kind: "start", title: "A rumor in the tavern", position: 0, carried_count: 0 },
-  { id: 2, thread_id: 1, kind: "beat", title: "Find the old map", body: "Ask the keeper about the hidden library.", position: 10, carried_count: 0 },
-  { id: 3, thread_id: 1, kind: "session", session_id: 1, title: "The first clue", position: 20, carried_count: 0 },
-  { id: 4, thread_id: 1, kind: "end", title: "Open the library gate", position: 30, carried_count: 0 },
-  { id: 5, thread_id: null, kind: "beat", title: "Meet the lighthouse keeper", body: "Add this beat to a thread when it fits.", position: 0, carried_count: 0 },
+  {
+    id: 1,
+    thread_id: 1,
+    kind: "start",
+    title: "A rumor in the tavern",
+    position: 0,
+    carried_count: 0,
+  },
+  {
+    id: 2,
+    thread_id: 1,
+    kind: "beat",
+    title: "Find the old map",
+    body: "Ask the keeper about the hidden library.",
+    position: 10,
+    carried_count: 0,
+  },
+  {
+    id: 3,
+    thread_id: 1,
+    kind: "session",
+    session_id: 1,
+    title: "The first clue",
+    position: 20,
+    carried_count: 0,
+  },
+  {
+    id: 4,
+    thread_id: 1,
+    kind: "end",
+    title: "Open the library gate",
+    position: 30,
+    carried_count: 0,
+  },
+  {
+    id: 5,
+    thread_id: null,
+    kind: "beat",
+    title: "Meet the lighthouse keeper",
+    body: "Add this beat to a thread when it fits.",
+    position: 0,
+    carried_count: 0,
+  },
 ];
 const tapestry: LoomTapestry = { threads: [thread], sessions: [session], nodes };
 const managedThread: LoomThread = thread;
@@ -53,19 +97,39 @@ export const LoomTapestryHome: Story = {
 
 export const ThreadSwimlanes: Story = {
   name: "Swimlanes — planned beats and session history",
-  render: () => <LoomSwimlanes threads={[thread]} nodes={nodes.filter((node) => node.kind !== "beat")} sessions={[session]} />,
+  render: () => (
+    <LoomSwimlanes
+      threads={[thread]}
+      nodes={nodes.filter((node) => node.kind !== "beat")}
+      sessions={[session]}
+    />
+  ),
 };
 
 export const ThreadLane: Story = {
   name: "Thread lane — selected story path",
-  render: () => <LoomLane thread={thread} nodes={nodes.filter((node) => node.kind !== "beat")} sessions={[session]} selectedNodeId={1} />,
+  render: () => (
+    <LoomLane
+      thread={thread}
+      nodes={nodes.filter((node) => node.kind !== "beat")}
+      sessions={[session]}
+      selectedNodeId={1}
+    />
+  ),
 };
 
 export const NodeCardCurrent: Story = {
   name: "Node card — current story beat",
   render: () => (
     <div style={{ maxWidth: 340 }}>
-      <LoomNodeCard node={{ ...nodes[1], thread_id: null, fulfilled_at: "2026-01-01T00:00:00Z" }} isNow threadColor="thread-2" selected onClick={fn()} />
+      <LoomNodeCard
+        node={{ ...nodes[1], thread_id: null, fulfilled_at: "2026-01-01T00:00:00Z" }}
+        isNow
+        isNext={false}
+        threadColor="thread-2"
+        selected
+        onClick={fn()}
+      />
     </div>
   ),
 };
@@ -77,7 +141,16 @@ export const NodeEditorCreate: Story = {
 
 export const BeatBankContents: Story = {
   name: "Beat Bank — unplaced story beat",
-  render: () => <LoomBeatBankTray nodes={[nodes[4]]} threads={[managedThread]} onSelectNode={fn()} onRestoreNode={fn()} onActivateNode={fn()} onManageThreads={fn()} />,
+  render: () => (
+    <LoomBeatBankTray
+      nodes={[nodes[4]]}
+      threads={[managedThread]}
+      onSelectNode={fn()}
+      onRestoreNode={fn()}
+      onActivateNode={fn()}
+      onManageThreads={fn()}
+    />
+  ),
 };
 
 export const LoomRailSelection: Story = {
@@ -133,12 +206,22 @@ export const ThreadManagerOpen: Story = {
 
 export const SessionLogOpen: Story = {
   name: "Session log — record outcomes",
-  render: () => <LoomSessionLogDialog tapestry={tapestry} onClose={fn()} onLogged={fn()} onError={fn()} />,
+  render: () => (
+    <LoomSessionLogDialog tapestry={tapestry} onClose={fn()} onLogged={fn()} onError={fn()} />
+  ),
 };
 
 export const BeatReorderOpen: Story = {
   name: "Beat reorder — reorder planned beats",
-  render: () => <LoomBeatReorderDialog thread={thread} nodes={nodes} onReordered={fn()} onError={fn()} onClose={fn()} />,
+  render: () => (
+    <LoomBeatReorderDialog
+      thread={thread}
+      nodes={nodes}
+      onReordered={fn()}
+      onError={fn()}
+      onClose={fn()}
+    />
+  ),
 };
 
 export const ErrorBannerVisible: Story = {

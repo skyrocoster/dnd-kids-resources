@@ -21,11 +21,18 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const conditions: Condition[] = [{ id: 1, name: "Poisoned" }, { id: 2, name: "Prone" }];
+const conditions: Condition[] = [
+  { id: 1, name: "Poisoned" },
+  { id: 2, name: "Prone" },
+];
 
 export const EncounterBrowserEmpty: Story = {
   name: "Encounter browser — empty collection",
-  render: () => <MemoryRouter><EncounterBrowserPage /></MemoryRouter>,
+  render: () => (
+    <MemoryRouter>
+      <EncounterBrowserPage />
+    </MemoryRouter>
+  ),
 };
 
 export const EncounterEditorCreate: Story = {

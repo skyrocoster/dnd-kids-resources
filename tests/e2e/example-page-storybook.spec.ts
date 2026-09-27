@@ -4,7 +4,7 @@ import { retryAxeWhenBusy } from "./axe-busy-retry";
 
 const STORYBOOK_URL = "http://127.0.0.1:6006";
 const STORYBOOK_ROOT = "#storybook-root";
-const STORY_ID = "example-page--logged-out";
+const STORY_ID = "reference-storybook-fixtures-starter-page--logged-out";
 
 async function openStory(page: Page) {
   await page.setViewportSize({ width: 1280, height: 900 });

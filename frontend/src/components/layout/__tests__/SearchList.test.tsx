@@ -165,7 +165,10 @@ describe("SearchList", () => {
   it("search input and item rows consume the control-height token", async () => {
     const { readFileSync } = await import("node:fs");
     const { resolve } = await import("node:path");
-    const css = readFileSync(resolve(process.cwd(), "src/components/layout/SearchList.css"), "utf-8");
+    const css = readFileSync(
+      resolve(process.cwd(), "src/components/layout/SearchList.css"),
+      "utf-8",
+    );
     expect(css).toMatch(/\.search-list-input\s*\{[^}]*min-height:\s*var\(--control-height\)/);
     expect(css).toMatch(/\.search-list-item\s*\{[^}]*min-height:\s*var\(--control-height\)/);
   });
@@ -174,7 +177,10 @@ describe("SearchList", () => {
   it("search input has a focus-visible outline using --md-primary token", async () => {
     const { readFileSync } = await import("node:fs");
     const { resolve } = await import("node:path");
-    const css = readFileSync(resolve(process.cwd(), "src/components/layout/SearchList.css"), "utf-8");
+    const css = readFileSync(
+      resolve(process.cwd(), "src/components/layout/SearchList.css"),
+      "utf-8",
+    );
     const focusRule = css.match(/\.search-list-input:focus-visible\s*\{([^}]*)\}/)?.[1] ?? "";
     expect(focusRule).toContain("outline: 2px solid var(--md-primary)");
     expect(focusRule).toContain("outline-offset: 2px");

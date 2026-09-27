@@ -40,7 +40,10 @@ describe("IconButton", () => {
   it("shows focus-visible ring using --md-primary token", async () => {
     const { readFileSync } = await import("node:fs");
     const { resolve } = await import("node:path");
-    const css = readFileSync(resolve(process.cwd(), "src/components/actions/IconButton.css"), "utf-8");
+    const css = readFileSync(
+      resolve(process.cwd(), "src/components/actions/IconButton.css"),
+      "utf-8",
+    );
     const focusRule = css.match(/\.icon-btn:focus-visible\s*\{([^}]*)\}/)?.[1] ?? "";
     expect(focusRule).toContain("var(--md-primary)");
   });
@@ -49,7 +52,10 @@ describe("IconButton", () => {
   it("button has 48px minimum width and height", async () => {
     const { readFileSync } = await import("node:fs");
     const { resolve } = await import("node:path");
-    const css = readFileSync(resolve(process.cwd(), "src/components/actions/IconButton.css"), "utf-8");
+    const css = readFileSync(
+      resolve(process.cwd(), "src/components/actions/IconButton.css"),
+      "utf-8",
+    );
     const rule = css.match(/\.icon-btn\s*\{([^}]*)\}/)?.[1] ?? "";
     expect(rule).toContain("width: var(--control-height)");
     expect(rule).toContain("height: var(--control-height)");

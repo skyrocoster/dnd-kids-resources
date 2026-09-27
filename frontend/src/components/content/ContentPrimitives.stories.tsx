@@ -63,12 +63,20 @@ export const CardVariants: Story = {
 
 export const DiceTextNotation: Story = {
   name: "Dice text — rules and notation",
-  render: () => <p><DiceText text="Roll 2d6 + 3 damage on a successful attack." role="spell" /></p>,
+  render: () => (
+    <p>
+      <DiceText text="Roll 2d6 + 3 damage on a successful attack." role="spell" />
+    </p>
+  ),
 };
 
 export const DisclosureClosed: Story = {
   name: "Disclosure — closed",
-  render: () => <Disclosure summary="Show quick rules"><p>Advantage rolls two d20s.</p></Disclosure>,
+  render: () => (
+    <Disclosure summary="Show quick rules">
+      <p>Advantage rolls two d20s.</p>
+    </Disclosure>
+  ),
 };
 
 export const GlossaryTermHint: Story = {
@@ -94,8 +102,14 @@ export const ProgressMeterStates: Story = {
 export const ScrollAreaContent: Story = {
   name: "Scroll area — long content",
   render: () => (
-    <ScrollArea style={{ blockSize: 220, maxWidth: 360, border: "1px solid var(--md-outline-variant)" }}>
-      <ol>{Array.from({ length: 12 }, (_, index) => <li key={index}>Encounter note {index + 1}</li>)}</ol>
+    <ScrollArea
+      style={{ blockSize: 220, maxWidth: 360, border: "1px solid var(--md-outline-variant)" }}
+    >
+      <ol>
+        {Array.from({ length: 12 }, (_, index) => (
+          <li key={index}>Encounter note {index + 1}</li>
+        ))}
+      </ol>
     </ScrollArea>
   ),
 };
@@ -104,8 +118,11 @@ export const SeparatorOrientations: Story = {
   name: "Separator — horizontal and vertical",
   render: () => (
     <div style={{ display: "flex", alignItems: "center", gap: 16, minHeight: 80 }}>
-      <span>Spells</span><Separator orientation="vertical" style={{ height: 40 }} /><span>Items</span>
-      <Separator /><span>Encounters</span>
+      <span>Spells</span>
+      <Separator orientation="vertical" style={{ height: 40 }} />
+      <span>Items</span>
+      <Separator />
+      <span>Encounters</span>
     </div>
   ),
 };

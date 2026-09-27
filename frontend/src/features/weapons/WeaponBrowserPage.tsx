@@ -16,7 +16,10 @@ import {
 } from "../../components/state/remoteState";
 import type { RemoteState } from "../../components/state/remoteState";
 import { SwordsIcon } from "../../components/icons";
-import { ReferenceText, weaponValueReferenceRegistry } from "../../components/content/referenceText";
+import {
+  ReferenceText,
+  weaponValueReferenceRegistry,
+} from "../../components/content/referenceText";
 import { WeaponEditor } from "./WeaponEditor";
 import { describeAttack } from "./weaponPresentation";
 import "./WeaponBrowserPage.css";

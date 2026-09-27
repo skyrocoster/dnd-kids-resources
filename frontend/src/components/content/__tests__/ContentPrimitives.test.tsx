@@ -36,7 +36,10 @@ describe("content primitives", () => {
     );
     expect(screen.getByText("1. e4 e5")).toBeVisible();
     expect(screen.getByLabelText("Move history")).toBeInTheDocument();
-    expect(screen.getByText("1. e4 e5").closest(".cp-scroll-viewport")).toHaveAttribute("tabindex", "0");
+    expect(screen.getByText("1. e4 e5").closest(".cp-scroll-viewport")).toHaveAttribute(
+      "tabindex",
+      "0",
+    );
     expect(screen.getByRole("separator")).toHaveAttribute("aria-orientation", "vertical");
   });
 });

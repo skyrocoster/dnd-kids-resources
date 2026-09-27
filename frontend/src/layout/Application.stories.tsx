@@ -43,5 +43,9 @@ export const AppShellPhoneNavigation: Story = {
 
 export const FieldGuideAlone: Story = {
   name: "Field Guide — chapter navigation",
-  render: () => <MemoryRouter><HomePage /></MemoryRouter>,
+  render: () => (
+    <MemoryRouter>
+      <HomePage />
+    </MemoryRouter>
+  ),
 };

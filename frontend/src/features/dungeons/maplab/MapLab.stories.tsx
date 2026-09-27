@@ -40,11 +40,21 @@ export const DungeonMapEditor: Story = {
 export const LoadingRouteState: Story = {
   name: "Route state — loading dungeon",
   render: () => (
-    <MapLabRouteState title="Loading dungeon" message="Loading dungeon details…" variant="loading" />
+    <MapLabRouteState
+      title="Loading dungeon"
+      message="Loading dungeon details…"
+      variant="loading"
+    />
   ),
 };
 
 export const MissingRouteState: Story = {
   name: "Route state — dungeon missing",
-  render: () => <MapLabRouteState title="Dungeon missing" message="This dungeon does not exist." variant="error" />,
+  render: () => (
+    <MapLabRouteState
+      title="Dungeon missing"
+      message="This dungeon does not exist."
+      variant="error"
+    />
+  ),
 };

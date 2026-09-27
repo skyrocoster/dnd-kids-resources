@@ -8,7 +8,10 @@ import { CheckboxField } from "../../components/forms/CheckboxField";
 import { MultiSelectField } from "../../components/forms/MultiSelectField";
 import { SelectField } from "../../components/forms/SelectField";
 import { TextField } from "../../components/forms/TextField";
-import { spellValueReferenceRegistry, validateReferenceText } from "../../components/content/referenceText";
+import {
+  spellValueReferenceRegistry,
+  validateReferenceText,
+} from "../../components/content/referenceText";
 import { LEVEL_OPTIONS, SCHOOL_OPTIONS } from "./constants";
 import { DiceRollField } from "./DiceRollField";
 import type { AttackRow, DamageRow, SpellFormState } from "./spellForm";

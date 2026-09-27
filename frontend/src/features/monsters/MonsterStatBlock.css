@@ -322,7 +322,9 @@
   line-height: 1.25rem;
 }
 
-.monster-stat-block[data-layout="unified"] .monster-stat-block-def-row + .monster-stat-block-def-row {
+.monster-stat-block[data-layout="unified"]
+  .monster-stat-block-def-row
+  + .monster-stat-block-def-row {
   margin-top: var(--space-2);
 }
 

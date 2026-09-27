@@ -87,7 +87,11 @@ function ToastTrigger() {
 
 export const ToastNotification: Story = {
   name: "Toast — saved notice",
-  render: () => <ToastProvider timeout={0}><ToastTrigger /></ToastProvider>,
+  render: () => (
+    <ToastProvider timeout={0}>
+      <ToastTrigger />
+    </ToastProvider>
+  ),
 };
 
 export const TooltipHint: Story = {

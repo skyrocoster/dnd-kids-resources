@@ -97,7 +97,12 @@ export const SplitPaneResizable: Story = {
       <SplitPane
         leftLabel="spell list"
         defaultLeftWidth={300}
-        left={<ul><li>Fire Bolt</li><li>Mage Hand</li></ul>}
+        left={
+          <ul>
+            <li>Fire Bolt</li>
+            <li>Mage Hand</li>
+          </ul>
+        }
         right={<p>Select a spell to see its details.</p>}
       />
     </div>

@@ -1,7 +1,10 @@
 import { useId } from "react";
 import { completeMonsterFeatures, type Feature, type Monster } from "../../api/types";
 import { DiceText } from "../../components/content/DiceText";
-import { DetailRegionGrid, type DetailRegionGridItem } from "../../components/layout/DetailRegionGrid";
+import {
+  DetailRegionGrid,
+  type DetailRegionGridItem,
+} from "../../components/layout/DetailRegionGrid";
 import { StatBlockAbilityScores } from "../../components/stat-block/StatBlockAbilityScores";
 import { StatBlockIdentity } from "../../components/stat-block/StatBlockIdentity";
 import { StatBlockProficiencies } from "../../components/stat-block/StatBlockProficiencies";
@@ -49,6 +52,21 @@ function FeatureBlock({ feature }: { feature: Feature }) {
   );
 }
 
+function ActionGrid({ features }: { features: Feature[] }) {
+  if (features.length === 0) return null;
+
+  return (
+    <DetailRegionGrid
+      regions={features.map((feature) => ({
+        title: feature.name,
+        content: feature.description ? <DiceText text={feature.description} /> : null,
+      }))}
+      columns={1}
+      headingLevel={5}
+    />
+  );
+}
+
 export function MonsterStatBlock({
   monster,
   showIdentity = true,
@@ -73,9 +91,7 @@ export function MonsterStatBlock({
   const condImmune = conditionImmunities.length > 0 ? conditionImmunities.join(", ") : null;
   const cr = formatCr(monster);
   const category = monster.creature_type?.category;
-  const categoryLabel = category
-    ? `${category.charAt(0).toUpperCase()}${category.slice(1)}`
-    : null;
+  const categoryLabel = category ? `${category.charAt(0).toUpperCase()}${category.slice(1)}` : null;
   const challengeRating = monster.cr
     ? `${monster.cr}${monster.cr_note ? ` (${monster.cr_note})` : ""}`
     : null;
@@ -117,9 +133,10 @@ export function MonsterStatBlock({
     if (hasActions) {
       detailRegions.push({
         title: "Actions",
-        subtitle: features.actions.length > 0 && features.spellcasting.length === 0
-          ? "Attacks & Actions"
-          : null,
+        subtitle:
+          features.actions.length > 0 && features.spellcasting.length === 0
+            ? "Attacks & Actions"
+            : null,
         content: (
           <>
             {features.spellcasting.map((block, i) => (
@@ -151,17 +168,13 @@ export function MonsterStatBlock({
                 <DiceText text={features.reaction_intro} />
               </p>
             )}
-            {features.actions.map((action, i) => (
-              <FeatureBlock key={`action-${i}`} feature={action} />
-            ))}
-            {features.bonus_actions.length > 0 && <DetailSubheading>Bonus Actions</DetailSubheading>}
-            {features.bonus_actions.map((action, i) => (
-              <FeatureBlock key={`bonus-${i}`} feature={action} />
-            ))}
+            <ActionGrid features={features.actions} />
+            {features.bonus_actions.length > 0 && (
+              <DetailSubheading>Bonus Actions</DetailSubheading>
+            )}
+            <ActionGrid features={features.bonus_actions} />
             {features.reactions.length > 0 && <DetailSubheading>Reactions</DetailSubheading>}
-            {features.reactions.map((action, i) => (
-              <FeatureBlock key={`reaction-${i}`} feature={action} />
-            ))}
+            <ActionGrid features={features.reactions} />
             {(features.legendary_actions.length > 0 ||
               features.legendary_intro ||
               features.legendary_actions_per_round != null) && (
@@ -177,13 +190,11 @@ export function MonsterStatBlock({
                 Legendary actions per round: {features.legendary_actions_per_round}
               </p>
             )}
-            {features.legendary_actions.map((action, i) => (
-              <FeatureBlock key={`legendary-${i}`} feature={action} />
-            ))}
-            {features.mythic_actions.length > 0 && <DetailSubheading>Mythic Actions</DetailSubheading>}
-            {features.mythic_actions.map((action, i) => (
-              <FeatureBlock key={`mythic-${i}`} feature={action} />
-            ))}
+            <ActionGrid features={features.legendary_actions} />
+            {features.mythic_actions.length > 0 && (
+              <DetailSubheading>Mythic Actions</DetailSubheading>
+            )}
+            <ActionGrid features={features.mythic_actions} />
           </>
         ),
       });
@@ -273,9 +284,7 @@ export function MonsterStatBlock({
           />
         )}
 
-        {showStrip && (
-          <StatBlockVitals items={vitalItems} ariaLabel="Combat statistics" />
-        )}
+        {showStrip && <StatBlockVitals items={vitalItems} ariaLabel="Combat statistics" />}
 
         {(abilityScores.length > 0 || saves.length > 0 || skills.length > 0) && (
           <section
@@ -296,7 +305,7 @@ export function MonsterStatBlock({
           </section>
         )}
 
-        <DetailRegionGrid regions={detailRegions} />
+        <DetailRegionGrid regions={detailRegions} columns={1} />
       </article>
     );
   }

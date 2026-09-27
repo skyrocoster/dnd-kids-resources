@@ -167,7 +167,10 @@ describe("SplitPane", () => {
   it("expands the pointer hit target without widening the visible divider", async () => {
     const { readFileSync } = await import("node:fs");
     const { resolve } = await import("node:path");
-    const css = readFileSync(resolve(process.cwd(), "src/components/layout/SplitPane.css"), "utf-8");
+    const css = readFileSync(
+      resolve(process.cwd(), "src/components/layout/SplitPane.css"),
+      "utf-8",
+    );
     const handleRule = css.match(/\.split-pane-handle\s*\{([^}]*)\}/)?.[1] ?? "";
     expect(handleRule).toContain("width: 4px");
     const hitTargetRule = css.match(/\.split-pane-handle::before\s*\{([^}]*)\}/)?.[1] ?? "";
