@@ -1,5 +1,14 @@
 # Candidate database and ownership
 
+**Historical fixed-number pilot model.** The current
+[forking discussion](../FORKING-DISCUSSION.md) explores level-scaled basic
+attacks; this model remains intact as a comparison, not its approved design.
+
+**Readiness note (2026-09-28):** retain this structure for a broader trial, but do
+not treat this document as proof that the validator enforces every rule below or
+that all source shapes are covered. [NEXT-STEPS.md](NEXT-STEPS.md) records concrete
+gaps and the next work. No schema changes were made as part of that review.
+
 ## Three tables, one catalogue
 
 There is one `parts` catalogue, not a separate table for every kind of feature.

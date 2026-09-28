@@ -1,11 +1,21 @@
 # Full-dataset conversion instructions — DRAFT, NOT AUTHORISED TO RUN
 
-These instructions describe the pilot's actual method and the remaining decision
-boundaries. After user review, update them to match the accepted catalogue and
-record approval here before dispatching a cheaper model. Do not treat the user's
-approval of the broad goal as approval of every candidate-v1 default.
+**Historical pilot draft, not a current fork procedure.** The active
+[forking discussion](../FORKING-DISCUSSION.md) explores a different damage
+direction. Do not dispatch these instructions or use them to convert monsters.
+
+These instructions describe the pilot's actual method and its then-open decision
+boundaries. They were not approved for dataset-wide use. Do not treat approval of
+the broad monster-building goal as approval of every candidate-v1 default.
 
 ## 0. Approval and execution gate
+
+**Readiness as reviewed on 2026-09-28: not ready for whole-dataset execution.**
+The historical [NEXT-STEPS.md](NEXT-STEPS.md) proposed full-input inventory,
+evidence-led decisions, a targeted second trial, and validation hardening.
+Inventory is not conversion. The eight-profile pilot and its passing tests do
+not establish universal defaults or complete shape coverage. This draft
+describes the original worker procedure, not a current implementation plan.
 
 Before a whole-dataset run, obtain all of:
 
@@ -16,6 +26,11 @@ Before a whole-dataset run, obtain all of:
 4. Agreement whether accepted pilot defaults are frozen or can be replaced using
    full-dataset evidence. **Default for the later worker: frozen.** Report changed
    evidence; do not silently rewrite accepted rules.
+
+The frozen-default rule applies only after explicit approval. It must not freeze
+currently proposed dragon-derived natural-weapon defaults before broader review.
+Include the second trial's approved treatments and rejection tests in the final
+worker contract; retain escalation for genuinely new cases.
 
 The deliverable is new JSON plus external decision/coverage records, not production
 integration. No generic overrides, inline legacy fallbacks, or provenance fields

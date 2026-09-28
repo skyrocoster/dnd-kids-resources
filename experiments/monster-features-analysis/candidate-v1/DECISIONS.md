@@ -3,8 +3,16 @@
 Most concrete choices below remain proposals for review. The user specifically
 approved the five sampled Multiattack behaviors and retaining the three evidenced
 fire strengths (1d4, 2d6, and 8d8). This record stays outside the playable model.
+This is the historical pilot decision record, not the current level-scaling
+direction; see [FORKING-DISCUSSION.md](../FORKING-DISCUSSION.md).
 
 ## Review hotspots
+
+The 2026-09-28 readiness review is recorded in [NEXT-STEPS.md](NEXT-STEPS.md).
+These pilot decisions remain the baseline, not approved dataset-wide defaults.
+In particular, review broader natural-weapon evidence and the policy for retaining
+strength differences before freezing the catalogue. Preserve the specific
+Multiattack/fire approvals above; do not infer approval of other choices.
 
 1. **One combat profile per monster.** The pilot collapses attack-specific bonuses
    into one attack bonus and one damage bonus. Aartuk's Radiant Pellet consequently

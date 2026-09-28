@@ -2,8 +2,17 @@
 
 **Proposal for review, not an approved D&D ruleset or a production migration.**
 The governing agreement is [the parent decision document](../2026-09-27-monster-features-remodel.md).
+This complete pilot is retained as a **historical comparison baseline**. The
+current fork discussion explores monster level and scalable attacks instead;
+see [FORKING-DISCUSSION.md](../FORKING-DISCUSSION.md). Do not treat this pilot's
+fixed damage defaults or expansion draft as current fork instructions.
 
 ## Start here
+
+For the **current fork**, read [FORKING-DISCUSSION.md](../FORKING-DISCUSSION.md)
+first. For the **original pilot**, [NEXT-STEPS.md](NEXT-STEPS.md) records its
+2026-09-28 assessment and then-proposed next work; those instructions are no
+longer an active handoff. Its findings and known validation gaps remain useful.
 
 1. [DECISIONS.md](DECISIONS.md) — what I standardised, discarded, or kept, and why.
    Read the review hotspots first: these are actual gameplay changes.
@@ -13,8 +22,8 @@ The governing agreement is [the parent decision document](../2026-09-27-monster-
 5. `examples.json` — calculated attacks, the five sampled Multiattack recipes, and
    a Frankenstein assembly using existing Javelin, Brute, Fire Breath, and Undead
    Fortitude parts.
-6. [EXPANSION-INSTRUCTIONS.md](EXPANSION-INSTRUCTIONS.md) — detailed **draft**
-   instructions for a cheaper model. Finalise after approving this candidate.
+6. [EXPANSION-INSTRUCTIONS.md](EXPANSION-INSTRUCTIONS.md) — historical **draft**
+   instructions for a cheaper model, not a procedure for the current fork.
 7. `source-name-mapping.json` — external, pilot-only source-name/alias and
    occurrence crosswalk; not a playable table or runtime join.
 
@@ -51,6 +60,8 @@ The other files are development material, not database fields:
 - `build_candidate.py`: deterministic, closed-pilot conversion and a limited
   attack resolver. It does not infer a new full-dataset design.
 - `test_candidate.py`: focused conversion, joining, and part-swapping checks.
+- `NEXT-STEPS.md`: historical readiness assessment and former handoff;
+  neither a current fork plan nor a production migration authorization.
 
 ## Run this pilot again
 
