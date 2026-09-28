@@ -1,0 +1,1091 @@
+{
+  "input_sha256": {
+    "catalogue-decisions.json": "dc38a6e9873a5a156edf20123bf1d9c6ed57c0c56ca7040ce7d08bb1e18ac915",
+    "source-name-mapping.json": "55a7b49c1ea455aea29e29bab924c92ac330a2a217997a5aa1ad6eb873b711f5",
+    "seed-sample.json": "211c56c9aca9ebf4622cc9ae9cd2a7a099a4080e8da2b59fac7911bbe6bcbcc4",
+    "javelin-name-review.json": "9205f2f3f1b10b1b46e5b66aa9714171c2bd78aa2e73afa577fce542e2ba65c3"
+  },
+  "complete_feature_profile_ids": [
+    1,
+    4,
+    12,
+    39,
+    106,
+    402,
+    403,
+    1372
+  ],
+  "partial_javelin_profile_ids": [
+    2,
+    562,
+    699,
+    724,
+    765,
+    767,
+    774,
+    783,
+    784,
+    785,
+    786,
+    792,
+    1166,
+    1178,
+    1253,
+    1309,
+    1314,
+    1352,
+    1371,
+    1531,
+    1658,
+    1757,
+    1781,
+    1782,
+    1795,
+    1845,
+    1869,
+    2220,
+    2333,
+    2334,
+    2343,
+    2418,
+    2533,
+    2535,
+    2712,
+    2717
+  ],
+  "deduplicated_overlap_count": 4,
+  "input_feature_occurrences": 90,
+  "assignments": [
+    {
+      "occurrence": "m1-action-0",
+      "name": "Talon",
+      "feature_ids": [
+        "m1-action-0"
+      ],
+      "candidate_part_ids": [
+        "talon"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m1-action-1",
+      "name": "Javelin",
+      "feature_ids": [
+        "m1-action-1"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m1-action-2",
+      "name": "Summon Air Elemental",
+      "feature_ids": [
+        "m1-action-2"
+      ],
+      "candidate_part_ids": [
+        "summon-air-elemental"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m1-trait-0",
+      "name": "Dive Attack",
+      "feature_ids": [
+        "m1-trait-0"
+      ],
+      "candidate_part_ids": [
+        "dive-attack"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m2-action-1",
+      "name": "Javelin",
+      "feature_ids": [
+        "m2-action-1"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m4-action-0",
+      "name": "Multiattack",
+      "feature_ids": [
+        "m4-action-0"
+      ],
+      "candidate_part_ids": [
+        "multiattack-branch-pellet-pair"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m4-action-1",
+      "name": "Branch",
+      "feature_ids": [
+        "m4-action-1"
+      ],
+      "candidate_part_ids": [
+        "branch"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m4-action-2",
+      "name": "Radiant Pellet",
+      "feature_ids": [
+        "m4-action-2"
+      ],
+      "candidate_part_ids": [
+        "radiant-pellet"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m4-bonus_action-0",
+      "name": "Tongue (Recharge 6)",
+      "feature_ids": [
+        "m4-bonus_action-0"
+      ],
+      "candidate_part_ids": [
+        "tongue"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m4-spellcasting-0",
+      "name": "Spellcasting (Psionics)",
+      "feature_ids": [
+        "m4-spellcasting-0"
+      ],
+      "candidate_part_ids": [
+        "spellcasting-psionics"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m4-trait-0",
+      "name": "Spider Climb",
+      "feature_ids": [
+        "m4-trait-0"
+      ],
+      "candidate_part_ids": [
+        "spider-climb"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m12-action-0",
+      "name": "Multiattack",
+      "feature_ids": [
+        "m12-action-0"
+      ],
+      "candidate_part_ids": [
+        "multiattack-three-arcane-bursts"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m12-action-1",
+      "name": "Arcane Burst",
+      "feature_ids": [
+        "m12-action-1"
+      ],
+      "candidate_part_ids": [
+        "arcane-burst"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m12-action-2",
+      "name": "Force Blast",
+      "feature_ids": [
+        "m12-action-2"
+      ],
+      "candidate_part_ids": [
+        "force-blast"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m12-reaction-0",
+      "name": "Arcane Ward (Recharge 4-6)",
+      "feature_ids": [
+        "m12-reaction-0"
+      ],
+      "candidate_part_ids": [
+        "arcane-ward"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m12-spellcasting-0",
+      "name": "Spellcasting",
+      "feature_ids": [
+        "m12-spellcasting-0"
+      ],
+      "candidate_part_ids": [
+        "spellcasting"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m39-action-0",
+      "name": "Multiattack",
+      "feature_ids": [
+        "m39-action-0"
+      ],
+      "candidate_part_ids": [
+        "multiattack-bite-two-claws"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m39-action-1",
+      "name": "Bite",
+      "feature_ids": [
+        "m39-action-1"
+      ],
+      "candidate_part_ids": [
+        "bite"
+      ],
+      "candidate_modifier_ids": [
+        "fire-damage-2d6"
+      ]
+    },
+    {
+      "occurrence": "m39-action-2",
+      "name": "Claw",
+      "feature_ids": [
+        "m39-action-2"
+      ],
+      "candidate_part_ids": [
+        "claw"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m39-action-3",
+      "name": "Tail",
+      "feature_ids": [
+        "m39-action-3"
+      ],
+      "candidate_part_ids": [
+        "tail"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m39-action-4",
+      "name": "Frightful Presence",
+      "feature_ids": [
+        "m39-action-4"
+      ],
+      "candidate_part_ids": [
+        "frightful-presence"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m39-action-5",
+      "name": "Fire Breath (Recharge 5-6)",
+      "feature_ids": [
+        "m39-action-5"
+      ],
+      "candidate_part_ids": [
+        "fire-breath"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m39-legendary_action-0",
+      "name": "Detect",
+      "feature_ids": [
+        "m39-legendary_action-0"
+      ],
+      "candidate_part_ids": [
+        "detect"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m39-legendary_action-1",
+      "name": "Tail Attack",
+      "feature_ids": [
+        "m39-legendary_action-1"
+      ],
+      "candidate_part_ids": [
+        "tail-attack"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m39-legendary_action-2",
+      "name": "Wing Attack (Costs 2 Actions)",
+      "feature_ids": [
+        "m39-legendary_action-2"
+      ],
+      "candidate_part_ids": [
+        "wing-attack"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m39-trait-0",
+      "name": "Legendary Resistances",
+      "feature_ids": [],
+      "decision": "omit empty heading; retain real Legendary Resistance trait"
+    },
+    {
+      "occurrence": "m39-trait-1",
+      "name": "Legendary Resistance (3/Day)",
+      "feature_ids": [
+        "m39-trait-1"
+      ],
+      "candidate_part_ids": [
+        "legendary-resistance"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m106-action-0",
+      "name": "Multiattack",
+      "feature_ids": [
+        "m106-action-0"
+      ],
+      "candidate_part_ids": [
+        "multiattack-bite-or-tail-two-claws"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m106-action-1",
+      "name": "Bite",
+      "feature_ids": [
+        "m106-action-1"
+      ],
+      "candidate_part_ids": [
+        "bite"
+      ],
+      "candidate_modifier_ids": [
+        "lightning-damage"
+      ]
+    },
+    {
+      "occurrence": "m106-action-2",
+      "name": "Claw",
+      "feature_ids": [
+        "m106-action-2"
+      ],
+      "candidate_part_ids": [
+        "claw"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m106-action-3",
+      "name": "Tail",
+      "feature_ids": [
+        "m106-action-3"
+      ],
+      "candidate_part_ids": [
+        "tail"
+      ],
+      "candidate_modifier_ids": [
+        "knock-prone"
+      ]
+    },
+    {
+      "occurrence": "m106-action-4",
+      "name": "Steam Breath (Recharge 5-6)",
+      "feature_ids": [
+        "m106-action-4"
+      ],
+      "candidate_part_ids": [
+        "steam-breath"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m106-legendary_action-0",
+      "name": "Attack",
+      "feature_ids": [
+        "m106-legendary_action-0"
+      ],
+      "candidate_part_ids": [
+        "claw-or-tail-attack"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m106-legendary_action-1",
+      "name": "Move",
+      "feature_ids": [
+        "m106-legendary_action-1"
+      ],
+      "candidate_part_ids": [
+        "move"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m106-legendary_action-2",
+      "name": "Boiling Aura (Costs 3 Actions)",
+      "feature_ids": [
+        "m106-legendary_action-2"
+      ],
+      "candidate_part_ids": [
+        "boiling-aura"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m106-mythic_action-0",
+      "name": "Bite",
+      "feature_ids": [
+        "m106-mythic_action-0"
+      ],
+      "candidate_part_ids": [
+        "bite-attack"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m106-mythic_action-1",
+      "name": "Armor of Storms (Costs 2 Actions)",
+      "feature_ids": [
+        "m106-mythic_action-1"
+      ],
+      "candidate_part_ids": [
+        "armor-of-storms"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m106-trait-0",
+      "name": "Amphibious",
+      "feature_ids": [
+        "m106-trait-0"
+      ],
+      "candidate_part_ids": [
+        "amphibious"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m106-trait-1",
+      "name": "Legendary Resistances",
+      "feature_ids": [],
+      "decision": "omit empty heading; retain real Legendary Resistance trait"
+    },
+    {
+      "occurrence": "m106-trait-2",
+      "name": "Unusual Nature",
+      "feature_ids": [
+        "m106-trait-2-no-food-or-drink"
+      ],
+      "candidate_part_ids": [
+        "no-food-or-drink"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m106-trait-3",
+      "name": "Blessing of the Sea (Recharges after a Short or Long Rest)",
+      "feature_ids": [
+        "m106-trait-3"
+      ],
+      "candidate_part_ids": [
+        "blessing-of-the-sea"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m106-trait-4",
+      "name": "Legendary Resistance (3/Day)",
+      "feature_ids": [
+        "m106-trait-4"
+      ],
+      "candidate_part_ids": [
+        "legendary-resistance"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m402-action-0",
+      "name": "Morningstar",
+      "feature_ids": [
+        "m402-action-0"
+      ],
+      "candidate_part_ids": [
+        "morningstar"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m402-action-1",
+      "name": "Javelin",
+      "feature_ids": [
+        "m402-action-1"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m402-trait-0",
+      "name": "Brute",
+      "feature_ids": [
+        "m402-trait-0"
+      ],
+      "candidate_part_ids": [
+        "brute"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m402-trait-1",
+      "name": "Surprise Attack",
+      "feature_ids": [
+        "m402-trait-1"
+      ],
+      "candidate_part_ids": [
+        "surprise-attack"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m403-action-0",
+      "name": "Multiattack",
+      "feature_ids": [
+        "m403-action-0"
+      ],
+      "candidate_part_ids": [
+        "multiattack-two-melee-attacks"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m403-action-1",
+      "name": "Morningstar",
+      "feature_ids": [
+        "m403-action-1"
+      ],
+      "candidate_part_ids": [
+        "morningstar"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m403-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m403-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m403-trait-0",
+      "name": "Brute",
+      "feature_ids": [
+        "m403-trait-0"
+      ],
+      "candidate_part_ids": [
+        "brute"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m403-trait-1",
+      "name": "Surprise Attack",
+      "feature_ids": [
+        "m403-trait-1"
+      ],
+      "candidate_part_ids": [
+        "surprise-attack"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m403-trait-2",
+      "name": "Heart of Hruggek",
+      "feature_ids": [
+        "m403-trait-2"
+      ],
+      "candidate_part_ids": [
+        "heart-of-hruggek"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m562-action-1",
+      "name": "Javelin",
+      "feature_ids": [
+        "m562-action-1"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m699-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m699-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": [
+        "fire-damage-1d4"
+      ]
+    },
+    {
+      "occurrence": "m724-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m724-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m765-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m765-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": [
+        "enlarged-weapon"
+      ]
+    },
+    {
+      "occurrence": "m767-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m767-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": [
+        "enlarged-weapon"
+      ]
+    },
+    {
+      "occurrence": "m774-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m774-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": [
+        "enlarged-weapon"
+      ]
+    },
+    {
+      "occurrence": "m783-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m783-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": [
+        "enlarged-weapon"
+      ]
+    },
+    {
+      "occurrence": "m784-action-1",
+      "name": "Javelin",
+      "feature_ids": [
+        "m784-action-1"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": [
+        "enlarged-weapon"
+      ]
+    },
+    {
+      "occurrence": "m785-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m785-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": [
+        "enlarged-weapon"
+      ]
+    },
+    {
+      "occurrence": "m786-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m786-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": [
+        "enlarged-weapon"
+      ]
+    },
+    {
+      "occurrence": "m792-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m792-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m1166-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m1166-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m1178-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m1178-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m1253-action-1",
+      "name": "Javelin",
+      "feature_ids": [
+        "m1253-action-1"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m1309-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m1309-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m1314-action-3",
+      "name": "Javelin",
+      "feature_ids": [
+        "m1314-action-3"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m1352-action-1",
+      "name": "Javelin",
+      "feature_ids": [
+        "m1352-action-1"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m1371-action-1",
+      "name": "Javelin",
+      "feature_ids": [
+        "m1371-action-1"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m1372-action-0",
+      "name": "Javelin",
+      "feature_ids": [
+        "m1372-action-0"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m1372-trait-0",
+      "name": "Undead Fortitude",
+      "feature_ids": [
+        "m1372-trait-0"
+      ],
+      "candidate_part_ids": [
+        "undead-fortitude"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m1372-trait-1",
+      "name": "Unusual Nature",
+      "feature_ids": [
+        "m1372-trait-1-no-food-or-drink",
+        "m1372-trait-1-no-air",
+        "m1372-trait-1-no-sleep"
+      ],
+      "candidate_part_ids": [
+        "no-food-or-drink",
+        "no-air",
+        "no-sleep"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m1531-action-3",
+      "name": "Javelin",
+      "feature_ids": [
+        "m1531-action-3"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m1658-action-1",
+      "name": "Javelin",
+      "feature_ids": [
+        "m1658-action-1"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m1757-action-1",
+      "name": "Javelin",
+      "feature_ids": [
+        "m1757-action-1"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m1781-action-1",
+      "name": "Javelin",
+      "feature_ids": [
+        "m1781-action-1"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m1782-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m1782-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m1795-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m1795-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m1845-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m1845-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m1869-action-3",
+      "name": "Javelin",
+      "feature_ids": [
+        "m1869-action-3"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m2220-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m2220-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": [
+        "poison-damage"
+      ]
+    },
+    {
+      "occurrence": "m2333-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m2333-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m2334-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m2334-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m2343-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m2343-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m2418-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m2418-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m2533-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m2533-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m2535-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m2535-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m2712-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m2712-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": []
+    },
+    {
+      "occurrence": "m2717-action-2",
+      "name": "Javelin",
+      "feature_ids": [
+        "m2717-action-2"
+      ],
+      "candidate_part_ids": [
+        "javelin"
+      ],
+      "candidate_modifier_ids": [
+        "fire-damage-8d8"
+      ]
+    }
+  ],
+  "category_counts": {
+    "action": 62,
+    "bonus_action": 1,
+    "legendary_action": 6,
+    "mythic_action": 2,
+    "reaction": 1,
+    "spellcasting": 2,
+    "trait": 16
+  },
+  "part_count": 50,
+  "feature_count": 90,
+  "monster_count": 44,
+  "javelin_source_base_dice_counts": {
+    "1d6": 34,
+    "2d6": 6
+  },
+  "fire_source_dice_counts": {
+    "1d4": 1,
+    "2d6": 1,
+    "8d8": 1
+  }
+}

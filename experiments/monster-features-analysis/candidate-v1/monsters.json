@@ -1,0 +1,268 @@
+[
+  {
+    "id": 1,
+    "name": "Aarakocra",
+    "attack_bonus": 4,
+    "damage_bonus": 2
+  },
+  {
+    "id": 2,
+    "name": "Aarakocra Simulacrum",
+    "attack_bonus": 4,
+    "damage_bonus": 2
+  },
+  {
+    "id": 4,
+    "name": "Aartuk Elder",
+    "attack_bonus": 6,
+    "damage_bonus": 4
+  },
+  {
+    "id": 12,
+    "name": "Abjurer Wizard",
+    "attack_bonus": 6,
+    "damage_bonus": 4
+  },
+  {
+    "id": 39,
+    "name": "Adult Red Dragon",
+    "attack_bonus": 14,
+    "damage_bonus": 8,
+    "legendary_actions_per_round": 3
+  },
+  {
+    "id": 106,
+    "name": "Ancient Dragon Turtle",
+    "attack_bonus": 16,
+    "damage_bonus": 9,
+    "legendary_actions_per_round": 3
+  },
+  {
+    "id": 402,
+    "name": "Bugbear",
+    "attack_bonus": 4,
+    "damage_bonus": 2
+  },
+  {
+    "id": 403,
+    "name": "Bugbear Chief",
+    "attack_bonus": 5,
+    "damage_bonus": 3
+  },
+  {
+    "id": 562,
+    "name": "Crushing Wave Reaver",
+    "attack_bonus": 4,
+    "damage_bonus": 2
+  },
+  {
+    "id": 699,
+    "name": "Dragon Army Soldier",
+    "attack_bonus": 4,
+    "damage_bonus": 2
+  },
+  {
+    "id": 724,
+    "name": "Dread Warrior",
+    "attack_bonus": 4,
+    "damage_bonus": 2
+  },
+  {
+    "id": 765,
+    "name": "Duergar",
+    "attack_bonus": 4,
+    "damage_bonus": 2
+  },
+  {
+    "id": 767,
+    "name": "Duergar Darkhaft",
+    "attack_bonus": 4,
+    "damage_bonus": 2
+  },
+  {
+    "id": 774,
+    "name": "Duergar Keeper of the Flame",
+    "attack_bonus": 4,
+    "damage_bonus": 2
+  },
+  {
+    "id": 783,
+    "name": "Duergar Stone Guard (MPMM)",
+    "attack_bonus": 6,
+    "damage_bonus": 4
+  },
+  {
+    "id": 784,
+    "name": "Duergar Stone Guard (MTF)",
+    "attack_bonus": 6,
+    "damage_bonus": 4
+  },
+  {
+    "id": 785,
+    "name": "Duergar Warlord (MPMM)",
+    "attack_bonus": 7,
+    "damage_bonus": 4
+  },
+  {
+    "id": 786,
+    "name": "Duergar Warlord (MTF)",
+    "attack_bonus": 7,
+    "damage_bonus": 4
+  },
+  {
+    "id": 792,
+    "name": "Duodrone",
+    "attack_bonus": 3,
+    "damage_bonus": 1
+  },
+  {
+    "id": 1166,
+    "name": "Goblin Boss",
+    "attack_bonus": 2,
+    "damage_bonus": 0
+  },
+  {
+    "id": 1178,
+    "name": "Goliath Warrior",
+    "attack_bonus": 6,
+    "damage_bonus": 4
+  },
+  {
+    "id": 1253,
+    "name": "Half-Ogre (Ogrillon)",
+    "attack_bonus": 5,
+    "damage_bonus": 3
+  },
+  {
+    "id": 1309,
+    "name": "Hobgoblin Captain",
+    "attack_bonus": 4,
+    "damage_bonus": 2
+  },
+  {
+    "id": 1314,
+    "name": "Hobgoblin Warlord",
+    "attack_bonus": 9,
+    "damage_bonus": 3
+  },
+  {
+    "id": 1352,
+    "name": "Hybrid Flier",
+    "attack_bonus": 5,
+    "damage_bonus": 3
+  },
+  {
+    "id": 1371,
+    "name": "Icewind Kobold",
+    "attack_bonus": 0,
+    "damage_bonus": -2
+  },
+  {
+    "id": 1372,
+    "name": "Icewind Kobold Zombie",
+    "attack_bonus": 1,
+    "damage_bonus": -1
+  },
+  {
+    "id": 1531,
+    "name": "Lizardfolk",
+    "attack_bonus": 4,
+    "damage_bonus": 2
+  },
+  {
+    "id": 1658,
+    "name": "Monodrone",
+    "attack_bonus": 2,
+    "damage_bonus": 0
+  },
+  {
+    "id": 1757,
+    "name": "Ogre",
+    "attack_bonus": 6,
+    "damage_bonus": 4
+  },
+  {
+    "id": 1781,
+    "name": "Orc",
+    "attack_bonus": 5,
+    "damage_bonus": 3
+  },
+  {
+    "id": 1782,
+    "name": "Orc Blade of Ilneval",
+    "attack_bonus": 5,
+    "damage_bonus": 3
+  },
+  {
+    "id": 1795,
+    "name": "Orog",
+    "attack_bonus": 6,
+    "damage_bonus": 4
+  },
+  {
+    "id": 1845,
+    "name": "Plasmoid Explorer",
+    "attack_bonus": 3,
+    "damage_bonus": 1
+  },
+  {
+    "id": 1869,
+    "name": "Pterafolk",
+    "attack_bonus": 4,
+    "damage_bonus": 2
+  },
+  {
+    "id": 2220,
+    "name": "Ssurran Poisoner",
+    "attack_bonus": 3,
+    "damage_bonus": 1
+  },
+  {
+    "id": 2333,
+    "name": "Tasloi",
+    "attack_bonus": 5,
+    "damage_bonus": 3
+  },
+  {
+    "id": 2334,
+    "name": "Tasloi Sniper",
+    "attack_bonus": 6,
+    "damage_bonus": 4
+  },
+  {
+    "id": 2343,
+    "name": "Thayan Warrior",
+    "attack_bonus": 5,
+    "damage_bonus": 3
+  },
+  {
+    "id": 2418,
+    "name": "Tridrone",
+    "attack_bonus": 3,
+    "damage_bonus": 1
+  },
+  {
+    "id": 2533,
+    "name": "Warforged Soldier",
+    "attack_bonus": 5,
+    "damage_bonus": 3
+  },
+  {
+    "id": 2535,
+    "name": "Warforged Warrior",
+    "attack_bonus": 5,
+    "damage_bonus": 3
+  },
+  {
+    "id": 2712,
+    "name": "Zakya Rakshasa",
+    "attack_bonus": 7,
+    "damage_bonus": 4
+  },
+  {
+    "id": 2717,
+    "name": "Zariel (MTF)",
+    "attack_bonus": 16,
+    "damage_bonus": 8
+  }
+]

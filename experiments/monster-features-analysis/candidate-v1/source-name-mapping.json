@@ -1,0 +1,68 @@
+{
+  "purpose": "External pilot crosswalk for changed candidate labels. Match by the exact pilot occurrence and its observed behavior, not by name alone. This file is not a playable database table.",
+  "aliases": {
+    "multiattack-branch-pellet-pair": ["Multiattack"],
+    "multiattack-three-arcane-bursts": ["Multiattack"],
+    "multiattack-bite-two-claws": ["Multiattack"],
+    "multiattack-bite-or-tail-two-claws": ["Multiattack"],
+    "multiattack-two-melee-attacks": ["Multiattack"],
+    "fire-damage-1d4": ["Additional Fire Damage"],
+    "fire-damage-2d6": ["Additional Fire Damage"],
+    "fire-damage-8d8": ["Additional Fire Damage"]
+  },
+  "multiattacks": [
+    {
+      "occurrence": "m4-action-0",
+      "source_name": "Multiattack",
+      "source_description": "The aartuk makes two Branch attacks, two Radiant Pellet attacks, or one of each.",
+      "candidate_part_id": "multiattack-branch-pellet-pair"
+    },
+    {
+      "occurrence": "m12-action-0",
+      "source_name": "Multiattack",
+      "source_description": "The abjurer makes three Arcane Burst attacks.",
+      "candidate_part_id": "multiattack-three-arcane-bursts"
+    },
+    {
+      "occurrence": "m39-action-0",
+      "source_name": "Multiattack",
+      "source_description": "The dragon can use its Frightful Presence. It then makes three attacks: one with its bite and two with its claws.",
+      "candidate_part_id": "multiattack-bite-two-claws"
+    },
+    {
+      "occurrence": "m106-action-0",
+      "source_name": "Multiattack",
+      "source_description": "The dragon turtle makes one Bite or Tail attack and two Claw attacks.",
+      "candidate_part_id": "multiattack-bite-or-tail-two-claws"
+    },
+    {
+      "occurrence": "m403-action-0",
+      "source_name": "Multiattack",
+      "source_description": "The bugbear makes two melee attacks.",
+      "candidate_part_id": "multiattack-two-melee-attacks"
+    }
+  ],
+  "fire_riders": [
+    {
+      "occurrence": "m699-action-2",
+      "source_name": "Javelin",
+      "expected_base_part_id": "javelin",
+      "expected_component": {"formula": "1d4", "damage_types": ["fire"], "bonus": 0},
+      "candidate_modifier_id": "fire-damage-1d4"
+    },
+    {
+      "occurrence": "m39-action-1",
+      "source_name": "Bite",
+      "expected_base_part_id": "bite",
+      "expected_component": {"formula": "2d6", "damage_types": ["fire"], "bonus": 0},
+      "candidate_modifier_id": "fire-damage-2d6"
+    },
+    {
+      "occurrence": "m2717-action-2",
+      "source_name": "Javelin",
+      "expected_base_part_id": "javelin",
+      "expected_component": {"formula": "8d8", "damage_types": ["fire"], "bonus": 0},
+      "candidate_modifier_id": "fire-damage-8d8"
+    }
+  ]
+}

@@ -1,0 +1,693 @@
+[
+  {
+    "id": "javelin",
+    "kind": "weapon",
+    "name": "Javelin",
+    "modes": [
+      {
+        "id": "melee",
+        "attack_type": "melee",
+        "reach_ft": 5,
+        "damage": {
+          "dice": "1d6",
+          "type": "piercing",
+          "add_monster_bonus": true
+        }
+      },
+      {
+        "id": "thrown",
+        "attack_type": "ranged",
+        "range_ft": 30,
+        "long_range_ft": 120,
+        "damage": {
+          "dice": "1d6",
+          "type": "piercing",
+          "add_monster_bonus": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "morningstar",
+    "kind": "weapon",
+    "name": "Morningstar",
+    "modes": [
+      {
+        "id": "melee",
+        "attack_type": "melee",
+        "reach_ft": 5,
+        "damage": {
+          "dice": "1d8",
+          "type": "piercing",
+          "add_monster_bonus": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "talon",
+    "kind": "weapon",
+    "name": "Talon",
+    "modes": [
+      {
+        "id": "melee",
+        "attack_type": "melee",
+        "reach_ft": 5,
+        "damage": {
+          "dice": "1d4",
+          "type": "slashing",
+          "add_monster_bonus": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "branch",
+    "kind": "weapon",
+    "name": "Branch",
+    "modes": [
+      {
+        "id": "melee",
+        "attack_type": "melee",
+        "reach_ft": 10,
+        "damage": {
+          "dice": "2d6",
+          "type": "bludgeoning",
+          "add_monster_bonus": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "bite",
+    "kind": "weapon",
+    "name": "Bite",
+    "modes": [
+      {
+        "id": "melee",
+        "attack_type": "melee",
+        "reach_ft": 10,
+        "damage": {
+          "dice": "2d10",
+          "type": "piercing",
+          "add_monster_bonus": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "claw",
+    "kind": "weapon",
+    "name": "Claw",
+    "modes": [
+      {
+        "id": "melee",
+        "attack_type": "melee",
+        "reach_ft": 5,
+        "damage": {
+          "dice": "2d6",
+          "type": "slashing",
+          "add_monster_bonus": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "tail",
+    "kind": "weapon",
+    "name": "Tail",
+    "modes": [
+      {
+        "id": "melee",
+        "attack_type": "melee",
+        "reach_ft": 15,
+        "damage": {
+          "dice": "2d8",
+          "type": "bludgeoning",
+          "add_monster_bonus": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "radiant-pellet",
+    "kind": "action",
+    "name": "Radiant Pellet",
+    "modes": [
+      {
+        "id": "ranged",
+        "attack_type": "ranged",
+        "range_ft": 60,
+        "damage": {
+          "dice": "4d4",
+          "type": "radiant",
+          "add_monster_bonus": false
+        }
+      }
+    ]
+  },
+  {
+    "id": "arcane-burst",
+    "kind": "action",
+    "name": "Arcane Burst",
+    "modes": [
+      {
+        "id": "ranged",
+        "attack_type": "ranged",
+        "range_ft": 120,
+        "damage": {
+          "dice": "3d10",
+          "type": "force",
+          "add_monster_bonus": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "brute",
+    "kind": "modifier",
+    "name": "Brute",
+    "effect": {
+      "operation": "add_base_damage_dice",
+      "count": 1,
+      "attack_type": "melee",
+      "part_kind": "weapon",
+      "activation": "always"
+    }
+  },
+  {
+    "id": "enlarged-weapon",
+    "kind": "modifier",
+    "name": "Enlarged Weapon",
+    "effect": {
+      "operation": "add_base_damage_dice",
+      "count": 1,
+      "part_kind": "weapon",
+      "activation": "enlarged"
+    }
+  },
+  {
+    "id": "fire-damage-1d4",
+    "kind": "modifier",
+    "name": "Additional Fire Damage (1d4)",
+    "effect": {
+      "operation": "add_damage",
+      "dice": "1d4",
+      "type": "fire",
+      "activation": "always"
+    }
+  },
+  {
+    "id": "fire-damage-2d6",
+    "kind": "modifier",
+    "name": "Additional Fire Damage (2d6)",
+    "effect": {
+      "operation": "add_damage",
+      "dice": "2d6",
+      "type": "fire",
+      "activation": "always"
+    }
+  },
+  {
+    "id": "fire-damage-8d8",
+    "kind": "modifier",
+    "name": "Additional Fire Damage (8d8)",
+    "effect": {
+      "operation": "add_damage",
+      "dice": "8d8",
+      "type": "fire",
+      "activation": "always"
+    }
+  },
+  {
+    "id": "poison-damage",
+    "kind": "modifier",
+    "name": "Additional Poison Damage",
+    "effect": {
+      "operation": "add_damage",
+      "dice": "1d8",
+      "type": "poison",
+      "activation": "always"
+    }
+  },
+  {
+    "id": "lightning-damage",
+    "kind": "modifier",
+    "name": "Additional Lightning Damage",
+    "effect": {
+      "operation": "add_damage",
+      "dice": "2d12",
+      "type": "lightning",
+      "activation": "always"
+    }
+  },
+  {
+    "id": "knock-prone",
+    "kind": "modifier",
+    "name": "Knock Prone",
+    "rules_text": "On a hit, if the target is a creature, it must succeed on a DC 24 Strength saving throw or be knocked prone."
+  },
+  {
+    "id": "multiattack-branch-pellet-pair",
+    "kind": "action",
+    "name": "Multiattack: Two Branch/Radiant Pellet Attacks",
+    "requires_parts": [
+      "branch",
+      "radiant-pellet"
+    ],
+    "effect": {
+      "operation": "repeat_attacks",
+      "count": 2,
+      "selection": "listed_attack_modes",
+      "choices": [
+        {
+          "part_id": "branch",
+          "mode_id": "melee"
+        },
+        {
+          "part_id": "radiant-pellet",
+          "mode_id": "ranged"
+        }
+      ]
+    }
+  },
+  {
+    "id": "multiattack-three-arcane-bursts",
+    "kind": "action",
+    "name": "Multiattack: Three Arcane Bursts",
+    "requires_parts": [
+      "arcane-burst"
+    ],
+    "effect": {
+      "operation": "repeat_attacks",
+      "count": 3,
+      "selection": "listed_attack_modes",
+      "choices": [
+        {
+          "part_id": "arcane-burst",
+          "mode_id": "ranged"
+        }
+      ]
+    }
+  },
+  {
+    "id": "multiattack-bite-two-claws",
+    "kind": "action",
+    "name": "Multiattack: Bite and Two Claws",
+    "requires_parts": [
+      "bite",
+      "claw",
+      "frightful-presence"
+    ],
+    "effect": {
+      "operation": "attack_sequence",
+      "optional_prelude_part_id": "frightful-presence",
+      "steps": [
+        {
+          "part_id": "bite",
+          "mode_id": "melee",
+          "count": 1
+        },
+        {
+          "part_id": "claw",
+          "mode_id": "melee",
+          "count": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "multiattack-bite-or-tail-two-claws",
+    "kind": "action",
+    "name": "Multiattack: Bite or Tail and Two Claws",
+    "requires_parts": [
+      "bite",
+      "tail",
+      "claw"
+    ],
+    "effect": {
+      "operation": "attack_sequence",
+      "steps": [
+        {
+          "count": 1,
+          "choices": [
+            {
+              "part_id": "bite",
+              "mode_id": "melee"
+            },
+            {
+              "part_id": "tail",
+              "mode_id": "melee"
+            }
+          ]
+        },
+        {
+          "part_id": "claw",
+          "mode_id": "melee",
+          "count": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "multiattack-two-melee-attacks",
+    "kind": "action",
+    "name": "Multiattack: Two Melee Attacks",
+    "effect": {
+      "operation": "repeat_attacks",
+      "count": 2,
+      "selection": "available_action_melee_attack_modes"
+    }
+  },
+  {
+    "id": "no-food-or-drink",
+    "kind": "trait",
+    "name": "No Food or Drink Required",
+    "rules_text": "This monster doesn't require food or drink."
+  },
+  {
+    "id": "no-air",
+    "kind": "trait",
+    "name": "No Air Required",
+    "rules_text": "This monster doesn't require air."
+  },
+  {
+    "id": "no-sleep",
+    "kind": "trait",
+    "name": "No Sleep Required",
+    "rules_text": "This monster doesn't require sleep."
+  },
+  {
+    "id": "tail-attack",
+    "kind": "action",
+    "name": "Tail Attack",
+    "usage": {
+      "action_cost": 1
+    },
+    "effect": {
+      "operation": "use_attack",
+      "choices": [
+        {
+          "part_id": "tail",
+          "mode_id": "melee"
+        }
+      ]
+    }
+  },
+  {
+    "id": "claw-or-tail-attack",
+    "kind": "action",
+    "name": "Claw or Tail Attack",
+    "usage": {
+      "action_cost": 1
+    },
+    "effect": {
+      "operation": "use_attack",
+      "choices": [
+        {
+          "part_id": "claw",
+          "mode_id": "melee"
+        },
+        {
+          "part_id": "tail",
+          "mode_id": "melee"
+        }
+      ]
+    }
+  },
+  {
+    "id": "bite-attack",
+    "kind": "action",
+    "name": "Bite Attack",
+    "usage": {
+      "action_cost": 1
+    },
+    "effect": {
+      "operation": "use_attack",
+      "choices": [
+        {
+          "part_id": "bite",
+          "mode_id": "melee"
+        }
+      ]
+    }
+  },
+  {
+    "id": "summon-air-elemental",
+    "kind": "action",
+    "name": "Summon Air Elemental",
+    "rules_text": "Five creatures with this action within 30 feet of each other can magically summon an air elemental. Each must use its action and movement on three consecutive turns to perform an aerial dance and maintain concentration as if concentrating on a spell. When all five finish, the elemental appears in an unoccupied space within 60 feet of them. It is friendly and obeys their spoken commands. It remains for 1 hour, until it or all its summoners die, or until a summoner dismisses it as a bonus action. A summoner cannot perform the dance again until it finishes a short rest. When the elemental returns to the Elemental Plane of Air, any creature with this action within 5 feet of it can return with it."
+  },
+  {
+    "id": "dive-attack",
+    "kind": "trait",
+    "name": "Dive Attack",
+    "rules_text": "If this monster is flying and dives at least 30 feet straight toward a target and then hits it with a melee weapon attack, the attack deals an extra 1d6 damage to the target."
+  },
+  {
+    "id": "tongue",
+    "kind": "action",
+    "name": "Tongue",
+    "rules_text": "This monster tries to use its gooey tongue to snare one Large or smaller creature it can see within 30 feet of itself. The target must make a DC 12 Dexterity saving throw. On a failed save, the target is grappled by the tongue (escape DC 14) and pulled up to 25 feet toward this monster. The tongue can grapple one creature at a time.",
+    "usage": {
+      "recharge_roll": [
+        6
+      ]
+    }
+  },
+  {
+    "id": "spellcasting-psionics",
+    "kind": "spellcasting",
+    "name": "Spellcasting (Psionics)",
+    "rules_text": "This monster casts one of the following spells, requiring no spell components and using Wisdom as the spellcasting ability (spell save DC 12):",
+    "spellcasting": {
+      "ability": "wis",
+      "groups": [
+        {
+          "label": "1/day each",
+          "spells": [
+            {
+              "name": "Calm Emotions"
+            },
+            {
+              "name": "Detect Magic"
+            },
+            {
+              "name": "Sending"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "spider-climb",
+    "kind": "trait",
+    "name": "Spider Climb",
+    "rules_text": "This monster can climb difficult surfaces, including upside down on ceilings, without needing to make an ability check."
+  },
+  {
+    "id": "force-blast",
+    "kind": "action",
+    "name": "Force Blast",
+    "rules_text": "Each creature in a 20-foot cube originating from this monster must make a DC 16 Constitution saving throw. On a failed save, a creature takes 8d8 force damage and is pushed up to 10 feet away from this monster. On a successful save, a creature takes half as much damage and isn't pushed."
+  },
+  {
+    "id": "arcane-ward",
+    "kind": "action",
+    "name": "Arcane Ward",
+    "rules_text": "When this monster or a creature it can see within 30 feet of it takes damage, this monster magically creates a protective barrier around itself or the other creature. The barrier reduces the damage to the protected creature by 4d10 + 4, to a minimum of 0, and then vanishes.",
+    "usage": {
+      "recharge_roll": [
+        4,
+        5,
+        6
+      ]
+    }
+  },
+  {
+    "id": "spellcasting",
+    "kind": "spellcasting",
+    "name": "Spellcasting",
+    "rules_text": "This monster casts one of the following spells, using Intelligence as the spellcasting ability (spell save DC 16):",
+    "spellcasting": {
+      "ability": "int",
+      "groups": [
+        {
+          "label": "At will",
+          "spells": [
+            {
+              "name": "Dancing Lights"
+            },
+            {
+              "name": "Mage Hand"
+            },
+            {
+              "name": "Message"
+            },
+            {
+              "name": "Prestidigitation"
+            }
+          ]
+        },
+        {
+          "label": "2/day each",
+          "spells": [
+            {
+              "name": "Dispel Magic"
+            },
+            {
+              "name": "Lightning Bolt"
+            },
+            {
+              "name": "Mage Armor"
+            }
+          ]
+        },
+        {
+          "label": "1/day each",
+          "spells": [
+            {
+              "name": "Arcane Lock"
+            },
+            {
+              "name": "Banishment"
+            },
+            {
+              "name": "Globe of Invulnerability"
+            },
+            {
+              "name": "Invisibility"
+            },
+            {
+              "name": "Wall of Force"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "frightful-presence",
+    "kind": "action",
+    "name": "Frightful Presence",
+    "rules_text": "Each creature of this monster's choice that is within 120 feet of this monster and aware of it must succeed on a DC 19 Wisdom saving throw or become frightened for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success. If a creature's saving throw is successful or the effect ends for it, the creature is immune to this monster's Frightful Presence for the next 24 hours."
+  },
+  {
+    "id": "fire-breath",
+    "kind": "action",
+    "name": "Fire Breath",
+    "rules_text": "This monster exhales fire in a 60-foot cone. Each creature in that area must make a DC 21 Dexterity saving throw, taking 18d6 fire damage on a failed save, or half as much damage on a successful one.",
+    "usage": {
+      "recharge_roll": [
+        5,
+        6
+      ]
+    }
+  },
+  {
+    "id": "detect",
+    "kind": "action",
+    "name": "Detect",
+    "rules_text": "This monster makes a Wisdom (Perception) check.",
+    "usage": {
+      "action_cost": 1
+    }
+  },
+  {
+    "id": "wing-attack",
+    "kind": "action",
+    "name": "Wing Attack",
+    "rules_text": "This monster beats its wings. Each creature within 10 feet of this monster must succeed on a DC 22 Dexterity saving throw or take 2d6 + 8 bludgeoning damage and be knocked prone. This monster can then fly up to half its flying speed.",
+    "usage": {
+      "action_cost": 2
+    }
+  },
+  {
+    "id": "legendary-resistance",
+    "kind": "trait",
+    "name": "Legendary Resistance",
+    "rules_text": "If this monster fails a saving throw, it can choose to succeed instead.",
+    "usage": {
+      "uses_per_day": 3
+    }
+  },
+  {
+    "id": "steam-breath",
+    "kind": "action",
+    "name": "Steam Breath",
+    "rules_text": "This monster exhales steam in a 90-foot cone. Each creature in that area must make a DC 24 Constitution saving throw, taking 15d8 fire damage on a failed save, or half as much damage on a successful one. Being underwater doesn't grant resistance against this damage.",
+    "usage": {
+      "recharge_roll": [
+        5,
+        6
+      ]
+    }
+  },
+  {
+    "id": "move",
+    "kind": "action",
+    "name": "Move",
+    "rules_text": "This monster moves up to its speed. If this monster is swimming, this movement doesn't provoke opportunity attacks.",
+    "usage": {
+      "action_cost": 1
+    }
+  },
+  {
+    "id": "boiling-aura",
+    "kind": "action",
+    "name": "Boiling Aura",
+    "rules_text": "This monster radiates intense heat. Until the start of this monster's next turn, whenever a creature starts its turn within 20 feet of this monster, that creature must succeed on a DC 24 Constitution saving throw or take 9d8 fire damage. Being underwater doesn't grant resistance against this damage.",
+    "usage": {
+      "action_cost": 3
+    }
+  },
+  {
+    "id": "armor-of-storms",
+    "kind": "action",
+    "name": "Armor of Storms",
+    "rules_text": "Lightning temporarily surrounds this monster, and it gains 40 temporary hit points until the start of its next turn. Until all these temporary hit points are gone, any creature that touches this monster or hits it with a melee attack takes 4d12 lightning damage.",
+    "usage": {
+      "action_cost": 2
+    }
+  },
+  {
+    "id": "amphibious",
+    "kind": "trait",
+    "name": "Amphibious",
+    "rules_text": "This monster can breathe air and water."
+  },
+  {
+    "id": "blessing-of-the-sea",
+    "kind": "trait",
+    "name": "Blessing of the Sea",
+    "rules_text": "If this monster would be reduced to 0 hit points, its hit points instead reset to 350 and its Steam Breath recharges. It can then use its mythic actions for 1 hour.",
+    "usage": {
+      "recharge_after": [
+        "short_rest",
+        "long_rest"
+      ]
+    },
+    "requires_parts": [
+      "steam-breath"
+    ]
+  },
+  {
+    "id": "surprise-attack",
+    "kind": "trait",
+    "name": "Surprise Attack",
+    "rules_text": "If this monster surprises a creature and hits it with an attack during the first round of combat, the target takes an extra 2d6 damage from the attack."
+  },
+  {
+    "id": "heart-of-hruggek",
+    "kind": "trait",
+    "name": "Heart of Hruggek",
+    "rules_text": "This monster has advantage on saving throws against being charmed, frightened, paralyzed, poisoned, stunned, or put to sleep."
+  },
+  {
+    "id": "undead-fortitude",
+    "kind": "trait",
+    "name": "Undead Fortitude",
+    "rules_text": "If damage reduces this monster to 0 hit points, it must make a Constitution saving throw with a DC of 5 + the damage taken, unless the damage is radiant or from a critical hit. On a success, this monster drops to 1 hit point instead."
+  }
+]

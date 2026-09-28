@@ -1,9 +1,14 @@
 # Monster features analysis pack
 
-This folder prepares examples and alternate *views* of the local monster seed
-for analysis. It does **not** propose or implement a database model. No feature
-variants are declared equivalent, no weapon links are inferred, and no seed,
-schema, or database data is changed.
+The original analysis files in this folder prepare examples and alternate *views*
+of the local monster seed. Those files do not declare equivalence or implement a
+database model. No seed, application schema, or live database data is changed.
+
+The separate [candidate-v1 proposal](candidate-v1/README.md) now contains a deliberately
+standardised shared-part catalogue, monster assemblies in JSON, conversion checks,
+and draft full-dataset instructions. Its decisions are proposals for review under
+[the agreed remodel direction](2026-09-27-monster-features-remodel.md), not conclusions
+silently added to the original evidence files.
 
 ## Source and regeneration
 

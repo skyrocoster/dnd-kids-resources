@@ -1,0 +1,337 @@
+{
+  "bugbear_morningstar": {
+    "part_id": "morningstar",
+    "mode_id": "melee",
+    "attack_bonus": 4,
+    "attack_type": "melee",
+    "targets": 1,
+    "reach_ft": 5,
+    "damage": [
+      {
+        "dice": "2d8",
+        "type": "piercing",
+        "bonus": 2
+      }
+    ],
+    "applied_modifier_ids": [
+      "brute"
+    ],
+    "on_hit_rules": []
+  },
+  "bugbear_javelin_melee": {
+    "part_id": "javelin",
+    "mode_id": "melee",
+    "attack_bonus": 4,
+    "attack_type": "melee",
+    "targets": 1,
+    "reach_ft": 5,
+    "damage": [
+      {
+        "dice": "2d6",
+        "type": "piercing",
+        "bonus": 2
+      }
+    ],
+    "applied_modifier_ids": [
+      "brute"
+    ],
+    "on_hit_rules": []
+  },
+  "bugbear_javelin_thrown": {
+    "part_id": "javelin",
+    "mode_id": "thrown",
+    "attack_bonus": 4,
+    "attack_type": "ranged",
+    "targets": 1,
+    "range_ft": 30,
+    "long_range_ft": 120,
+    "damage": [
+      {
+        "dice": "1d6",
+        "type": "piercing",
+        "bonus": 2
+      }
+    ],
+    "applied_modifier_ids": [],
+    "on_hit_rules": []
+  },
+  "duergar_normal": {
+    "part_id": "javelin",
+    "mode_id": "thrown",
+    "attack_bonus": 4,
+    "attack_type": "ranged",
+    "targets": 1,
+    "range_ft": 30,
+    "long_range_ft": 120,
+    "damage": [
+      {
+        "dice": "1d6",
+        "type": "piercing",
+        "bonus": 2
+      }
+    ],
+    "applied_modifier_ids": [],
+    "on_hit_rules": []
+  },
+  "duergar_enlarged": {
+    "part_id": "javelin",
+    "mode_id": "thrown",
+    "attack_bonus": 4,
+    "attack_type": "ranged",
+    "targets": 1,
+    "range_ft": 30,
+    "long_range_ft": 120,
+    "damage": [
+      {
+        "dice": "2d6",
+        "type": "piercing",
+        "bonus": 2
+      }
+    ],
+    "applied_modifier_ids": [
+      "enlarged-weapon"
+    ],
+    "on_hit_rules": []
+  },
+  "soldier_fire_javelin": {
+    "part_id": "javelin",
+    "mode_id": "thrown",
+    "attack_bonus": 4,
+    "attack_type": "ranged",
+    "targets": 1,
+    "range_ft": 30,
+    "long_range_ft": 120,
+    "damage": [
+      {
+        "dice": "1d6",
+        "type": "piercing",
+        "bonus": 2
+      },
+      {
+        "dice": "1d4",
+        "type": "fire",
+        "bonus": 0
+      }
+    ],
+    "applied_modifier_ids": [
+      "fire-damage-1d4"
+    ],
+    "on_hit_rules": []
+  },
+  "red_dragon_fire_bite": {
+    "part_id": "bite",
+    "mode_id": "melee",
+    "attack_bonus": 14,
+    "attack_type": "melee",
+    "targets": 1,
+    "reach_ft": 10,
+    "damage": [
+      {
+        "dice": "2d10",
+        "type": "piercing",
+        "bonus": 8
+      },
+      {
+        "dice": "2d6",
+        "type": "fire",
+        "bonus": 0
+      }
+    ],
+    "applied_modifier_ids": [
+      "fire-damage-2d6"
+    ],
+    "on_hit_rules": []
+  },
+  "zariel_fire_javelin_partial": {
+    "part_id": "javelin",
+    "mode_id": "thrown",
+    "attack_bonus": 16,
+    "attack_type": "ranged",
+    "targets": 1,
+    "range_ft": 30,
+    "long_range_ft": 120,
+    "damage": [
+      {
+        "dice": "1d6",
+        "type": "piercing",
+        "bonus": 8
+      },
+      {
+        "dice": "8d8",
+        "type": "fire",
+        "bonus": 0
+      }
+    ],
+    "applied_modifier_ids": [
+      "fire-damage-8d8"
+    ],
+    "on_hit_rules": []
+  },
+  "multiattack_recipes": {
+    "m4-action-0": {
+      "part_id": "multiattack-branch-pellet-pair",
+      "effect": {
+        "operation": "repeat_attacks",
+        "count": 2,
+        "selection": "listed_attack_modes",
+        "choices": [
+          {
+            "part_id": "branch",
+            "mode_id": "melee"
+          },
+          {
+            "part_id": "radiant-pellet",
+            "mode_id": "ranged"
+          }
+        ]
+      }
+    },
+    "m12-action-0": {
+      "part_id": "multiattack-three-arcane-bursts",
+      "effect": {
+        "operation": "repeat_attacks",
+        "count": 3,
+        "selection": "listed_attack_modes",
+        "choices": [
+          {
+            "part_id": "arcane-burst",
+            "mode_id": "ranged"
+          }
+        ]
+      }
+    },
+    "m39-action-0": {
+      "part_id": "multiattack-bite-two-claws",
+      "effect": {
+        "operation": "attack_sequence",
+        "optional_prelude_part_id": "frightful-presence",
+        "steps": [
+          {
+            "part_id": "bite",
+            "mode_id": "melee",
+            "count": 1
+          },
+          {
+            "part_id": "claw",
+            "mode_id": "melee",
+            "count": 2
+          }
+        ]
+      }
+    },
+    "m106-action-0": {
+      "part_id": "multiattack-bite-or-tail-two-claws",
+      "effect": {
+        "operation": "attack_sequence",
+        "steps": [
+          {
+            "count": 1,
+            "choices": [
+              {
+                "part_id": "bite",
+                "mode_id": "melee"
+              },
+              {
+                "part_id": "tail",
+                "mode_id": "melee"
+              }
+            ]
+          },
+          {
+            "part_id": "claw",
+            "mode_id": "melee",
+            "count": 2
+          }
+        ]
+      }
+    },
+    "m403-action-0": {
+      "part_id": "multiattack-two-melee-attacks",
+      "effect": {
+        "operation": "repeat_attacks",
+        "count": 2,
+        "selection": "available_action_melee_attack_modes"
+      }
+    }
+  },
+  "frankenstein_demo": {
+    "note": "Illustration only, not a converted source monster. Morningstar removed; Javelin, Brute, Fire Breath and Undead Fortitude assembled without new parts.",
+    "monster": {
+      "id": "demo",
+      "name": "Frankenstein Demonstration",
+      "attack_bonus": 4,
+      "damage_bonus": 2
+    },
+    "features": [
+      {
+        "id": "demo-0",
+        "monster_id": "demo",
+        "category": "action",
+        "position": 0,
+        "part_id": "javelin",
+        "mode_ids": [
+          "melee",
+          "thrown"
+        ]
+      },
+      {
+        "id": "demo-1",
+        "monster_id": "demo",
+        "category": "trait",
+        "position": 1,
+        "part_id": "brute"
+      },
+      {
+        "id": "demo-2",
+        "monster_id": "demo",
+        "category": "action",
+        "position": 2,
+        "part_id": "fire-breath"
+      },
+      {
+        "id": "demo-3",
+        "monster_id": "demo",
+        "category": "trait",
+        "position": 3,
+        "part_id": "undead-fortitude"
+      }
+    ],
+    "melee": {
+      "part_id": "javelin",
+      "mode_id": "melee",
+      "attack_bonus": 4,
+      "attack_type": "melee",
+      "targets": 1,
+      "reach_ft": 5,
+      "damage": [
+        {
+          "dice": "2d6",
+          "type": "piercing",
+          "bonus": 2
+        }
+      ],
+      "applied_modifier_ids": [
+        "brute"
+      ],
+      "on_hit_rules": []
+    },
+    "thrown": {
+      "part_id": "javelin",
+      "mode_id": "thrown",
+      "attack_bonus": 4,
+      "attack_type": "ranged",
+      "targets": 1,
+      "range_ft": 30,
+      "long_range_ft": 120,
+      "damage": [
+        {
+          "dice": "1d6",
+          "type": "piercing",
+          "bonus": 2
+        }
+      ],
+      "applied_modifier_ids": [],
+      "on_hit_rules": []
+    }
+  }
+}

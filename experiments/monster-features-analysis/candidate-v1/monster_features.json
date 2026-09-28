@@ -1,0 +1,841 @@
+[
+  {
+    "id": "m1-action-0",
+    "monster_id": 1,
+    "category": "action",
+    "position": 0,
+    "part_id": "talon",
+    "mode_ids": [
+      "melee"
+    ]
+  },
+  {
+    "id": "m1-action-1",
+    "monster_id": 1,
+    "category": "action",
+    "position": 1,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m1-action-2",
+    "monster_id": 1,
+    "category": "action",
+    "position": 2,
+    "part_id": "summon-air-elemental"
+  },
+  {
+    "id": "m1-trait-0",
+    "monster_id": 1,
+    "category": "trait",
+    "position": 0,
+    "part_id": "dive-attack"
+  },
+  {
+    "id": "m2-action-1",
+    "monster_id": 2,
+    "category": "action",
+    "position": 1,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m4-action-0",
+    "monster_id": 4,
+    "category": "action",
+    "position": 0,
+    "part_id": "multiattack-branch-pellet-pair"
+  },
+  {
+    "id": "m4-action-1",
+    "monster_id": 4,
+    "category": "action",
+    "position": 1,
+    "part_id": "branch",
+    "mode_ids": [
+      "melee"
+    ]
+  },
+  {
+    "id": "m4-action-2",
+    "monster_id": 4,
+    "category": "action",
+    "position": 2,
+    "part_id": "radiant-pellet",
+    "mode_ids": [
+      "ranged"
+    ]
+  },
+  {
+    "id": "m4-bonus_action-0",
+    "monster_id": 4,
+    "category": "bonus_action",
+    "position": 0,
+    "part_id": "tongue",
+    "display_name": "Tongue (Recharge 6)"
+  },
+  {
+    "id": "m4-spellcasting-0",
+    "monster_id": 4,
+    "category": "spellcasting",
+    "position": 0,
+    "part_id": "spellcasting-psionics"
+  },
+  {
+    "id": "m4-trait-0",
+    "monster_id": 4,
+    "category": "trait",
+    "position": 0,
+    "part_id": "spider-climb"
+  },
+  {
+    "id": "m12-action-0",
+    "monster_id": 12,
+    "category": "action",
+    "position": 0,
+    "part_id": "multiattack-three-arcane-bursts"
+  },
+  {
+    "id": "m12-action-1",
+    "monster_id": 12,
+    "category": "action",
+    "position": 1,
+    "part_id": "arcane-burst",
+    "mode_ids": [
+      "ranged"
+    ]
+  },
+  {
+    "id": "m12-action-2",
+    "monster_id": 12,
+    "category": "action",
+    "position": 2,
+    "part_id": "force-blast"
+  },
+  {
+    "id": "m12-reaction-0",
+    "monster_id": 12,
+    "category": "reaction",
+    "position": 0,
+    "part_id": "arcane-ward",
+    "display_name": "Arcane Ward (Recharge 4-6)"
+  },
+  {
+    "id": "m12-spellcasting-0",
+    "monster_id": 12,
+    "category": "spellcasting",
+    "position": 0,
+    "part_id": "spellcasting"
+  },
+  {
+    "id": "m39-action-0",
+    "monster_id": 39,
+    "category": "action",
+    "position": 0,
+    "part_id": "multiattack-bite-two-claws"
+  },
+  {
+    "id": "m39-action-1",
+    "monster_id": 39,
+    "category": "action",
+    "position": 1,
+    "part_id": "bite",
+    "mode_ids": [
+      "melee"
+    ],
+    "modifier_ids": [
+      "fire-damage-2d6"
+    ]
+  },
+  {
+    "id": "m39-action-2",
+    "monster_id": 39,
+    "category": "action",
+    "position": 2,
+    "part_id": "claw",
+    "mode_ids": [
+      "melee"
+    ]
+  },
+  {
+    "id": "m39-action-3",
+    "monster_id": 39,
+    "category": "action",
+    "position": 3,
+    "part_id": "tail",
+    "mode_ids": [
+      "melee"
+    ]
+  },
+  {
+    "id": "m39-action-4",
+    "monster_id": 39,
+    "category": "action",
+    "position": 4,
+    "part_id": "frightful-presence"
+  },
+  {
+    "id": "m39-action-5",
+    "monster_id": 39,
+    "category": "action",
+    "position": 5,
+    "part_id": "fire-breath",
+    "display_name": "Fire Breath (Recharge 5-6)"
+  },
+  {
+    "id": "m39-legendary_action-0",
+    "monster_id": 39,
+    "category": "legendary_action",
+    "position": 0,
+    "part_id": "detect"
+  },
+  {
+    "id": "m39-legendary_action-1",
+    "monster_id": 39,
+    "category": "legendary_action",
+    "position": 1,
+    "part_id": "tail-attack"
+  },
+  {
+    "id": "m39-legendary_action-2",
+    "monster_id": 39,
+    "category": "legendary_action",
+    "position": 2,
+    "part_id": "wing-attack",
+    "display_name": "Wing Attack (Costs 2 Actions)"
+  },
+  {
+    "id": "m39-trait-1",
+    "monster_id": 39,
+    "category": "trait",
+    "position": 1,
+    "part_id": "legendary-resistance",
+    "display_name": "Legendary Resistance (3/Day)"
+  },
+  {
+    "id": "m106-action-0",
+    "monster_id": 106,
+    "category": "action",
+    "position": 0,
+    "part_id": "multiattack-bite-or-tail-two-claws"
+  },
+  {
+    "id": "m106-action-1",
+    "monster_id": 106,
+    "category": "action",
+    "position": 1,
+    "part_id": "bite",
+    "mode_ids": [
+      "melee"
+    ],
+    "modifier_ids": [
+      "lightning-damage"
+    ]
+  },
+  {
+    "id": "m106-action-2",
+    "monster_id": 106,
+    "category": "action",
+    "position": 2,
+    "part_id": "claw",
+    "mode_ids": [
+      "melee"
+    ]
+  },
+  {
+    "id": "m106-action-3",
+    "monster_id": 106,
+    "category": "action",
+    "position": 3,
+    "part_id": "tail",
+    "mode_ids": [
+      "melee"
+    ],
+    "modifier_ids": [
+      "knock-prone"
+    ]
+  },
+  {
+    "id": "m106-action-4",
+    "monster_id": 106,
+    "category": "action",
+    "position": 4,
+    "part_id": "steam-breath",
+    "display_name": "Steam Breath (Recharge 5-6)"
+  },
+  {
+    "id": "m106-legendary_action-0",
+    "monster_id": 106,
+    "category": "legendary_action",
+    "position": 0,
+    "part_id": "claw-or-tail-attack",
+    "display_name": "Attack"
+  },
+  {
+    "id": "m106-legendary_action-1",
+    "monster_id": 106,
+    "category": "legendary_action",
+    "position": 1,
+    "part_id": "move"
+  },
+  {
+    "id": "m106-legendary_action-2",
+    "monster_id": 106,
+    "category": "legendary_action",
+    "position": 2,
+    "part_id": "boiling-aura",
+    "display_name": "Boiling Aura (Costs 3 Actions)"
+  },
+  {
+    "id": "m106-mythic_action-0",
+    "monster_id": 106,
+    "category": "mythic_action",
+    "position": 0,
+    "part_id": "bite-attack",
+    "display_name": "Bite"
+  },
+  {
+    "id": "m106-mythic_action-1",
+    "monster_id": 106,
+    "category": "mythic_action",
+    "position": 1,
+    "part_id": "armor-of-storms",
+    "display_name": "Armor of Storms (Costs 2 Actions)"
+  },
+  {
+    "id": "m106-trait-0",
+    "monster_id": 106,
+    "category": "trait",
+    "position": 0,
+    "part_id": "amphibious"
+  },
+  {
+    "id": "m106-trait-2-no-food-or-drink",
+    "monster_id": 106,
+    "category": "trait",
+    "position": 2,
+    "part_id": "no-food-or-drink"
+  },
+  {
+    "id": "m106-trait-3",
+    "monster_id": 106,
+    "category": "trait",
+    "position": 3,
+    "part_id": "blessing-of-the-sea",
+    "display_name": "Blessing of the Sea (Recharges after a Short or Long Rest)"
+  },
+  {
+    "id": "m106-trait-4",
+    "monster_id": 106,
+    "category": "trait",
+    "position": 4,
+    "part_id": "legendary-resistance",
+    "display_name": "Legendary Resistance (3/Day)"
+  },
+  {
+    "id": "m402-action-0",
+    "monster_id": 402,
+    "category": "action",
+    "position": 0,
+    "part_id": "morningstar",
+    "mode_ids": [
+      "melee"
+    ]
+  },
+  {
+    "id": "m402-action-1",
+    "monster_id": 402,
+    "category": "action",
+    "position": 1,
+    "part_id": "javelin",
+    "mode_ids": [
+      "melee",
+      "thrown"
+    ]
+  },
+  {
+    "id": "m402-trait-0",
+    "monster_id": 402,
+    "category": "trait",
+    "position": 0,
+    "part_id": "brute"
+  },
+  {
+    "id": "m402-trait-1",
+    "monster_id": 402,
+    "category": "trait",
+    "position": 1,
+    "part_id": "surprise-attack"
+  },
+  {
+    "id": "m403-action-0",
+    "monster_id": 403,
+    "category": "action",
+    "position": 0,
+    "part_id": "multiattack-two-melee-attacks"
+  },
+  {
+    "id": "m403-action-1",
+    "monster_id": 403,
+    "category": "action",
+    "position": 1,
+    "part_id": "morningstar",
+    "mode_ids": [
+      "melee"
+    ]
+  },
+  {
+    "id": "m403-action-2",
+    "monster_id": 403,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "melee",
+      "thrown"
+    ]
+  },
+  {
+    "id": "m403-trait-0",
+    "monster_id": 403,
+    "category": "trait",
+    "position": 0,
+    "part_id": "brute"
+  },
+  {
+    "id": "m403-trait-1",
+    "monster_id": 403,
+    "category": "trait",
+    "position": 1,
+    "part_id": "surprise-attack"
+  },
+  {
+    "id": "m403-trait-2",
+    "monster_id": 403,
+    "category": "trait",
+    "position": 2,
+    "part_id": "heart-of-hruggek"
+  },
+  {
+    "id": "m562-action-1",
+    "monster_id": 562,
+    "category": "action",
+    "position": 1,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m699-action-2",
+    "monster_id": 699,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ],
+    "modifier_ids": [
+      "fire-damage-1d4"
+    ]
+  },
+  {
+    "id": "m724-action-2",
+    "monster_id": 724,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m765-action-2",
+    "monster_id": 765,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ],
+    "modifier_ids": [
+      "enlarged-weapon"
+    ]
+  },
+  {
+    "id": "m767-action-2",
+    "monster_id": 767,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ],
+    "modifier_ids": [
+      "enlarged-weapon"
+    ]
+  },
+  {
+    "id": "m774-action-2",
+    "monster_id": 774,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ],
+    "modifier_ids": [
+      "enlarged-weapon"
+    ]
+  },
+  {
+    "id": "m783-action-2",
+    "monster_id": 783,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ],
+    "modifier_ids": [
+      "enlarged-weapon"
+    ]
+  },
+  {
+    "id": "m784-action-1",
+    "monster_id": 784,
+    "category": "action",
+    "position": 1,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ],
+    "modifier_ids": [
+      "enlarged-weapon"
+    ]
+  },
+  {
+    "id": "m785-action-2",
+    "monster_id": 785,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ],
+    "modifier_ids": [
+      "enlarged-weapon"
+    ]
+  },
+  {
+    "id": "m786-action-2",
+    "monster_id": 786,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ],
+    "modifier_ids": [
+      "enlarged-weapon"
+    ]
+  },
+  {
+    "id": "m792-action-2",
+    "monster_id": 792,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m1166-action-2",
+    "monster_id": 1166,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m1178-action-2",
+    "monster_id": 1178,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m1253-action-1",
+    "monster_id": 1253,
+    "category": "action",
+    "position": 1,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m1309-action-2",
+    "monster_id": 1309,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m1314-action-3",
+    "monster_id": 1314,
+    "category": "action",
+    "position": 3,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m1352-action-1",
+    "monster_id": 1352,
+    "category": "action",
+    "position": 1,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m1371-action-1",
+    "monster_id": 1371,
+    "category": "action",
+    "position": 1,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m1372-action-0",
+    "monster_id": 1372,
+    "category": "action",
+    "position": 0,
+    "part_id": "javelin",
+    "mode_ids": [
+      "melee"
+    ]
+  },
+  {
+    "id": "m1372-trait-0",
+    "monster_id": 1372,
+    "category": "trait",
+    "position": 0,
+    "part_id": "undead-fortitude"
+  },
+  {
+    "id": "m1372-trait-1-no-food-or-drink",
+    "monster_id": 1372,
+    "category": "trait",
+    "position": 1,
+    "part_id": "no-food-or-drink"
+  },
+  {
+    "id": "m1372-trait-1-no-air",
+    "monster_id": 1372,
+    "category": "trait",
+    "position": 1,
+    "part_id": "no-air"
+  },
+  {
+    "id": "m1372-trait-1-no-sleep",
+    "monster_id": 1372,
+    "category": "trait",
+    "position": 1,
+    "part_id": "no-sleep"
+  },
+  {
+    "id": "m1531-action-3",
+    "monster_id": 1531,
+    "category": "action",
+    "position": 3,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m1658-action-1",
+    "monster_id": 1658,
+    "category": "action",
+    "position": 1,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m1757-action-1",
+    "monster_id": 1757,
+    "category": "action",
+    "position": 1,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m1781-action-1",
+    "monster_id": 1781,
+    "category": "action",
+    "position": 1,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m1782-action-2",
+    "monster_id": 1782,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m1795-action-2",
+    "monster_id": 1795,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m1845-action-2",
+    "monster_id": 1845,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m1869-action-3",
+    "monster_id": 1869,
+    "category": "action",
+    "position": 3,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m2220-action-2",
+    "monster_id": 2220,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ],
+    "modifier_ids": [
+      "poison-damage"
+    ]
+  },
+  {
+    "id": "m2333-action-2",
+    "monster_id": 2333,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m2334-action-2",
+    "monster_id": 2334,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m2343-action-2",
+    "monster_id": 2343,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m2418-action-2",
+    "monster_id": 2418,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m2533-action-2",
+    "monster_id": 2533,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m2535-action-2",
+    "monster_id": 2535,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m2712-action-2",
+    "monster_id": 2712,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ]
+  },
+  {
+    "id": "m2717-action-2",
+    "monster_id": 2717,
+    "category": "action",
+    "position": 2,
+    "part_id": "javelin",
+    "mode_ids": [
+      "thrown"
+    ],
+    "modifier_ids": [
+      "fire-damage-8d8"
+    ]
+  }
+]
